@@ -42,18 +42,19 @@ android {
 
 dependencies {
     /* Dependencias necesarias para el Proyecto */
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
     implementation(libs.retrofit)
     implementation(libs.gson)
     // Coil para cargar imágenes desde URL
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation(libs.coil.compose)
 //    implementation(libs.room.runtime)
 //    implementation(libs.room.ktx)
 //    ksp(libs.room.compiler)
     implementation(libs.androidx.sqlite)
     implementation(libs.androidx.sqlite.framework)
     implementation(libs.androidx.navigation)
+    implementation(libs.androidx.compose.material.icons.extended)
     /**/
 
     implementation(libs.androidx.core.ktx)
