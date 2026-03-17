@@ -63,9 +63,15 @@ fun NavigationHost(
         }
         
         composable(AppRoutes.Home.route) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "Bienvenido al Sistema JyPS")
-            }
+            val adminViewModel: mx.edu.utez.jyps.viewmodel.AdminViewModel = viewModel()
+            mx.edu.utez.jyps.ui.screens.admin.AdminDashboardScreen(
+                viewModel = adminViewModel,
+                onLogoutSuccess = {
+                    navController.navigate(AppRoutes.Login.route) {
+                        popUpTo(AppRoutes.Home.route) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }
