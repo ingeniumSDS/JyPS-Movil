@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,14 +35,14 @@ fun AppLogo(modifier: Modifier = Modifier) {
         // Representative Icon Box from Figma
         Box(
             modifier = Modifier
-                .size(64.dp)
-                .background(color = MaterialTheme.colorScheme.primary, shape = CircleShape),
+                .size(56.dp)
+                .background(color = Color(0xFF0F2C59), shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Filled.Description,
+                imageVector = Icons.Filled.School,
                 contentDescription = "Logo Icon",
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(28.dp),
                 tint = Color.White
             )
         }

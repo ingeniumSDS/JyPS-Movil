@@ -106,7 +106,106 @@ class AdminViewModel : ViewModel() {
         _selectedFilter.value = filter
     }
 
+    // --- CREATE USER FORM STATE ---
+    private val _isCreateUserVisible = MutableStateFlow(false)
+    val isCreateUserVisible: StateFlow<Boolean> = _isCreateUserVisible
+
+    private val _newUserName = MutableStateFlow("")
+    val newUserName: StateFlow<String> = _newUserName
+
+    private val _newUserPaterno = MutableStateFlow("")
+    val newUserPaterno: StateFlow<String> = _newUserPaterno
+
+    private val _newUserMaterno = MutableStateFlow("")
+    val newUserMaterno: StateFlow<String> = _newUserMaterno
+
+    private val _newUserPhone = MutableStateFlow("")
+    val newUserPhone: StateFlow<String> = _newUserPhone
+
+    private val _newUserEmail = MutableStateFlow("")
+    val newUserEmail: StateFlow<String> = _newUserEmail
+
+    private val _newUserRoles = MutableStateFlow<Set<Int>>(emptySet())
+    val newUserRoles: StateFlow<Set<Int>> = _newUserRoles
+
+    private val _newUserDepartmentId = MutableStateFlow(1) // Default to TI for now
+    val newUserDepartmentId: StateFlow<Int> = _newUserDepartmentId
+
+    fun setCreateUserVisible(visible: Boolean) {
+        if (!visible) resetForm()
+        _isCreateUserVisible.value = visible
+    }
+
+    fun onNameChange(name: String) { _newUserName.value = name }
+    fun onPaternoChange(paterno: String) { _newUserPaterno.value = paterno }
+    fun onMaternoChange(materno: String) { _newUserMaterno.value = materno }
+    fun onPhoneChange(phone: String) { _newUserPhone.value = phone }
+    fun onEmailChange(email: String) { _newUserEmail.value = email }
+    
+    fun toggleRole(roleId: Int) {
+        val current = _newUserRoles.value.toMutableSet()
+        if (current.contains(roleId)) current.remove(roleId)
+        else current.add(roleId)
+        _newUserRoles.value = current
+    }
+
+    private fun resetForm() {
+        _newUserName.value = ""
+        _newUserPaterno.value = ""
+        _newUserMaterno.value = ""
+        _newUserPhone.value = ""
+        _newUserEmail.value = ""
+        _newUserRoles.value = emptySet()
+    }
+
+    fun saveNewUser() {
+        val roleMap = mapOf(
+            1 to Roles(1, "Trabajador"),
+            2 to Roles(2, "Seguridad"),
+            3 to Roles(3, "Jefe de Área"),
+            4 to Roles(4, "Administrador"),
+            5 to Roles(5, "Recursos Humanos")
+        )
+
+        val selectedRoles = _newUserRoles.value.mapNotNull { roleMap[it] }
+        val depto = if (_newUserDepartmentId.value == 1) {
+            Departamento(1, "Tecnologías de la Información", null, "", true)
+        } else {
+            Departamento(2, "Desarrollo de Software", null, "", true)
+        }
+
+        val newUser = UserWithDetails(
+            usuario = Usuario(
+                id = (_users.value.maxOfOrNull { it.usuario.id } ?: 0) + 1,
+                nombre = _newUserName.value,
+                apellidoPaterno = _newUserPaterno.value,
+                apellidoMaterno = _newUserMaterno.value,
+                correo = _newUserEmail.value,
+                telefono = _newUserPhone.value,
+                idDepartamento = depto.id,
+                inicioJornada = "08:00",
+                finJornada = "16:00"
+            ),
+            cuenta = Cuenta(
+                idUsuario = 0,
+                intentosFallidos = 0,
+                tokenRecuperacion = null,
+                tokenExpiresAt = null,
+                tokenUsado = false,
+                bloqueada = false,
+                blockedAt = null,
+                activa = true,
+                passwordHash = "temp"
+            ),
+            departamento = depto,
+            roles = selectedRoles
+        )
+
+        _users.value = listOf(newUser) + _users.value
+        setCreateUserVisible(false)
+    }
+
     fun onLogout() {
-        // Handle logic for logout, maybe resetting data or updating a specific flow State
+        // Handle logic for logout
     }
 }

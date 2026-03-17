@@ -96,5 +96,8 @@ fun AdminDashboardScreen(
                 }
             }
         }
+
+        // --- DIALOGS ---
+        CreateUserDialog(viewModel)
     }
 }

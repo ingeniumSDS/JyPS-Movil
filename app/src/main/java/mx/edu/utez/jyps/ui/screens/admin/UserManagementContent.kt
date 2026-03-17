@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Group
@@ -83,13 +84,13 @@ fun UserManagementContent(viewModel: AdminViewModel) {
                 )
 
                 Button(
-                    onClick = { /* TODO: Navigate to create user */ },
+                    onClick = { viewModel.setCreateUserVisible(true) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28A745))
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28A745)),
+                    shape = RoundedCornerShape(8.dp)
+                ) { Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
                     Spacer(Modifier.width(8.dp))
                     Text("Crear Usuario", fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 }
@@ -98,43 +99,39 @@ fun UserManagementContent(viewModel: AdminViewModel) {
 
         // Metrics Section
         item {
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Column 1
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Row 1
+                MetricCard(
+                    title = "Total Usuarios",
+                    value = totalUsers.toString(),
+                    icon = Icons.Default.Group,
+                    iconContainerColor = Color(0xFFF3F4F6),
+                    contentColor = Color(0xFF0F2C59)
+                )
+                
+                // Row 2
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     MetricCard(
-                        title = "Total Usuarios",
-                        value = totalUsers.toString(),
-                        icon = Icons.Default.Group,
-                        iconContainerColor = Color(0xFFF3F4F6),
-                        contentColor = Color(0xFF0F2C59)
+                        title = "Usuarios Activos",
+                        value = activeUsers.toString(),
+                        icon = Icons.Default.PersonOutline,
+                        iconContainerColor = Color(0xFFDCFCE7),
+                        contentColor = Color(0xFF28A745),
+                        modifier = Modifier.weight(1f)
                     )
                     MetricCard(
                         title = "Usuarios Inactivos",
                         value = inactiveUsers.toString(),
                         icon = Icons.Default.PersonOff,
                         iconContainerColor = Color(0xFFFFE2E2),
-                        contentColor = Color(0xFFDC3545)
-                    )
-                }
-                
-                // Column 2
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    MetricCard(
-                        title = "Usuarios Activos",
-                        value = activeUsers.toString(),
-                        icon = Icons.Default.PersonOutline,
-                        iconContainerColor = Color(0xFFDCFCE7),
-                        contentColor = Color(0xFF28A745)
-                    )
-                     MetricCard(
-                        title = "Trabajadores",
-                        value = "2", // Hardcoded based on mockup, could be calculated dynamically too
-                        icon = Icons.Default.Group,
-                        iconContainerColor = Color.White,
-                        contentColor = Color(0xFF1447E6) // Assuming blue for default Worker
+                        contentColor = Color(0xFFDC3545),
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
