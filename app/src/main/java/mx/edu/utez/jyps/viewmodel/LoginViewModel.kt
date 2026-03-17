@@ -16,7 +16,9 @@ data class LoginUiState(
     val password: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val isLoginSuccessful: Boolean = false
+    val isLoginSuccessful: Boolean = false,
+    val loginAttempts: Int = 3,
+    val isLockedOut: Boolean = false
 )
 
 /**
@@ -46,6 +48,8 @@ class LoginViewModel : ViewModel() {
      * Uses dummy logic for now.
      */
     fun login() {
+        if (_uiState.value.isLockedOut) return
+
         val email = _uiState.value.email
         val password = _uiState.value.password
 
@@ -61,9 +65,51 @@ class LoginViewModel : ViewModel() {
             kotlinx.coroutines.delay(1500)
 
             if (email == "admin@utez.edu.mx" && password == "admin123") {
-                _uiState.update { it.copy(isLoading = false, isLoginSuccessful = true) }
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false, 
+                        isLoginSuccessful = true,
+                        loginAttempts = 3, // Reset on success
+                        errorMessage = null
+                    ) 
+                }
             } else {
-                _uiState.update { it.copy(isLoading = false, errorMessage = "Credenciales incorrectas.") }
+                val remainingAttempts = _uiState.value.loginAttempts - 1
+                if (remainingAttempts <= 0) {
+                    _uiState.update { 
+                        it.copy(
+                            isLoading = false, 
+                            isLockedOut = true, 
+                            errorMessage = null 
+                        ) 
+                    }
+                    startLockoutTimer()
+                } else {
+                    _uiState.update { 
+                        it.copy(
+                            isLoading = false, 
+                            loginAttempts = remainingAttempts,
+                            errorMessage = "Credenciales inválidas ($remainingAttempts intento${if (remainingAttempts == 1) "" else "s"} restante${if (remainingAttempts == 1) "" else "s"})"
+                        ) 
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Handles the lockout duration timer.
+     */
+    private fun startLockoutTimer() {
+        viewModelScope.launch {
+            // Lockout duration 1 minute (simulated by wait)
+            kotlinx.coroutines.delay(60000)
+            _uiState.update { 
+                it.copy(
+                    isLockedOut = false,
+                    loginAttempts = 3,
+                    errorMessage = null
+                )
             }
         }
     }
