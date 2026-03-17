@@ -11,7 +11,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import mx.edu.utez.jyps.ui.screens.ForgotPasswordScreen
 import mx.edu.utez.jyps.ui.screens.LoginScreen
+import mx.edu.utez.jyps.viewmodel.ForgotPasswordViewModel
 import mx.edu.utez.jyps.viewmodel.LoginViewModel
 
 /**
@@ -20,6 +22,7 @@ import mx.edu.utez.jyps.viewmodel.LoginViewModel
 sealed class AppRoutes(val route: String) {
     object Login : AppRoutes("login")
     object Home : AppRoutes("home")
+    object ForgotPassword : AppRoutes("forgot_password")
 }
 
 /**
@@ -42,6 +45,19 @@ fun NavigationHost(
                     navController.navigate(AppRoutes.Home.route) {
                         popUpTo(AppRoutes.Login.route) { inclusive = true }
                     }
+                },
+                onForgotPasswordClick = {
+                    navController.navigate(AppRoutes.ForgotPassword.route)
+                }
+            )
+        }
+        
+        composable(AppRoutes.ForgotPassword.route) {
+            val forgotPasswordViewModel: ForgotPasswordViewModel = viewModel()
+            ForgotPasswordScreen(
+                viewModel = forgotPasswordViewModel,
+                onBackToLoginClick = {
+                    navController.popBackStack()
                 }
             )
         }
