@@ -12,7 +12,7 @@ object RetrofitInstance { // De momento solo sirve de referencia
     // Esta es la IP que usa el emulador de Android para conectarse
     // al servidor SpringBoot en tu computadora.
     // Actualiza esta IP según tu configuración de red
-    private const val BASE_URL = "http://192.168.0.23:5000/"
+    private const val BASE_URL = "https://yolonda-otocystic-personably.ngrok-free.dev/"
 
     // Interceptor para logging de peticiones HTTP
     private val loggingInterceptor = HttpLoggingInterceptor().apply {

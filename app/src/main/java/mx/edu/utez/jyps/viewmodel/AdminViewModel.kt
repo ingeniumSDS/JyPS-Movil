@@ -1,48 +1,52 @@
 package mx.edu.utez.jyps.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.data.model.Cuenta
 import mx.edu.utez.jyps.data.model.Departamento
 import mx.edu.utez.jyps.data.model.Roles
-import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.data.model.UserWithDetails
+import mx.edu.utez.jyps.data.model.Usuario
+import mx.edu.utez.jyps.data.model.UserRequest
+import mx.edu.utez.jyps.data.network.RetrofitInstance
+import mx.edu.utez.jyps.data.repository.UsuarioRepository
 
-class AdminViewModel : ViewModel() {
+class AdminViewModel(
+    private val repository: UsuarioRepository = UsuarioRepository(RetrofitInstance.api)
+) : ViewModel() {
 
-    private val _users = MutableStateFlow<List<UserWithDetails>>(emptyList())
-    val users: StateFlow<List<UserWithDetails>> = _users
+    // Observamos la lista desde el repositorio
+    val users: StateFlow<List<UserWithDetails>> = repository.allUsers
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    // Menu Item Activo (Route string)
     private val _selectedDrawerItem = MutableStateFlow("admin_users")
     val selectedDrawerItem: StateFlow<String> = _selectedDrawerItem
 
-    // Búsqueda
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
-    // Filtros: "Todos", "Activos", "Inactivos"
     private val _selectedFilter = MutableStateFlow("Todos")
     val selectedFilter: StateFlow<String> = _selectedFilter
 
     init {
-        loadMockData()
+        loadInitialData()
     }
 
-    private fun loadMockData() {
-        // Roles hardcodeados
+    private fun loadInitialData() {
         val rolTrabajador = Roles(1, "Trabajador")
         val rolSeguridad = Roles(2, "Seguridad")
         val rolJefeArea = Roles(3, "Jefe de Área")
         val rolAdmin = Roles(4, "Administrador")
         val rolRH = Roles(5, "Recursos Humanos")
 
-        // Departamentos
         val deptoTI = Departamento(1, "Tecnologías de la Información", null, "", true)
         val deptoSoftware = Departamento(2, "Desarrollo de Software", null, "", true)
 
-        // Cuentas Base
         val cuentaActiva = Cuenta(0, 0, null, null, false, false, null, true, "****")
         val cuentaInactiva = Cuenta(0, 0, null, null, false, false, null, false, "****")
 
@@ -86,25 +90,16 @@ class AdminViewModel : ViewModel() {
             UserWithDetails(
                 usuario = Usuario(7, "Laura", "Martínez", "Ramírez", "laura.martinez@utez.edu.mx", "777 456 7890", 2, "08:00", "16:00"),
                 cuenta = cuentaActiva.copy(idUsuario = 7),
-                departamento = deptoSoftware, // Guessing from Figma consistency
+                departamento = deptoSoftware,
                 roles = listOf(rolRH)
             )
         )
-
-        _users.value = mockUsers
+        repository.setInitialMockData(mockUsers)
     }
 
-    fun selectDrawerItem(item: String) {
-        _selectedDrawerItem.value = item
-    }
-
-    fun onSearchQueryChange(query: String) {
-        _searchQuery.value = query
-    }
-
-    fun setFilter(filter: String) {
-        _selectedFilter.value = filter
-    }
+    fun selectDrawerItem(item: String) { _selectedDrawerItem.value = item }
+    fun onSearchQueryChange(query: String) { _searchQuery.value = query }
+    fun setFilter(filter: String) { _selectedFilter.value = filter }
 
     // --- CREATE USER FORM STATE ---
     private val _isCreateUserVisible = MutableStateFlow(false)
@@ -128,8 +123,24 @@ class AdminViewModel : ViewModel() {
     private val _newUserRoles = MutableStateFlow<Set<Int>>(emptySet())
     val newUserRoles: StateFlow<Set<Int>> = _newUserRoles
 
-    private val _newUserDepartmentId = MutableStateFlow(1) // Default to TI for now
+    private val _newUserDepartmentId = MutableStateFlow(1) 
     val newUserDepartmentId: StateFlow<Int> = _newUserDepartmentId
+
+    private val _newUserStartTime = MutableStateFlow("08:00:00")
+    val newUserStartTime: StateFlow<String> = _newUserStartTime
+
+    private val _newUserEndTime = MutableStateFlow("16:00:00")
+    val newUserEndTime: StateFlow<String> = _newUserEndTime
+
+    // Feedback State
+    private val _showToast = MutableStateFlow(false)
+    val showToast: StateFlow<Boolean> = _showToast
+
+    private val _toastMessage = MutableStateFlow("")
+    val toastMessage: StateFlow<String> = _toastMessage
+
+    private val _isProcessing = MutableStateFlow(false)
+    val isProcessing: StateFlow<Boolean> = _isProcessing
 
     fun setCreateUserVisible(visible: Boolean) {
         if (!visible) resetForm()
@@ -141,6 +152,9 @@ class AdminViewModel : ViewModel() {
     fun onMaternoChange(materno: String) { _newUserMaterno.value = materno }
     fun onPhoneChange(phone: String) { _newUserPhone.value = phone }
     fun onEmailChange(email: String) { _newUserEmail.value = email }
+    fun onDepartmentChange(id: Int) { _newUserDepartmentId.value = id }
+    fun onStartTimeChange(time: String) { _newUserStartTime.value = time }
+    fun onEndTimeChange(time: String) { _newUserEndTime.value = time }
     
     fun toggleRole(roleId: Int) {
         val current = _newUserRoles.value.toMutableSet()
@@ -156,9 +170,62 @@ class AdminViewModel : ViewModel() {
         _newUserPhone.value = ""
         _newUserEmail.value = ""
         _newUserRoles.value = emptySet()
+        _newUserDepartmentId.value = 1
+        _newUserStartTime.value = "08:00:00"
+        _newUserEndTime.value = "16:00:00"
     }
 
+    fun dismissToast() { _showToast.value = false }
+
     fun saveNewUser() {
+        val roleMapping = mapOf(
+            1 to "EMPLEADO",
+            2 to "GUARDIA",
+            3 to "JEFE_DE_DEPARTAMENTO",
+            4 to "ADMINISTRADOR",
+            5 to "AUDITOR"
+        )
+
+        val selectedRoleNames = _newUserRoles.value.mapNotNull { roleMapping[it] }
+        
+        val request = UserRequest(
+            nombre = _newUserName.value,
+            apellidoPaterno = _newUserPaterno.value,
+            apellidoMaterno = _newUserMaterno.value,
+            correo = _newUserEmail.value,
+            telefono = _newUserPhone.value,
+            horaEntrada = _newUserStartTime.value,
+            horaSalida = _newUserEndTime.value,
+            roles = selectedRoleNames,
+            departamentoId = _newUserDepartmentId.value.toLong()
+        )
+
+        viewModelScope.launch {
+            _isProcessing.value = true
+            try {
+                val response = repository.registrarUsuario(request)
+                if (response.isSuccessful) {
+                    _toastMessage.value = "Usuario creado exitosamente"
+                    _showToast.value = true
+                    
+                    // Actualizar lista local en el repositorio
+                    updateLocalListAfterSuccess()
+                    
+                    setCreateUserVisible(false)
+                } else {
+                    _toastMessage.value = "Error al crear usuario: ${response.code()}"
+                    _showToast.value = true
+                }
+            } catch (e: Exception) {
+                _toastMessage.value = "Error de red: ${e.message}"
+                _showToast.value = true
+            } finally {
+                _isProcessing.value = false
+            }
+        }
+    }
+
+    private fun updateLocalListAfterSuccess() {
         val roleMap = mapOf(
             1 to Roles(1, "Trabajador"),
             2 to Roles(2, "Seguridad"),
@@ -168,23 +235,23 @@ class AdminViewModel : ViewModel() {
         )
 
         val selectedRoles = _newUserRoles.value.mapNotNull { roleMap[it] }
-        val depto = if (_newUserDepartmentId.value == 1) {
-            Departamento(1, "Tecnologías de la Información", null, "", true)
-        } else {
-            Departamento(2, "Desarrollo de Software", null, "", true)
+        val depto = when(_newUserDepartmentId.value) {
+            1 -> Departamento(1, "Tecnologías de la Información", null, "", true)
+            2 -> Departamento(2, "Desarrollo de Software", null, "", true)
+            else -> Departamento(_newUserDepartmentId.value, "Departamento ${_newUserDepartmentId.value}", null, "", true)
         }
 
         val newUser = UserWithDetails(
             usuario = Usuario(
-                id = (_users.value.maxOfOrNull { it.usuario.id } ?: 0) + 1,
+                id = (users.value.maxOfOrNull { it.usuario.id } ?: 0) + 1,
                 nombre = _newUserName.value,
                 apellidoPaterno = _newUserPaterno.value,
                 apellidoMaterno = _newUserMaterno.value,
                 correo = _newUserEmail.value,
                 telefono = _newUserPhone.value,
                 idDepartamento = depto.id,
-                inicioJornada = "08:00",
-                finJornada = "16:00"
+                inicioJornada = _newUserStartTime.value.take(5),
+                finJornada = _newUserEndTime.value.take(5)
             ),
             cuenta = Cuenta(
                 idUsuario = 0,
@@ -195,17 +262,14 @@ class AdminViewModel : ViewModel() {
                 bloqueada = false,
                 blockedAt = null,
                 activa = true,
-                passwordHash = "temp"
+                passwordHash = "****"
             ),
             departamento = depto,
             roles = selectedRoles
         )
 
-        _users.value = listOf(newUser) + _users.value
-        setCreateUserVisible(false)
+        repository.updateLocalList(newUser)
     }
 
-    fun onLogout() {
-        // Handle logic for logout
-    }
+    fun onLogout() { /* Logic for logout */ }
 }

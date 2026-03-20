@@ -42,9 +42,9 @@ fun TestUsersBox(modifier: Modifier = Modifier) {
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            TestUserRow("Trabajador", "juan.perez@utez.edu.mx")
-            TestUserRow("Seguridad", "maria.gonzalez@utez.edu.mx")
-            TestUserRow("Jefe de Área", "roberto.sanchez@utez.edu.mx")
+            TestUserRow("Empleado", "juan.perez@utez.edu.mx")
+            TestUserRow("Guardia", "maria.gonzalez@utez.edu.mx")
+            TestUserRow("Jefe de Departamento", "roberto.sanchez@utez.edu.mx")
             TestUserRow("Recursos Humanos", "laura.martinez@utez.edu.mx")
             TestUserRow("Administrador", "carlos.rodriguez@utez.edu.mx")
             TestUserRow(

@@ -3,6 +3,7 @@ package mx.edu.utez.jyps.data.network
 import mx.edu.utez.jyps.data.model.User
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Multipart
@@ -11,13 +12,20 @@ import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 
-interface ApiService { // De momento solo sirve de referencia
+import mx.edu.utez.jyps.data.model.UserRequest
+import mx.edu.utez.jyps.data.model.UserWithDetails
+import retrofit2.Response
 
-    @GET("users")
-    suspend fun getUsers(): List<User>
+interface ApiService { 
 
-    @GET("users/{id}")
-    suspend fun getUserById(@Path("id") id: Int): User
+    @POST("api/v1/usuarios")
+    suspend fun registrarUsuario(@Body request: UserRequest): Response<Void>
+
+    @GET("api/v1/usuarios")
+    suspend fun getUsuarios(): List<UserWithDetails>
+
+    @GET("api/v1/usuarios/{id}")
+    suspend fun getUsuarioPorId(@Path("id") id: Int): UserWithDetails
 
     @Multipart
     @POST("users")

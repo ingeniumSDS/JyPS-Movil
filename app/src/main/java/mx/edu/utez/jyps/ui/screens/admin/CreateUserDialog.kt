@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -157,6 +158,62 @@ fun CreateUserDialog(viewModel: AdminViewModel) {
                             }
 
                             Spacer(Modifier.height(24.dp))
+
+                            Spacer(Modifier.height(24.dp))
+
+                            // Conditional Fields: Department
+                            val showDepartment = selectedRoles.contains(1) || selectedRoles.contains(3)
+                            if (showDepartment) {
+                                Text("Departamento *", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF364153))
+                                Spacer(Modifier.height(8.dp))
+                                
+                                val selectedDeptId by viewModel.newUserDepartmentId.collectAsStateWithLifecycle()
+                                val departments = listOf(1 to "Tecnologías de la Información", 2 to "Desarrollo de Software", 3 to "Ventas")
+                                
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .border(1.dp, Color(0xFFD1D5DC), RoundedCornerShape(8.dp))
+                                ) {
+                                    departments.forEach { (id, name) ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { viewModel.onDepartmentChange(id) }
+                                                .padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(16.dp)
+                                                    .border(1.dp, if (selectedDeptId == id) Color(0xFF0F2C59) else Color.Gray, CircleShape)
+                                                    .padding(3.dp)
+                                                    .background(if (selectedDeptId == id) Color(0xFF0F2C59) else Color.Transparent, CircleShape)
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(name, fontSize = 14.sp, color = if (selectedDeptId == id) Color(0xFF0F2C59) else Color(0xFF364153))
+                                        }
+                                    }
+                                }
+                                Spacer(Modifier.height(24.dp))
+                            }
+
+                            // Conditional Fields: Schedule
+                            val showSchedule = selectedRoles.contains(1)
+                            if (showSchedule) {
+                                val startTime by viewModel.newUserStartTime.collectAsStateWithLifecycle()
+                                val endTime by viewModel.newUserEndTime.collectAsStateWithLifecycle()
+                                
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        FormField(label = "Hora Inicio *", value = startTime, onValueChange = viewModel::onStartTimeChange, placeholder = "08:00:00")
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        FormField(label = "Hora Fin *", value = endTime, onValueChange = viewModel::onEndTimeChange, placeholder = "16:00:00")
+                                    }
+                                }
+                                Spacer(Modifier.height(24.dp))
+                            }
 
                             // Info Box
                             PasswordInfoBox()

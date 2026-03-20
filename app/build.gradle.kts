@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp) // Plugin necesario para el Proyecto
+    alias(libs.plugins.googleServices) // Add the Google services Gradle plugin
+    alias(libs.plugins.crashlytics) // Add the Crashlytics Gradle plugin
 }
 
 android {
@@ -17,6 +19,17 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // PARA RENOMBRAR EL APK
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            val appName = "JyPS" //
+            val newName = "${appName}_${variant.versionName}.apk"
+            output.outputFileName = newName
+        }
     }
 
     buildTypes {
@@ -55,6 +68,16 @@ dependencies {
     implementation(libs.androidx.sqlite.framework)
     implementation(libs.androidx.navigation)
     implementation(libs.androidx.compose.material.icons.extended)
+
+    // Import the Firebase BoM
+    implementation(platform(libs.firebase.bom))
+    // Add the dependencies for Firebase products you want to use
+    // When using the BoM, don't specify versions in Firebase dependencies
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
+
+    // Add the dependencies for any other desired Firebase products
+    // https://firebase.google.com/docs/android/setup#available-libraries
     /**/
 
     implementation(libs.androidx.core.ktx)
