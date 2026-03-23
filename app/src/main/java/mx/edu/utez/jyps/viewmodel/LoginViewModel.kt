@@ -64,7 +64,7 @@ class LoginViewModel : ViewModel() {
             // Simulating API call
             kotlinx.coroutines.delay(1500)
 
-            if (email == "carlos.rodriguez@utez.edu.mx" && password == "") {
+            if (email == "carlos.rodriguez@utez.edu.mx") { //  && password == ""
                 _uiState.update { 
                     it.copy(
                         isLoading = false, 

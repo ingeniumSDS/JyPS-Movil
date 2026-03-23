@@ -43,18 +43,18 @@ fun UserManagementContent(viewModel: AdminViewModel) {
 
     // Calculate metrics
     val totalUsers = users.size
-    val activeUsers = users.count { it.cuenta.activa }
-    val inactiveUsers = users.count { !it.cuenta.activa }
+    val activeUsers = users.count { it.isActivo }
+    val inactiveUsers = users.count { !it.isActivo }
 
     // Filter logic
     val filteredUsers = users.filter { user ->
-        val matchesSearch = user.usuario.nombreCompleto.contains(searchQuery, ignoreCase = true) ||
-                            user.usuario.correo.contains(searchQuery, ignoreCase = true) ||
-                            (user.primaryRole?.nombre?.contains(searchQuery, ignoreCase = true) ?: false)
-        
+        val matchesSearch = user.nombreCompleto.contains(searchQuery, ignoreCase = true) ||
+                            user.correo.contains(searchQuery, ignoreCase = true) ||
+                            user.primaryRoleDisplay.contains(searchQuery, ignoreCase = true)
+
         val matchesFilter = when (selectedFilter) {
-            "Activos" -> user.cuenta.activa
-            "Inactivos" -> !user.cuenta.activa
+            "Activos" -> user.isActivo
+            "Inactivos" -> !user.isActivo
             else -> true
         }
 
@@ -150,11 +150,12 @@ fun UserManagementContent(viewModel: AdminViewModel) {
         }
 
         // User List
-        items(filteredUsers) { userWithDetails ->
+        items(filteredUsers) { usuario ->
             UserCard(
-                userWithDetails = userWithDetails,
+                usuario = usuario,
                 onEditClick = { /* TODO */ },
-                onToggleStatusClick = { /* TODO */ }
+                onToggleStatusClick = { /* TODO */ },
+                onViewDetail = { userId -> viewModel.viewUserDetail(userId) }
             )
         }
     }

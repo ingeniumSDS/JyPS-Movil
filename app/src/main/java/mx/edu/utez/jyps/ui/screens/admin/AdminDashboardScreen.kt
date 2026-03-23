@@ -106,6 +106,7 @@ fun AdminDashboardScreen(
 
         // --- DIALOGS ---
         CreateUserDialog(viewModel)
+        UserDetailDialog(viewModel)
 
         // --- FEEDBACK / TOAST ---
         val showToast by viewModel.showToast.collectAsStateWithLifecycle()

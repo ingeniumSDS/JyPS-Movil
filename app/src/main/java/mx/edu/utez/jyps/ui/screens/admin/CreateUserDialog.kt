@@ -117,9 +117,9 @@ fun CreateUserDialog(viewModel: AdminViewModel) {
                             
                             val selectedRoles by viewModel.newUserRoles.collectAsStateWithLifecycle()
                             val roles = listOf(
-                                1 to "Trabajador",
-                                3 to "Jefe de Área",
-                                2 to "Seguridad",
+                                1 to "Empleado",
+                                3 to "Jefe de Departamento",
+                                2 to "Guardia",
                                 5 to "Recursos Humanos",
                                 4 to "Administrador"
                             )
