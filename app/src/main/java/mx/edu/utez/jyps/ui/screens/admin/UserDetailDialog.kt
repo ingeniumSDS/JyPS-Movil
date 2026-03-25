@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import mx.edu.utez.jyps.data.model.CuentaResponse
 import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.viewmodel.AdminViewModel
 
@@ -31,16 +32,16 @@ import mx.edu.utez.jyps.viewmodel.AdminViewModel
 fun UserDetailDialog(viewModel: AdminViewModel) {
     val isVisible by viewModel.isUserDetailVisible.collectAsStateWithLifecycle()
     val user by viewModel.selectedUser.collectAsStateWithLifecycle()
+    val accountStatuses by viewModel.accountStatuses.collectAsStateWithLifecycle()
 
     if (isVisible && user != null) {
+        val cuenta = accountStatuses[user!!.id]
         Dialog(
             onDismissRequest = { viewModel.closeUserDetail() },
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f)),
+                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -63,7 +64,7 @@ fun UserDetailDialog(viewModel: AdminViewModel) {
                     }
 
                     HorizontalDivider(color = Color(0xFFE5E7EB))
-                    user?.let { DetailContent(it) }
+                    user?.let { DetailContent(it, cuenta) }
                 }
             }
         }
@@ -71,7 +72,7 @@ fun UserDetailDialog(viewModel: AdminViewModel) {
 }
 
 @Composable
-private fun DetailContent(usuario: Usuario) {
+private fun DetailContent(usuario: Usuario, cuenta: CuentaResponse?) {
     Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
         // Avatar + Name
@@ -80,10 +81,7 @@ private fun DetailContent(usuario: Usuario) {
                 modifier = Modifier.size(56.dp).background(Color(0xFF0F2C59), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = usuario.nombre.take(1).uppercase() + usuario.apellidoPaterno.take(1).uppercase(),
-                    color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp
-                )
+                Text(usuario.initial, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
             }
             Column {
                 Text(usuario.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF101828))
@@ -105,38 +103,41 @@ private fun DetailContent(usuario: Usuario) {
 
         DetailRow(Icons.Default.Email, "Correo", usuario.correo)
         DetailRow(Icons.Default.Phone, "Teléfono", usuario.telefono)
-        DetailRow(Icons.Default.Person, "Departamento", "Depto. ${usuario.departamentoId}")
+        DetailRow(Icons.Default.Person, "Departamento", usuario.departamentoDisplay)
 
-        // Schedule (only for EMPLEADO)
-        if (usuario.roles.contains("EMPLEADO") && usuario.horaEntrada != null) {
+        // Schedule
+        if (usuario.horaEntrada != null) {
             HorizontalDivider(color = Color(0xFFE5E7EB))
             Text("Jornada Laboral", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color(0xFF364153))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Entrada", fontSize = 12.sp, color = Color.Gray)
-                    Text(usuario.horaEntrada.take(5), fontWeight = FontWeight.Medium, color = Color(0xFF0F2C59))
+                    Text(usuario.horaEntradaDisplay, fontWeight = FontWeight.Medium, color = Color(0xFF0F2C59))
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Salida", fontSize = 12.sp, color = Color.Gray)
-                    Text(usuario.horaSalida?.take(5) ?: "--:--", fontWeight = FontWeight.Medium, color = Color(0xFF0F2C59))
+                    Text(usuario.horaSalidaDisplay, fontWeight = FontWeight.Medium, color = Color(0xFF0F2C59))
                 }
             }
         }
 
         // Account status
-        usuario.cuenta?.let { cuenta ->
+        cuenta?.let { c ->
             HorizontalDivider(color = Color(0xFFE5E7EB))
             Text("Estado de la Cuenta", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color(0xFF364153))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val (bg, tc) = if (cuenta.activa) Color(0xFFDCFCE7) to Color(0xFF16A34A) else Color(0xFFFEE2E2) to Color(0xFFDC2626)
+                val (bg, tc) = if (c.activa) Color(0xFFDCFCE7) to Color(0xFF16A34A) else Color(0xFFFEE2E2) to Color(0xFFDC2626)
                 Box(modifier = Modifier.background(bg, RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 4.dp)) {
-                    Text(if (cuenta.activa) "Activa" else "Inactiva", fontSize = 12.sp, color = tc, fontWeight = FontWeight.Medium)
+                    Text(if (c.activa) "Activa" else "Inactiva", fontSize = 12.sp, color = tc, fontWeight = FontWeight.Medium)
                 }
-                if (cuenta.bloqueada) {
+                if (c.bloqueada) {
                     Box(modifier = Modifier.background(Color(0xFFFEE2E2), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 4.dp)) {
                         Text("Bloqueada", fontSize = 12.sp, color = Color(0xFFDC2626), fontWeight = FontWeight.Medium)
                     }
                 }
+            }
+            if (c.intentosFallidos > 0) {
+                Text("Intentos fallidos: ${c.intentosFallidos}", fontSize = 12.sp, color = Color(0xFF6A7282))
             }
         }
 
@@ -156,16 +157,16 @@ private fun DetailRow(icon: ImageVector, label: String, value: String) {
 }
 
 private fun roleDisplayName(role: String) = when (role) {
-    "EMPLEADO" -> "Trabajador"; "GUARDIA" -> "Seguridad"
-    "JEFE_DE_DEPARTAMENTO" -> "Jefe de Área"; "ADMINISTRADOR" -> "Administrador"
+    "EMPLEADO" -> "Empleado"; "GUARDIA" -> "Guardia"
+    "JEFE_DE_DEPARTAMENTO" -> "Jefe de Departamento"; "ADMINISTRADOR" -> "Administrador"
     "AUDITOR" -> "Auditor"; else -> role
 }
 
 private fun roleColors(role: String): Pair<Color, Color> = when (role) {
     "ADMINISTRADOR" -> Color(0xFFFEE2E2) to Color(0xFFDC2626)
-    "JEFE_DE_DEPARTAMENTO" -> Color(0xFFFFF3CD) to Color(0xFF856404)
+    "JEFE_DE_DEPARTAMENTO" -> Color(0xFFF3E8FF) to Color(0xFF8200DB)
     "EMPLEADO" -> Color(0xFFDEEBFF) to Color(0xFF1D4ED8)
-    "GUARDIA" -> Color(0xFFE0F2F1) to Color(0xFF00796B)
-    "AUDITOR" -> Color(0xFFF3E8FF) to Color(0xFF7C3AED)
+    "GUARDIA" -> Color(0xFFFFEDD4) to Color(0xFFCA3500)
+    "AUDITOR" -> Color(0xFFDCFCE7) to Color(0xFF008236)
     else -> Color(0xFFF3F4F6) to Color(0xFF6B7280)
 }

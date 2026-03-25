@@ -1,10 +1,9 @@
 package mx.edu.utez.jyps.data.model
 
-import com.google.gson.annotations.SerializedName
-
 /**
- * Data Transfer Object for creating a new user.
+ * DTO for creating/updating a user.
  * Matches the backend's RegistrarUsuarioCommand.
+ * Uses LocalTimeInfo objects for time fields.
  */
 data class UserRequest(
     val nombre: String,
@@ -12,9 +11,8 @@ data class UserRequest(
     val apellidoMaterno: String,
     val correo: String,
     val telefono: String,
-    val horaEntrada: String, // Format HH:mm:ss
-    val horaSalida: String,  // Format HH:mm:ss
-    val roles: List<String>, // [ADMINISTRADOR, EMPLEADO, JEFE_DE_DEPARTAMENTO, GUARDIA, AUDITOR]
-    @SerializedName("departamentoId")
+    val horaEntrada: LocalTimeInfo,
+    val horaSalida: LocalTimeInfo,
+    val roles: List<String>,
     val departamentoId: Long
 )

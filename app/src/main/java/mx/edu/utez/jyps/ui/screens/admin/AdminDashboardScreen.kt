@@ -1,26 +1,31 @@
 package mx.edu.utez.jyps.ui.screens.admin
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,11 +38,9 @@ import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.ui.components.navigation.AdminNavigationDrawer
 import mx.edu.utez.jyps.ui.components.navigation.adminMenuOptions
 import mx.edu.utez.jyps.viewmodel.AdminViewModel
-import mx.edu.utez.jyps.ui.screens.admin.UserManagementContent
 
 /**
- * Main wrapper screen for the Administrator dashboard,
- * handling the Drawer and the Top App Bar.
+ * Main wrapper screen for the Administrator dashboard.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,12 +50,22 @@ fun AdminDashboardScreen(
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
-    
-    // Listen to the selected drawer item route
+    val snackbarHostState = remember { SnackbarHostState() }
+
     val selectedRoute by viewModel.selectedDrawerItem.collectAsStateWithLifecycle()
-    
-    // Find title for current route
     val currentTitle = adminMenuOptions.find { it.route == selectedRoute }?.title ?: "Administrador"
+
+    // Toast / Feedback — using Snackbar on top of everything
+    val showToast by viewModel.showToast.collectAsStateWithLifecycle()
+    val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
+    val isProcessing by viewModel.isProcessing.collectAsStateWithLifecycle()
+
+    LaunchedEffect(showToast) {
+        if (showToast) {
+            snackbarHostState.showSnackbar(toastMessage)
+            viewModel.dismissToast()
+        }
+    }
 
     AdminNavigationDrawer(
         drawerState = drawerState,
@@ -66,7 +79,6 @@ fun AdminDashboardScreen(
             onLogoutSuccess()
         }
     ) {
-        // Main Content Area
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -82,6 +94,25 @@ fun AdminDashboardScreen(
                         navigationIconContentColor = Color(0xFF0F2C59)
                     )
                 )
+            },
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState) { data ->
+                    val isSuccess = toastMessage.contains("exitosamente", true)
+                    Surface(
+                        modifier = Modifier.padding(16.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isSuccess) Color(0xFF28A745) else Color(0xFFDC3545),
+                        shadowElevation = 8.dp
+                    ) {
+                        Text(
+                            text = data.visuals.message,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         ) { paddingValues ->
             Box(
@@ -90,11 +121,8 @@ fun AdminDashboardScreen(
                     .padding(paddingValues)
                     .background(Color(0xFFF8F9FA))
             ) {
-                // Here we render the specific screen based on the route
                 when (selectedRoute) {
-                    "admin_users" -> {
-                        UserManagementContent(viewModel)
-                    }
+                    "admin_users" -> UserManagementContent(viewModel)
                     else -> {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             Text("Pantalla en Construcción: $selectedRoute")
@@ -104,50 +132,16 @@ fun AdminDashboardScreen(
             }
         }
 
-        // --- DIALOGS ---
+        // Dialogs
         CreateUserDialog(viewModel)
+        EditUserDialog(viewModel)
         UserDetailDialog(viewModel)
 
-        // --- FEEDBACK / TOAST ---
-        val showToast by viewModel.showToast.collectAsStateWithLifecycle()
-        val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
-        val isProcessing by viewModel.isProcessing.collectAsStateWithLifecycle()
-
-        if (showToast) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 32.dp),
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .size(width = 341.dp, height = 53.dp)
-                        .clickable { viewModel.dismissToast() },
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color.White,
-                    shadowElevation = 8.dp,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x1A000000))
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = toastMessage,
-                            fontSize = 14.sp,
-                            color = if (toastMessage.contains("exitosamente", true)) Color(0xFF28A745) else Color(0xFFFB2C36),
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-        }
-
+        // Processing overlay
         if (isProcessing) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = Color.Black.copy(alpha = 0.3f)
-            ) {
+            Surface(modifier = Modifier.fillMaxSize(), color = Color.Black.copy(alpha = 0.3f)) {
                 Box(contentAlignment = Alignment.Center) {
-                    androidx.compose.material3.CircularProgressIndicator(color = Color.White)
+                    CircularProgressIndicator(color = Color.White)
                 }
             }
         }

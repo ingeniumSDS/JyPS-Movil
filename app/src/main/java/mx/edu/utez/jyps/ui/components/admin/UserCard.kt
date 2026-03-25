@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,22 +20,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import mx.edu.utez.jyps.data.model.CuentaResponse
 import mx.edu.utez.jyps.data.model.Usuario
 
 @Composable
 fun UserCard(
     usuario: Usuario,
+    cuenta: CuentaResponse?,
     onEditClick: (Usuario) -> Unit,
     onToggleStatusClick: (Usuario) -> Unit,
     onViewDetail: ((Long) -> Unit)? = null
 ) {
-    val isActivo = usuario.isActivo
+    val isActivo = cuenta?.activa ?: true
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = if (!isActivo) BorderStroke(2.dp, Color(0xFFE5E7EB)) else null
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
 
@@ -55,20 +59,17 @@ fun UserCard(
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column {
-                    Text(
-                        text = usuario.nombreCompleto,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isActivo) Color(0xFF0F2C59) else Color(0xFF6A7282)
-                    )
+                        Text(
+                            text = usuario.nombreCompleto,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isActivo) Color(0xFF0F2C59) else Color(0xFF6A7282)
+                        )
+
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         RolePill(usuario.primaryRoleDisplay)
-                        if (!isActivo) {
-                            StatusPill("Inactiva", Color(0xFFC10007), Color(0xFFFFE2E2))
-                        } else {
-                            DeptPill("Depto. ${usuario.departamentoId}")
-                        }
+                        DeptPill(usuario.departamentoDisplay)
                     }
                 }
             }
@@ -76,8 +77,8 @@ fun UserCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ContactRow(icon = Icons.Default.Email, text = usuario.correo)
-                ContactRow(icon = Icons.Default.Phone, text = usuario.telefono)
+                ContactRow(icon = Icons.Default.Email, text = usuario.correo, dimmed = !isActivo)
+                ContactRow(icon = Icons.Default.Phone, text = usuario.telefono, dimmed = !isActivo)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -95,17 +96,18 @@ fun UserCard(
                     }
                 }
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedButton(
                         onClick = { onEditClick(usuario) },
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(8.dp),
                         border = BorderStroke(1.5.dp, Color(0xFF0F2C59)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF0F2C59))
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF0F2C59)),
+                        contentPadding = PaddingValues(horizontal = 8.dp)
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Editar", fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Editar", fontWeight = FontWeight.Medium, fontSize = 14.sp, maxLines = 1)
                     }
 
                     val actionText = if (isActivo) "Desactivar" else "Activar"
@@ -117,11 +119,12 @@ fun UserCard(
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(8.dp),
                         border = BorderStroke(1.5.dp, actionColor),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = actionColor)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = actionColor),
+                        contentPadding = PaddingValues(horizontal = 8.dp)
                     ) {
                         Icon(actionIcon, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(actionText, fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(actionText, fontWeight = FontWeight.Medium, fontSize = 14.sp, maxLines = 1)
                     }
                 }
             }
@@ -158,16 +161,21 @@ private fun DeptPill(dept: String) {
 
 @Composable
 private fun StatusPill(status: String, textColor: Color, bgColor: Color) {
-    Box(modifier = Modifier.background(bgColor, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 4.dp)) {
+    Row(
+        modifier = Modifier.background(bgColor, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Default.Warning, contentDescription = null, tint = textColor, modifier = Modifier.size(12.dp))
+        Spacer(modifier = Modifier.width(4.dp))
         Text(text = status, color = textColor, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
 }
 
 @Composable
-private fun ContactRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
+private fun ContactRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, dimmed: Boolean = false) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, tint = Color(0xFF99A1AF), modifier = Modifier.size(16.dp))
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text = text, color = Color(0xFF4A5565), fontSize = 14.sp)
+        Text(text = text, color = if (dimmed) Color(0xFF6A7282) else Color(0xFF4A5565), fontSize = 14.sp)
     }
 }

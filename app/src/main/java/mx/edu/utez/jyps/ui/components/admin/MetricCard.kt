@@ -36,7 +36,8 @@ fun MetricCard(
     icon: ImageVector,
     iconContainerColor: Color,
     contentColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isVertical: Boolean = false
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -44,41 +45,75 @@ fun MetricCard(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .padding(24.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Box(
+        if (isVertical) {
+            Column(
                 modifier = Modifier
-                    .size(48.dp)
-                    .background(iconContainerColor, RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
+                    .padding(20.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = contentColor,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column {
                 Text(
                     text = title,
                     fontSize = 14.sp,
-                    color = Color(0xFF4A5565)
+                    color = Color(0xFF4A5565),
+                    fontWeight = FontWeight.Medium
                 )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(iconContainerColor, RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
                 Text(
                     text = value,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = contentColor
                 )
+            }
+        } else {
+            Row(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(iconContainerColor, RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = title,
+                        fontSize = 14.sp,
+                        color = Color(0xFF4A5565)
+                    )
+                    Text(
+                        text = value,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor
+                    )
+                }
             }
         }
     }
