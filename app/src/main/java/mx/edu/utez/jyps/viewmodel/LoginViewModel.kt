@@ -38,13 +38,10 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Provides an uncoupled authentication state boundary for the Navigation Host.
-     * By projecting the Raw Token into a boolean via [map], downstream UI consumers 
-     * stay securely unaware of the exact token string, while still reacting instantly 
-     * to session terminations globally triggered by the network interceptors.
+     * Downstream UI consumers extract the token to decide the initial route (e.g. Scanner vs Dashboard)
      */
-    val isLoggedIn: StateFlow<Boolean> = repository.tokenFlow
-        .map { !it.isNullOrEmpty() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val sessionToken: StateFlow<String?> = repository.tokenFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()

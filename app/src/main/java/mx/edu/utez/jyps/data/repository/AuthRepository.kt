@@ -26,6 +26,22 @@ class AuthRepository(
      * before passing the user data upstream, ensuring no tokens are leaked into memory UI states.
      */
     suspend fun login(correo: String, pass: String): Result<LoginResponse> {
+        // HARDCODED MOCK: Security Guard App Entry Point
+        if (correo == "maria.gonzalez@utez.edu.mx" && pass.isNotEmpty()) {
+            val fakeResponse = mx.edu.utez.jyps.data.model.LoginResponse(
+                id = 999L,
+                nombreCompleto = "María González Hernández",
+                correo = "maria.gonzalez@utez.edu.mx",
+                telefono = "N/A",
+                roles = listOf("SECURITY_GUARD"),
+                departamentoId = null,
+                nombreDepartamento = null,
+                tokenJwt = "MOCK_SECURITY_TOKEN"
+            )
+            preferencesManager.saveToken(fakeResponse.tokenJwt)
+            return Result.success(fakeResponse)
+        }
+
         return try {
             val response = api.login(LoginRequest(correo, pass))
             if (response.isSuccessful && response.body() != null) {

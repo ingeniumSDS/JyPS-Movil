@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,16 +28,15 @@ import mx.edu.utez.jyps.viewmodel.LoginViewModel
 sealed class AppRoutes(val route: String) {
     object Login : AppRoutes("login")
     object Home : AppRoutes("home")
+    object SecurityScanner : AppRoutes("security_scanner")
     object ForgotPassword : AppRoutes("forgot_password")
 }
 
 /**
  * Connects the UI layers to the navigation graph.
  * 
- * Subscribes to the global `isLoggedIn` flow emitted by the auth repository. This ensures
- * robust state-driven routing: if the TokenManager clears the token (e.g. from an interceptor HTTP 401),
- * this host observes the emission and immediately sweeps the navigator back to the Login screen, 
- * destroying any backstack traces of the dashboard.
+ * Subscribes to the global `sessionToken` flow emitted by the auth repository. This ensures
+ * robust state-driven routing with dynamic role-based entry point mapping.
  * 
  * @param navController Controller managing internal stack and transitions.
  * @param loginViewModel Exposes the reactive authentication state.
@@ -46,10 +46,18 @@ fun NavigationHost(
     navController: NavHostController = rememberNavController(),
     loginViewModel: LoginViewModel = viewModel()
 ) {
-    val isLoggedIn by loginViewModel.isLoggedIn.collectAsStateWithLifecycle()
+    val sessionToken by loginViewModel.sessionToken.collectAsStateWithLifecycle()
+    
+    val targetRoute = remember(sessionToken) {
+        when (sessionToken) {
+            "MOCK_SECURITY_TOKEN" -> AppRoutes.SecurityScanner.route
+            null, "" -> AppRoutes.Login.route
+            else -> AppRoutes.Home.route
+        }
+    }
 
-    androidx.compose.runtime.LaunchedEffect(isLoggedIn) {
-        if (!isLoggedIn) {
+    androidx.compose.runtime.LaunchedEffect(targetRoute) {
+        if (targetRoute == AppRoutes.Login.route) {
             if (navController.currentDestination?.route != AppRoutes.Login.route &&
                 navController.currentDestination?.route != AppRoutes.ForgotPassword.route) {
                     
@@ -59,7 +67,7 @@ fun NavigationHost(
             }
         } else {
             if (navController.currentDestination?.route == AppRoutes.Login.route) {
-                navController.navigate(AppRoutes.Home.route) {
+                navController.navigate(targetRoute) {
                     popUpTo(AppRoutes.Login.route) { inclusive = true }
                 }
             }
@@ -68,13 +76,13 @@ fun NavigationHost(
 
     NavHost(
         navController = navController,
-        startDestination = if (isLoggedIn) AppRoutes.Home.route else AppRoutes.Login.route
+        startDestination = if (targetRoute != AppRoutes.Login.route) targetRoute else AppRoutes.Login.route
     ) {
         composable(AppRoutes.Login.route) {
             LoginScreen(
                 viewModel = loginViewModel,
                 onLoginSuccess = {
-                    navController.navigate(AppRoutes.Home.route) {
+                    navController.navigate(targetRoute) {
                         popUpTo(AppRoutes.Login.route) { inclusive = true }
                     }
                 },
@@ -94,6 +102,12 @@ fun NavigationHost(
             )
         }
         
+        // Security Guard Scope Dashboard
+        composable(AppRoutes.SecurityScanner.route) {
+            mx.edu.utez.jyps.ui.screens.security.ScannerScreen()
+        }
+
+        // Core App Generic Dashboard
         composable(AppRoutes.Home.route) {
             val adminViewModel: AdminViewModel = viewModel()
             AdminDashboardScreen(
