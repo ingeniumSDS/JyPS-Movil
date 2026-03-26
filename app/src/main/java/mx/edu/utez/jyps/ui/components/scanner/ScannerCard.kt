@@ -1,0 +1,85 @@
+package mx.edu.utez.jyps.ui.components.scanner
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import mx.edu.utez.jyps.viewmodel.ScannerStatus
+
+/**
+ * Main card wrapping the scanning area and its controls ("Start Scanning", text feedback).
+ *
+ * This component abstracts a large UI block so the screen consumes it without
+ * accumulating excessive lines of Compose, favoring maintainability.
+ *
+ * @param status Current dynamic status of the scan. Determines button states and visible texts.
+ * @param onStartScan Lambda triggered when the user presses the scan button.
+ * @param modifier Base modifier for scalability with generic Compose layouts.
+ */
+@Composable
+fun ScannerCard(
+    status: ScannerStatus,
+    onStartScan: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Simulated camera scanner visual region
+            ScannerBox(isScanning = status == ScannerStatus.Scanning)
+
+            // Primary interaction: Start scanning
+            val isButtonEnabled = status != ScannerStatus.Scanning
+            Button(
+                onClick = onStartScan,
+                enabled = isButtonEnabled,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (status == ScannerStatus.Scanning) Color(0xFF0F2C59).copy(alpha = 0.5f) else Color(0xFF0F2C59)
+                )
+            ) {
+                Text(
+                    text = if (status == ScannerStatus.Scanning) "Scanning..." else "Start Scan",
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp
+                )
+            }
+
+            // Injected status sub-component (temporary feedback)
+            when (status) {
+                is ScannerStatus.ValidQR -> StatusText(isValid = true, code = status.code)
+                is ScannerStatus.InvalidQR -> StatusText(isValid = false, code = status.error)
+                else -> Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun ScannerCardPreview() {
+    ScannerCard(status = ScannerStatus.Idle, onStartScan = {})
+}
