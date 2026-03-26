@@ -34,7 +34,9 @@ sealed class ScannerStatus {
  */
 data class ScannerUiState(
     val currentTab: ScannerTab = ScannerTab.QR,
-    val status: ScannerStatus = ScannerStatus.Idle
+    val status: ScannerStatus = ScannerStatus.Idle,
+    val manualCode: String = "",
+    val errorToast: String? = null
 )
 
 /**
@@ -51,7 +53,39 @@ class ScannerViewModel : ViewModel() {
      * Changes the currently active tab in the scanner.
      */
     fun setTab(tab: ScannerTab) {
-        _uiState.value = _uiState.value.copy(currentTab = tab, status = ScannerStatus.Idle)
+        _uiState.value = _uiState.value.copy(
+            currentTab = tab, 
+            status = ScannerStatus.Idle,
+            errorToast = null
+        )
+    }
+
+    /**
+     * Updates the manual code input text.
+     */
+    fun onManualCodeChange(newValue: String) {
+        _uiState.value = _uiState.value.copy(manualCode = newValue, errorToast = null)
+    }
+
+    /**
+     * Verifies the manual code against valid codes.
+     */
+    fun verifyManualCode() {
+        val code = _uiState.value.manualCode.uppercase()
+        if (code == "GDKF64NC") {
+            mockValidPass()
+        } else {
+            _uiState.value = _uiState.value.copy(
+                errorToast = "Invalid code"
+            )
+        }
+    }
+
+    /**
+     * Clears the error toast.
+     */
+    fun clearErrorToast() {
+        _uiState.value = _uiState.value.copy(errorToast = null)
     }
 
     /**

@@ -15,10 +15,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import mx.edu.utez.jyps.ui.components.header.ValidationHeader
+import mx.edu.utez.jyps.ui.components.common.AppToast
+import mx.edu.utez.jyps.ui.components.scanner.ManualCodeCard
 import mx.edu.utez.jyps.ui.components.scanner.ScannerCard
 import mx.edu.utez.jyps.ui.components.scanner.ScannerTabs
 import mx.edu.utez.jyps.ui.components.scanner.ValidPassCard
 import mx.edu.utez.jyps.viewmodel.ScannerStatus
+import mx.edu.utez.jyps.viewmodel.ScannerTab
 import mx.edu.utez.jyps.viewmodel.ScannerViewModel
 
 /**
@@ -40,69 +43,86 @@ fun ScannerScreen(
     // Listens to status StateFlow and triggers recompositions respecting NavGraph lifecycle
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF8F9FA)) // General App background
-    ) {
-        // Header (Unchanged for all states of this particular screen)
-        ValidationHeader(
-            userName = "María González Hernández",
-            onActionClick = { /* Logic pending for drawer/menu or extra options */ }
-        )
-
-        val scrollState = rememberScrollState()
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .background(Color(0xFFF8F9FA)) // General App background
         ) {
-            
-            // Tab Selector (QR or Keyboard)
-            ScannerTabs(
-                selectedTab = uiState.currentTab,
-                onTabSelected = { viewModel.setTab(it) }
+            // Header (Unchanged for all states of this particular screen)
+            ValidationHeader(
+                userName = "María González Hernández",
+                onActionClick = { /* Logic pending for drawer/menu or extra options */ }
             )
 
-            // General view switcher based on state validity
-            if (uiState.status is ScannerStatus.ValidPass) {
-                // Instance and mapping of a validated pass to its display card
-                val passInfo = uiState.status as ScannerStatus.ValidPass
-                ValidPassCard(
-                    name = passInfo.name,
-                    email = passInfo.email,
-                    date = passInfo.date,
-                    code = passInfo.code,
-                    type = passInfo.type,
-                    onClose = { viewModel.resetScanner() }
-                )
-            } else {
-                // Base interface: Native scanner (or with quick feedback text below)
-                ScannerCard(
-                    status = uiState.status,
-                    onStartScan = {
-                        viewModel.startScanning()
-                        // Dev Note: Integrate CameraX trigger or LaunchedEffect delay here.
-                    }
+            val scrollState = rememberScrollState()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(scrollState),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+
+                // Tab Selector (QR or Keyboard)
+                ScannerTabs(
+                    selectedTab = uiState.currentTab,
+                    onTabSelected = { viewModel.setTab(it) }
                 )
 
-                // ----------------------------------------------------
-                // QA & DEBUG MOCK SECTION:
-                // Temporary manual controls to preview expected feedbacks 
-                // since no real physical reader is connected yet.
-                // ----------------------------------------------------
-                Row(
-                    modifier = Modifier.fillMaxWidth(), 
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    TextButton(onClick = { viewModel.mockValidQR() }) { Text("Valid QR") }
-                    TextButton(onClick = { viewModel.mockInvalidQR() }) { Text("Invalid QR") }
-                    TextButton(onClick = { viewModel.mockValidPass() }) { Text("Full Pass") }
+                // General view switcher based on state validity
+                if (uiState.status is ScannerStatus.ValidPass) {
+                    // Instance and mapping of a validated pass to its display card
+                    val passInfo = uiState.status as ScannerStatus.ValidPass
+                    ValidPassCard(
+                        name = passInfo.name,
+                        email = passInfo.email,
+                        date = passInfo.date,
+                        code = passInfo.code,
+                        type = passInfo.type,
+                        onClose = { viewModel.resetScanner() }
+                    )
+                } else {
+                    // Toggle between visual scanner and manual input card
+                    if (uiState.currentTab == ScannerTab.QR) {
+                        ScannerCard(
+                            status = uiState.status,
+                            onStartScan = {
+                                viewModel.startScanning()
+                            }
+                        )
+                    } else {
+                        ManualCodeCard(
+                            code = uiState.manualCode,
+                            onCodeChange = { viewModel.onManualCodeChange(it) },
+                            onVerifyClick = { viewModel.verifyManualCode() }
+                        )
+                    }
+
+                    // ----------------------------------------------------
+                    // QA & DEBUG MOCK SECTION:
+                    // Temporary manual controls to preview expected feedbacks 
+                    // since no real physical reader is connected yet.
+                    // ----------------------------------------------------
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        TextButton(onClick = { viewModel.mockValidQR() }) { Text("Valid QR") }
+                        TextButton(onClick = { viewModel.mockInvalidQR() }) { Text("Invalid QR") }
+                        TextButton(onClick = { viewModel.mockValidPass() }) { Text("Full Pass") }
+                    }
                 }
             }
         }
+
+        // Overlay for Toast notification feedback at the bottom
+        AppToast(
+            message = uiState.errorToast,
+            isVisible = uiState.errorToast != null,
+            onDismiss = { viewModel.clearErrorToast() },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
