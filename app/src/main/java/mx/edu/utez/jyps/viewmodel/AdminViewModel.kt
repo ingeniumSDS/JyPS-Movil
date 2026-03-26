@@ -279,8 +279,8 @@ class AdminViewModel(
             apellidoMaterno = _newUserMaterno.value.trim(),
             correo = _newUserEmail.value.trim(),
             telefono = _newUserPhone.value.trim(),
-            horaEntrada = LocalTimeInfo(hour = _newUserStartHour.value, minute = _newUserStartMinute.value),
-            horaSalida = LocalTimeInfo(hour = _newUserEndHour.value, minute = _newUserEndMinute.value),
+            horaEntrada = "%02d:%02d:00".format(_newUserStartHour.value, _newUserStartMinute.value),
+            horaSalida = "%02d:%02d:00".format(_newUserEndHour.value, _newUserEndMinute.value),
             roles = selectedRoleNames,
             departamentoId = _newUserDepartmentId.value.toLong()
         )
@@ -371,8 +371,8 @@ class AdminViewModel(
             apellidoMaterno = _editMaterno.value.trim(),
             correo = _editEmail.value.trim(),
             telefono = _editPhone.value.trim(),
-            horaEntrada = LocalTimeInfo(hour = _editStartHour.value, minute = _editStartMinute.value),
-            horaSalida = LocalTimeInfo(hour = _editEndHour.value, minute = _editEndMinute.value),
+            horaEntrada = "%02d:%02d:00".format(_editStartHour.value, _editStartMinute.value),
+            horaSalida = "%02d:%02d:00".format(_editEndHour.value, _editEndMinute.value),
             roles = selectedRoleNames,
             departamentoId = _editDepartmentId.value.toLong()
         )
@@ -430,5 +430,10 @@ class AdminViewModel(
         return errors
     }
 
-    fun onLogout() { /* Logic for logout */ }
+    fun onLogout() { 
+        // Simply clear local cached data so another user doesn't see it
+        viewModelScope.launch {
+            repository.clearSelectedUser()
+        }
+    }
 }

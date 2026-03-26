@@ -49,13 +49,19 @@ fun NavigationHost(
     val isLoggedIn by loginViewModel.isLoggedIn.collectAsStateWithLifecycle()
 
     androidx.compose.runtime.LaunchedEffect(isLoggedIn) {
-        if (!isLoggedIn && navController.currentDestination?.route != AppRoutes.Login.route && navController.currentDestination?.route != AppRoutes.ForgotPassword.route) {
-            navController.navigate(AppRoutes.Login.route) {
-                popUpTo(0) { inclusive = true }
+        if (!isLoggedIn) {
+            if (navController.currentDestination?.route != AppRoutes.Login.route &&
+                navController.currentDestination?.route != AppRoutes.ForgotPassword.route) {
+                    
+                navController.navigate(AppRoutes.Login.route) {
+                    popUpTo(navController.graph.id) { inclusive = true }
+                }
             }
-        } else if (isLoggedIn && navController.currentDestination?.route == AppRoutes.Login.route) {
-            navController.navigate(AppRoutes.Home.route) {
-                popUpTo(AppRoutes.Login.route) { inclusive = true }
+        } else {
+            if (navController.currentDestination?.route == AppRoutes.Login.route) {
+                navController.navigate(AppRoutes.Home.route) {
+                    popUpTo(AppRoutes.Login.route) { inclusive = true }
+                }
             }
         }
     }
