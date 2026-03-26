@@ -138,15 +138,6 @@ fun EditUserDialog(viewModel: AdminViewModel) {
                                 ) {
                                     Text("Cancelar", color = Color(0xFF6A7282), fontWeight = FontWeight.Medium, fontSize = 14.sp)
                                 }
-
-                                OutlinedButton(
-                                    onClick = { /* TODO: implement delete user */ },
-                                    modifier = Modifier.weight(1f).height(48.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFDC3545))
-                                ) {
-                                    Text("Eliminar", color = Color(0xFFDC3545), fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                                }
                             }
                         }
                     }
