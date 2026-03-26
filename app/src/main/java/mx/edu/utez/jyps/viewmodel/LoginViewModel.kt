@@ -1,12 +1,19 @@
 package mx.edu.utez.jyps.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mx.edu.utez.jyps.data.network.RetrofitInstance
+import mx.edu.utez.jyps.data.repository.AuthRepository
+import mx.edu.utez.jyps.data.repository.PreferencesManager
 
 /**
  * UI State for the Login screen.
@@ -24,7 +31,20 @@ data class LoginUiState(
 /**
  * LoginViewModel manages the state and business logic for the Login screen.
  */
-class LoginViewModel : ViewModel() {
+class LoginViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val preferencesManager = PreferencesManager(application)
+    private val repository = AuthRepository(RetrofitInstance.api, preferencesManager)
+
+    /**
+     * Provides an uncoupled authentication state boundary for the Navigation Host.
+     * By projecting the Raw Token into a boolean via [map], downstream UI consumers 
+     * stay securely unaware of the exact token string, while still reacting instantly 
+     * to session terminations globally triggered by the network interceptors.
+     */
+    val isLoggedIn: StateFlow<Boolean> = repository.tokenFlow
+        .map { !it.isNullOrEmpty() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -44,8 +64,10 @@ class LoginViewModel : ViewModel() {
     }
 
     /**
-     * Handles the login action. 
-     * Uses dummy logic for now.
+     * Executes the main authentication flow.
+     * Delegates exclusively to [AuthRepository] to ensure the cryptographic material
+     * is resolved entirely out-of-bounds from the UI Thread, preventing memory leaks 
+     * of sensitive data. Handles internal anti-bruteforce locking directly.
      */
     fun login() {
         if (_uiState.value.isLockedOut) return
@@ -59,12 +81,11 @@ class LoginViewModel : ViewModel() {
         }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             
-            // Simulating API call
-            kotlinx.coroutines.delay(1500)
-
-            if (email == "carlos.rodriguez@utez.edu.mx") { //  && password == ""
+            val result = repository.login(email, password)
+            
+            result.onSuccess {
                 _uiState.update { 
                     it.copy(
                         isLoading = false, 
@@ -73,7 +94,7 @@ class LoginViewModel : ViewModel() {
                         errorMessage = null
                     ) 
                 }
-            } else {
+            }.onFailure { error ->
                 val remainingAttempts = _uiState.value.loginAttempts - 1
                 if (remainingAttempts <= 0) {
                     _uiState.update { 
@@ -89,7 +110,7 @@ class LoginViewModel : ViewModel() {
                         it.copy(
                             isLoading = false, 
                             loginAttempts = remainingAttempts,
-                            errorMessage = "Credenciales inválidas ($remainingAttempts intento${if (remainingAttempts == 1) "" else "s"} restante${if (remainingAttempts == 1) "" else "s"})"
+                            errorMessage = "${error.message} ($remainingAttempts intento${if (remainingAttempts == 1) "" else "s"} restante${if (remainingAttempts == 1) "" else "s"})"
                         ) 
                     }
                 }
@@ -133,5 +154,17 @@ class LoginViewModel : ViewModel() {
      */
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    /**
+     * Orchestrates a safe session termination by dispatching to the secure repository.
+     * This action immediately mutates [isLoggedIn] back to false, propagating the 
+     * effect straight to the app's root navigation component.
+     */
+    fun logout() {
+        viewModelScope.launch {
+            repository.logout()
+            _uiState.update { LoginUiState() } // Reset form
+        }
     }
 }

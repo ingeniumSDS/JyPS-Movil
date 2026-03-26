@@ -3,6 +3,8 @@ package mx.edu.utez.jyps.data.network
 import mx.edu.utez.jyps.data.model.CuentaResponse
 import mx.edu.utez.jyps.data.model.Departamento
 import mx.edu.utez.jyps.data.model.EstadoCuentaResponse
+import mx.edu.utez.jyps.data.model.LoginRequest
+import mx.edu.utez.jyps.data.model.LoginResponse
 import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.data.model.UserRequest
 import retrofit2.Response
@@ -14,6 +16,10 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface ApiService {
+
+    // ── Autenticación ───────────────────────────────
+    @POST("api/v1/usuarios/login")
+    suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
     // ── Usuarios ────────────────────────────────────
     @GET("api/v1/usuarios")
