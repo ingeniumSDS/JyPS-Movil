@@ -4,6 +4,10 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 /**
  * General status of the scanner.
@@ -17,8 +21,10 @@ sealed class ScannerStatus {
         val name: String,
         val email: String,
         val date: String,
+        val exitTime: String,
+        val returnTime: String,
         val code: String,
-        val type: String = "Permitir salida"
+        val type: String = "Permitir Salida"
     ) : ScannerStatus()
 }
 
@@ -41,6 +47,9 @@ class ScannerViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(ScannerUiState())
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
 
+    // Mock storage for tracking single-use QR codes
+    private val usedCodes = mutableSetOf<String>()
+
     /**
      * Updates the manual code input text.
      */
@@ -49,17 +58,61 @@ class ScannerViewModel : ViewModel() {
     }
 
     /**
-     * Verifies the manual code against valid codes.
+     * Verifies the manual code against valid test scenarios.
      */
     fun verifyManualCode() {
         val code = _uiState.value.manualCode.uppercase()
-        if (code == "GDKF64NC") {
-            mockValidPass()
-        } else {
-            _uiState.value = _uiState.value.copy(
-                errorToast = "Código inválido"
-            )
+        when (code) {
+            "GDKF64NC" -> processValidCode(code)
+            "LATE" -> processValidCode(code, isLate = true)
+            "EXPIRED" -> _uiState.value = _uiState.value.copy(errorToast = "Caducado")
+            "INVALID" -> _uiState.value = _uiState.value.copy(errorToast = "Código inválido")
+            else -> {
+                if (usedCodes.contains(code)) {
+                    _uiState.value = _uiState.value.copy(errorToast = "Código ya utilizado")
+                } else {
+                    _uiState.value = _uiState.value.copy(errorToast = "Código inválido")
+                }
+            }
         }
+    }
+
+    /**
+     * Internal logic processing the core business rules:
+     * 1. Check for single use (blocks exit if used).
+     * 2. Log exact exit time.
+     * 3. Calculates dynamic limits (3 hours) or marks as shift end.
+     */
+    private fun processValidCode(code: String, isLate: Boolean = false) {
+        if (usedCodes.contains(code)) {
+            _uiState.value = _uiState.value.copy(errorToast = "Código ya utilizado")
+            return
+        }
+        
+        // Single-use enforcement
+        usedCodes.add(code)
+
+        val locale = Locale("es", "MX")
+        val dateStr = SimpleDateFormat("EEEE, d 'de' MMMM 'de' yyyy", locale).format(Date())
+        val timeStr = SimpleDateFormat("hh:mm a", locale).format(Date())
+        
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.HOUR_OF_DAY, 3)
+        val limitTimeStr = SimpleDateFormat("hh:mm a", locale).format(calendar.time)
+        
+        val returnTimeStr = if (isLate) "No requiere regreso (Fin jornada)" else limitTimeStr
+
+        _uiState.value = _uiState.value.copy(
+            status = ScannerStatus.ValidPass(
+                name = "Juan Pérez García",
+                email = "juan.perez@utez.edu.mx",
+                date = dateStr,
+                exitTime = timeStr,
+                returnTime = returnTimeStr,
+                code = code,
+                type = "Permitir Salida"
+            )
+        )
     }
 
     /**
@@ -80,7 +133,11 @@ class ScannerViewModel : ViewModel() {
      * Simulates a valid QR scan result returning raw code.
      */
     fun mockValidQR(code: String = "GDKF64NC") {
-        _uiState.value = _uiState.value.copy(status = ScannerStatus.ValidQR(code))
+        if (usedCodes.contains(code)) {
+            _uiState.value = _uiState.value.copy(status = ScannerStatus.InvalidQR("Código ya utilizado"))
+        } else {
+            _uiState.value = _uiState.value.copy(status = ScannerStatus.ValidQR(code))
+        }
     }
 
     /**
@@ -94,14 +151,7 @@ class ScannerViewModel : ViewModel() {
      * Simulates validating a QR and obtaining the full success pass card.
      */
     fun mockValidPass() {
-        _uiState.value = _uiState.value.copy(
-            status = ScannerStatus.ValidPass(
-                name = "Juan Pérez García",
-                email = "juan.perez@utez.edu.mx",
-                date = "martes, 24 de febrero de 2026",
-                code = "JUST001"
-            )
-        )
+        processValidCode("GDKF64NC")
     }
 
     /**

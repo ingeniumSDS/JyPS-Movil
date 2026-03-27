@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.sp
  * @param name Student / Worker name.
  * @param email Email associated with the account or validation.
  * @param date Readable format of the pass date.
+ * @param exitTime The exact time the pass was validated and the user exited.
+ * @param returnTime The estimated return time (3 hours limits) or return status.
  * @param code Specific alphanumeric validation code.
  * @param type Type of pass (e.g., "Allow exit").
  * @param onClose Lambda consumed to close the view and reset the scanner state.
@@ -34,6 +36,8 @@ fun ValidPassCard(
     name: String,
     email: String,
     date: String,
+    exitTime: String,
+    returnTime: String,
     code: String,
     type: String,
     onClose: () -> Unit,
@@ -60,36 +64,12 @@ fun ValidPassCard(
                     .padding(vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Thick Check icon box
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .border(6.5.dp, Color(0xFF28A745), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("✓", color = Color(0xFF28A745), fontSize = 48.sp, fontWeight = FontWeight.Bold)
-                }
-                Spacer(modifier = Modifier.height(16.dp))
                 Text("Válido", color = Color(0xFF28A745), fontSize = 30.sp, fontWeight = FontWeight.Bold)
                 Text(type, color = Color(0xFF4A5565), fontSize = 18.sp, fontWeight = FontWeight.Normal)
             }
 
             // Bearer data
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(128.dp)
-                        .background(Color(0xFF0F2C59), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = name.firstOrNull()?.toString()?.uppercase() ?: "",
-                        color = Color.White,
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
                 Text(name, color = Color(0xFF0F2C59), fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                 Text(email, color = Color(0xFF4A5565), fontSize = 16.sp, fontWeight = FontWeight.Normal)
             }
@@ -103,9 +83,17 @@ fun ValidPassCard(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text("Fecha de pase", color = Color(0xFF4A5565), fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(date, color = Color(0xFF0F2C59), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                Text(date, color = Color(0xFF0F2C59), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text("Hora de salida", color = Color(0xFF4A5565), fontSize = 14.sp)
+                Text(exitTime, color = Color(0xFF0F2C59), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text("Hora de regreso calculada", color = Color(0xFF4A5565), fontSize = 14.sp)
+                Text(returnTime, color = Color(0xFF0F2C59), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
                 Spacer(modifier = Modifier.height(16.dp))
+                
                 Text("Código", color = Color(0xFF4A5565), fontSize = 14.sp)
                 Text(
                     text = code,
@@ -140,8 +128,10 @@ fun ValidPassCardPreview() {
         name = "Juan Pérez García",
         email = "juan.perez@utez.edu.mx",
         date = "martes, 24 de febrero de 2026",
+        exitTime = "09:40 a.m.",
+        returnTime = "12:40 p.m.",
         code = "JUST001",
-        type = "Permitir salida",
+        type = "Permitir Salida",
         onClose = {}
     )
 }

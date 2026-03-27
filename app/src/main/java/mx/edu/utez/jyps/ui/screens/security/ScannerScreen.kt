@@ -94,6 +94,8 @@ fun ScannerContent(
                         name = passInfo.name,
                         email = passInfo.email,
                         date = passInfo.date,
+                        exitTime = passInfo.exitTime,
+                        returnTime = passInfo.returnTime,
                         code = passInfo.code,
                         type = passInfo.type,
                         onClose = onResetScanner

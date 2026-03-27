@@ -114,12 +114,22 @@ fun ManualCodeCard(
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "✅ GDKF64NC - Código válido",
+                        text = "✅ GDKF64NC - Código válido (1 solo uso)",
                         color = Color(0xFF193CB8),
                         fontSize = 12.sp
                     )
                     Text(
-                        text = "❌ INVALIDO - Código no válido (para pruebas)",
+                        text = "⚠️ LATE - Válido (Fin de jornada)",
+                        color = Color(0xFF193CB8),
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = "❌ EXPIRED - Caducado",
+                        color = Color(0xFF193CB8),
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = "❌ INVALID - Código no válido",
                         color = Color(0xFF193CB8),
                         fontSize = 12.sp
                     )
