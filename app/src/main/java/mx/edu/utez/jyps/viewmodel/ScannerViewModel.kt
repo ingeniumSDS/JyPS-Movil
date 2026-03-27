@@ -6,13 +6,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Represents the three tabs or visual options for the screen.
- */
-enum class ScannerTab {
-    QR, MANUAL
-}
-
-/**
  * General status of the scanner.
  */
 sealed class ScannerStatus {
@@ -33,7 +26,6 @@ sealed class ScannerStatus {
  * Full state of the scanner UI.
  */
 data class ScannerUiState(
-    val currentTab: ScannerTab = ScannerTab.QR,
     val status: ScannerStatus = ScannerStatus.Idle,
     val manualCode: String = "",
     val errorToast: String? = null
@@ -48,17 +40,6 @@ class ScannerViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(ScannerUiState())
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
-
-    /**
-     * Changes the currently active tab in the scanner.
-     */
-    fun setTab(tab: ScannerTab) {
-        _uiState.value = _uiState.value.copy(
-            currentTab = tab, 
-            status = ScannerStatus.Idle,
-            errorToast = null
-        )
-    }
 
     /**
      * Updates the manual code input text.

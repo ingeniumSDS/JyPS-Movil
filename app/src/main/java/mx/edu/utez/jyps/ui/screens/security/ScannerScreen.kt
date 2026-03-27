@@ -19,10 +19,8 @@ import mx.edu.utez.jyps.ui.components.header.ValidationHeader
 import mx.edu.utez.jyps.ui.components.common.AppToast
 import mx.edu.utez.jyps.ui.components.scanner.ManualCodeCard
 import mx.edu.utez.jyps.ui.components.scanner.ScannerCard
-import mx.edu.utez.jyps.ui.components.scanner.ScannerTabs
 import mx.edu.utez.jyps.ui.components.scanner.ValidPassCard
 import mx.edu.utez.jyps.viewmodel.ScannerStatus
-import mx.edu.utez.jyps.viewmodel.ScannerTab
 import mx.edu.utez.jyps.viewmodel.ScannerUiState
 import mx.edu.utez.jyps.viewmodel.ScannerViewModel
 
@@ -41,11 +39,9 @@ fun ScannerScreen(
     
     ScannerContent(
         uiState = uiState,
-        onTabSelected = { viewModel.setTab(it) },
         onManualCodeChange = { viewModel.onManualCodeChange(it) },
         onVerifyManualCode = { viewModel.verifyManualCode() },
         onResetScanner = { viewModel.resetScanner() },
-        onStartScan = { viewModel.startScanning() },
         onClearError = { viewModel.clearErrorToast() },
         onMockValidQR = { viewModel.mockValidQR() },
         onMockInvalidQR = { viewModel.mockInvalidQR() },
@@ -63,11 +59,9 @@ fun ScannerScreen(
 @Composable
 fun ScannerContent(
     uiState: ScannerUiState,
-    onTabSelected: (ScannerTab) -> Unit,
     onManualCodeChange: (String) -> Unit,
     onVerifyManualCode: () -> Unit,
     onResetScanner: () -> Unit,
-    onStartScan: () -> Unit,
     onClearError: () -> Unit,
     onMockValidQR: () -> Unit,
     onMockInvalidQR: () -> Unit,
@@ -93,10 +87,6 @@ fun ScannerContent(
                     .verticalScroll(scrollState),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                ScannerTabs(
-                    selectedTab = uiState.currentTab,
-                    onTabSelected = onTabSelected
-                )
 
                 if (uiState.status is ScannerStatus.ValidPass) {
                     val passInfo = uiState.status as ScannerStatus.ValidPass
@@ -109,18 +99,14 @@ fun ScannerContent(
                         onClose = onResetScanner
                     )
                 } else {
-                    if (uiState.currentTab == ScannerTab.QR) {
-                        ScannerCard(
-                            status = uiState.status,
-                            onStartScan = onStartScan
-                        )
-                    } else {
-                        ManualCodeCard(
-                            code = uiState.manualCode,
-                            onCodeChange = onManualCodeChange,
-                            onVerifyClick = onVerifyManualCode
-                        )
-                    }
+                    // Unified Layout: Scanner at top, Manual below
+                    ScannerCard(status = uiState.status)
+
+                    ManualCodeCard(
+                        code = uiState.manualCode,
+                        onCodeChange = onManualCodeChange,
+                        onVerifyClick = onVerifyManualCode
+                    )
 
                     // QA & DEBUG MOCK SECTION
                     Row(
@@ -149,12 +135,10 @@ fun ScannerContent(
 fun ScannerScreenPreview() {
     // We use a mock state instead of a constructor call to avoid Lint issues
     ScannerContent(
-        uiState = ScannerUiState(currentTab = ScannerTab.QR),
-        onTabSelected = {},
+        uiState = ScannerUiState(),
         onManualCodeChange = {},
         onVerifyManualCode = {},
         onResetScanner = {},
-        onStartScan = {},
         onClearError = {},
         onMockValidQR = {},
         onMockInvalidQR = {},

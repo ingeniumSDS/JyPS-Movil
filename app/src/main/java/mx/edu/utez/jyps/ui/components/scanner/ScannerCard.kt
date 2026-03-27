@@ -18,19 +18,17 @@ import androidx.compose.ui.unit.sp
 import mx.edu.utez.jyps.viewmodel.ScannerStatus
 
 /**
- * Main card wrapping the scanning area and its controls ("Start Scanning", text feedback).
+ * Main card wrapping the scanning area and its controls.
  *
  * This component abstracts a large UI block so the screen consumes it without
  * accumulating excessive lines of Compose, favoring maintainability.
  *
  * @param status Current dynamic status of the scan. Determines button states and visible texts.
- * @param onStartScan Lambda triggered when the user presses the scan button.
  * @param modifier Base modifier for scalability with generic Compose layouts.
  */
 @Composable
 fun ScannerCard(
     status: ScannerStatus,
-    onStartScan: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -44,29 +42,8 @@ fun ScannerCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Simulated camera scanner visual region
-            ScannerBox(isScanning = status == ScannerStatus.Scanning)
-
-            // Primary interaction: Start scanning
-            val isButtonEnabled = status != ScannerStatus.Scanning
-            Button(
-                onClick = onStartScan,
-                enabled = isButtonEnabled,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (status == ScannerStatus.Scanning) Color(0xFF0F2C59).copy(alpha = 0.5f) else Color(0xFF0F2C59)
-                )
-            ) {
-                Text(
-                    text = if (status == ScannerStatus.Scanning) "Escaneando..." else "Iniciar Escaneo",
-                    color = Color.White,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 16.sp
-                )
-            }
+            // Simulated camera scanner visual region. Assuming automatic scanning.
+            ScannerBox(isScanning = true)
 
             // Injected status sub-component (temporary feedback)
             when (status) {
@@ -81,5 +58,5 @@ fun ScannerCard(
 @Preview
 @Composable
 fun ScannerCardPreview() {
-    ScannerCard(status = ScannerStatus.Idle, onStartScan = {})
+    ScannerCard(status = ScannerStatus.Idle)
 }
