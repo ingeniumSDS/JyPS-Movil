@@ -24,7 +24,7 @@ fun StatusText(
     code: String,
     modifier: Modifier = Modifier
 ) {
-    val text = if (isValid) "✅ Valid code: $code" else "❌ Invalid code: $code"
+    val text = if (isValid) "✅ Código válido: $code" else "❌ Código inválido: $code"
     
     Text(
         text = text,

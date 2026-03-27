@@ -34,7 +34,8 @@ import mx.edu.utez.jyps.viewmodel.ScannerViewModel
  */
 @Composable
 fun ScannerScreen(
-    viewModel: ScannerViewModel = viewModel()
+    viewModel: ScannerViewModel = viewModel(),
+    onLogoutClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
@@ -48,7 +49,8 @@ fun ScannerScreen(
         onClearError = { viewModel.clearErrorToast() },
         onMockValidQR = { viewModel.mockValidQR() },
         onMockInvalidQR = { viewModel.mockInvalidQR() },
-        onMockValidPass = { viewModel.mockValidPass() }
+        onMockValidPass = { viewModel.mockValidPass() },
+        onLogoutClick = onLogoutClick
     )
 }
 
@@ -69,7 +71,8 @@ fun ScannerContent(
     onClearError: () -> Unit,
     onMockValidQR: () -> Unit,
     onMockInvalidQR: () -> Unit,
-    onMockValidPass: () -> Unit
+    onMockValidPass: () -> Unit,
+    onLogoutClick: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -79,7 +82,7 @@ fun ScannerContent(
         ) {
             ValidationHeader(
                 userName = "María González Hernández",
-                onActionClick = { /* Drawer/menu logic */ }
+                onLogoutClick = onLogoutClick
             )
 
             val scrollState = rememberScrollState()
@@ -124,9 +127,9 @@ fun ScannerContent(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        TextButton(onClick = onMockValidQR) { Text("Valid QR") }
-                        TextButton(onClick = onMockInvalidQR) { Text("Invalid QR") }
-                        TextButton(onClick = onMockValidPass) { Text("Full Pass") }
+                        TextButton(onClick = onMockValidQR) { Text("QR Válido") }
+                        TextButton(onClick = onMockInvalidQR) { Text("QR Inválido") }
+                        TextButton(onClick = onMockValidPass) { Text("Pase Completo") }
                     }
                 }
             }
@@ -155,6 +158,7 @@ fun ScannerScreenPreview() {
         onClearError = {},
         onMockValidQR = {},
         onMockInvalidQR = {},
-        onMockValidPass = {}
+        onMockValidPass = {},
+        onLogoutClick = {}
     )
 }

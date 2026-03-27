@@ -65,7 +65,7 @@ fun ScannerTabs(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Scan QR",
+                text = "Escanear QR",
                 color = if (isQrSelected) Color.White else Color(0xFF364153),
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp
@@ -97,7 +97,7 @@ fun ScannerTabs(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Manual Code",
+                text = "Código Manual",
                 color = if (isManualSelected) Color.White else Color(0xFF364153),
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp

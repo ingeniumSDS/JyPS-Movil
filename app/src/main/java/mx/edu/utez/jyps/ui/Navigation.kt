@@ -104,7 +104,9 @@ fun NavigationHost(
         
         // Security Guard Scope Dashboard
         composable(AppRoutes.SecurityScanner.route) {
-            mx.edu.utez.jyps.ui.screens.security.ScannerScreen()
+            mx.edu.utez.jyps.ui.screens.security.ScannerScreen(
+                onLogoutClick = { loginViewModel.logout() }
+            )
         }
 
         // Core App Generic Dashboard

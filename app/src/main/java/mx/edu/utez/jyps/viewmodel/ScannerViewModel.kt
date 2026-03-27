@@ -25,7 +25,7 @@ sealed class ScannerStatus {
         val email: String,
         val date: String,
         val code: String,
-        val type: String = "Allow exit"
+        val type: String = "Permitir salida"
     ) : ScannerStatus()
 }
 
@@ -76,7 +76,7 @@ class ScannerViewModel : ViewModel() {
             mockValidPass()
         } else {
             _uiState.value = _uiState.value.copy(
-                errorToast = "Invalid code"
+                errorToast = "Código inválido"
             )
         }
     }
@@ -106,7 +106,7 @@ class ScannerViewModel : ViewModel() {
      * Simulates an invalid QR scan result.
      */
     fun mockInvalidQR() {
-        _uiState.value = _uiState.value.copy(status = ScannerStatus.InvalidQR("INVALID"))
+        _uiState.value = _uiState.value.copy(status = ScannerStatus.InvalidQR("INVALIDO"))
     }
 
     /**
@@ -117,7 +117,7 @@ class ScannerViewModel : ViewModel() {
             status = ScannerStatus.ValidPass(
                 name = "Juan Pérez García",
                 email = "juan.perez@utez.edu.mx",
-                date = "Tuesday, February 24, 2026",
+                date = "martes, 24 de febrero de 2026",
                 code = "JUST001"
             )
         )

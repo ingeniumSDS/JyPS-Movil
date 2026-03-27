@@ -70,7 +70,7 @@ fun ValidPassCard(
                     Text("✓", color = Color(0xFF28A745), fontSize = 48.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Valid", color = Color(0xFF28A745), fontSize = 30.sp, fontWeight = FontWeight.Bold)
+                Text("Válido", color = Color(0xFF28A745), fontSize = 30.sp, fontWeight = FontWeight.Bold)
                 Text(type, color = Color(0xFF4A5565), fontSize = 18.sp, fontWeight = FontWeight.Normal)
             }
 
@@ -102,11 +102,11 @@ fun ValidPassCard(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Pass date", color = Color(0xFF4A5565), fontSize = 14.sp)
+                Text("Fecha de pase", color = Color(0xFF4A5565), fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(date, color = Color(0xFF0F2C59), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Code", color = Color(0xFF4A5565), fontSize = 14.sp)
+                Text("Código", color = Color(0xFF4A5565), fontSize = 14.sp)
                 Text(
                     text = code,
                     color = Color(0xFF0F2C59),
@@ -127,7 +127,7 @@ fun ValidPassCard(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF0F2C59)),
                 border = BorderStroke(1.5.dp, Color(0xFF0F2C59))
             ) {
-                Text("Close", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Text("Cerrar", fontSize = 16.sp, fontWeight = FontWeight.Medium)
             }
         }
     }

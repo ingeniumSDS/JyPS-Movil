@@ -52,7 +52,7 @@ fun ScannerBox(
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = if (isScanning) "Scanning..." else "Press button to scan",
+                text = if (isScanning) "Escaneando..." else "Presiona para escanear",
                 color = Color.White.copy(alpha = if (isScanning) 1f else 0.75f),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Normal

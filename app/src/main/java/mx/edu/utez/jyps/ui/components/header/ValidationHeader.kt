@@ -5,7 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,13 +27,13 @@ import androidx.compose.ui.unit.sp
  *
  * @param userName Name of the logged-in user, e.g., "María González Hernández".
  * @param modifier Optional modifier to inject visual configurations from the parent.
- * @param onActionClick Lambda executed when the menu button is pressed. Useful for delegating actions.
+ * @param onLogoutClick Lambda executed when the logout button is pressed.
  */
 @Composable
 fun ValidationHeader(
     userName: String,
     modifier: Modifier = Modifier,
-    onActionClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {}
 ) {
     Row(
         modifier = modifier
@@ -64,7 +64,7 @@ fun ValidationHeader(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = "Validation System",
+                text = "Sistema de Validación",
                 color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
@@ -79,16 +79,16 @@ fun ValidationHeader(
         
         Spacer(modifier = Modifier.width(8.dp))
         
-        // Action button (menu)
+        // Action button (logout)
         IconButton(
-            onClick = onActionClick,
+            onClick = onLogoutClick,
             modifier = Modifier
                 .size(40.dp)
                 .background(Color(0xFF233B63), RoundedCornerShape(8.dp)) // Contrast background
         ) {
             Icon(
-                imageVector = Icons.Default.Menu,
-                contentDescription = "Menu",
+                imageVector = Icons.Default.ExitToApp,
+                contentDescription = "Cerrar sesión",
                 tint = Color.White
             )
         }

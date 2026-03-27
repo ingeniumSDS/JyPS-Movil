@@ -61,7 +61,7 @@ fun ScannerCard(
                 )
             ) {
                 Text(
-                    text = if (status == ScannerStatus.Scanning) "Scanning..." else "Start Scan",
+                    text = if (status == ScannerStatus.Scanning) "Escaneando..." else "Iniciar Escaneo",
                     color = Color.White,
                     fontWeight = FontWeight.Medium,
                     fontSize = 16.sp

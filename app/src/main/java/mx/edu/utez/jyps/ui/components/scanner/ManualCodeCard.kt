@@ -47,7 +47,7 @@ fun ManualCodeCard(
             // Label and Input field
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Enter QR code",
+                    text = "Ingresa el código QR",
                     color = Color(0xFF0A0A0A),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
@@ -59,7 +59,7 @@ fun ManualCodeCard(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(
-                            text = "Example: GDKF64NC",
+                            text = "Ejemplo: GDKF64NC",
                             color = Color(0xFF0A0A0A).copy(alpha = 0.5f),
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center
@@ -90,7 +90,7 @@ fun ManualCodeCard(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F2C59))
             ) {
                 Text(
-                    text = "Verify Code",
+                    text = "Verificar Código",
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
@@ -107,19 +107,19 @@ fun ManualCodeCard(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Test codes available:",
+                    text = "Códigos de prueba disponibles:",
                     color = Color(0xFF1C398E),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "✅ GDKF64NC - Valid code",
+                        text = "✅ GDKF64NC - Código válido",
                         color = Color(0xFF193CB8),
                         fontSize = 12.sp
                     )
                     Text(
-                        text = "❌ INVALID - Invalid code (test)",
+                        text = "❌ INVALIDO - Código no válido (para pruebas)",
                         color = Color(0xFF193CB8),
                         fontSize = 12.sp
                     )
