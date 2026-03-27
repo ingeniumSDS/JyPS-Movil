@@ -29,6 +29,7 @@ sealed class AppRoutes(val route: String) {
     object Login : AppRoutes("login")
     object Home : AppRoutes("home")
     object EmployeeHome : AppRoutes("employee_home")
+    object History : AppRoutes("history")
     object SecurityScanner : AppRoutes("security_scanner")
     object ForgotPassword : AppRoutes("forgot_password")
 }
@@ -107,7 +108,16 @@ fun NavigationHost(
         // Employee Scope Dashboard
         composable(AppRoutes.EmployeeHome.route) {
             mx.edu.utez.jyps.ui.screens.employee.EmployeeDashboardScreen(
-                onLogoutClick = { loginViewModel.logout() }
+                onLogoutClick = { loginViewModel.logout() },
+                onHistoryClick = { navController.navigate(AppRoutes.History.route) }
+            )
+        }
+
+        // Employee History
+        composable(AppRoutes.History.route) {
+            mx.edu.utez.jyps.ui.screens.employee.EmployeeHistoryScreen(
+                onLogoutClick = { loginViewModel.logout() },
+                onHomeClick = { navController.popBackStack() }
             )
         }
         
