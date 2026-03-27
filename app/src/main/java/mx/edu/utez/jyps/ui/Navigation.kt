@@ -28,6 +28,7 @@ import mx.edu.utez.jyps.viewmodel.LoginViewModel
 sealed class AppRoutes(val route: String) {
     object Login : AppRoutes("login")
     object Home : AppRoutes("home")
+    object EmployeeHome : AppRoutes("employee_home")
     object SecurityScanner : AppRoutes("security_scanner")
     object ForgotPassword : AppRoutes("forgot_password")
 }
@@ -51,6 +52,7 @@ fun NavigationHost(
     val targetRoute = remember(sessionToken) {
         when (sessionToken) {
             "MOCK_SECURITY_TOKEN" -> AppRoutes.SecurityScanner.route
+            "MOCK_EMPLOYEE_TOKEN" -> AppRoutes.EmployeeHome.route
             null, "" -> AppRoutes.Login.route
             else -> AppRoutes.Home.route
         }
@@ -102,6 +104,13 @@ fun NavigationHost(
             )
         }
         
+        // Employee Scope Dashboard
+        composable(AppRoutes.EmployeeHome.route) {
+            mx.edu.utez.jyps.ui.screens.employee.EmployeeDashboardScreen(
+                onLogoutClick = { loginViewModel.logout() }
+            )
+        }
+        
         // Security Guard Scope Dashboard
         composable(AppRoutes.SecurityScanner.route) {
             mx.edu.utez.jyps.ui.screens.security.ScannerScreen(
@@ -109,7 +118,7 @@ fun NavigationHost(
             )
         }
 
-        // Core App Generic Dashboard
+        // Core App Generic Dashboard (Admin)
         composable(AppRoutes.Home.route) {
             val adminViewModel: AdminViewModel = viewModel()
             AdminDashboardScreen(

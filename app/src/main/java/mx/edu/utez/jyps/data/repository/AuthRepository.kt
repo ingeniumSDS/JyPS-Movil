@@ -42,6 +42,22 @@ class AuthRepository(
             return Result.success(fakeResponse)
         }
 
+        // HARDCODED MOCK: Employee Dashboard App Entry Point
+        if (correo == "juan.perez@utez.edu.mx" && pass.isNotEmpty()) {
+            val fakeResponse = mx.edu.utez.jyps.data.model.LoginResponse(
+                id = 100L,
+                nombreCompleto = "Juan Pérez García",
+                correo = "juan.perez@utez.edu.mx",
+                telefono = "7771234567",
+                roles = listOf("EMPLOYEE"),
+                departamentoId = 1L,
+                nombreDepartamento = "Sistemas",
+                tokenJwt = "MOCK_EMPLOYEE_TOKEN"
+            )
+            preferencesManager.saveToken(fakeResponse.tokenJwt)
+            return Result.success(fakeResponse)
+        }
+
         return try {
             val response = api.login(LoginRequest(correo, pass))
             if (response.isSuccessful && response.body() != null) {
