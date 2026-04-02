@@ -18,6 +18,10 @@ import androidx.navigation.compose.rememberNavController
 import mx.edu.utez.jyps.ui.screens.ForgotPasswordScreen
 import mx.edu.utez.jyps.ui.screens.LoginScreen
 import mx.edu.utez.jyps.ui.screens.admin.AdminDashboardScreen
+import mx.edu.utez.jyps.ui.screens.employee.EmployeeDashboardScreen
+import mx.edu.utez.jyps.ui.screens.employee.EmployeeHistoryScreen
+import mx.edu.utez.jyps.ui.screens.employee.ProfileScreen
+import mx.edu.utez.jyps.ui.screens.security.ScannerScreen
 import mx.edu.utez.jyps.viewmodel.AdminViewModel
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordViewModel
 import mx.edu.utez.jyps.viewmodel.LoginViewModel
@@ -30,6 +34,7 @@ sealed class AppRoutes(val route: String) {
     object Home : AppRoutes("home")
     object EmployeeHome : AppRoutes("employee_home")
     object History : AppRoutes("history")
+    object Profile : AppRoutes("profile")
     object SecurityScanner : AppRoutes("security_scanner")
     object ForgotPassword : AppRoutes("forgot_password")
 }
@@ -107,23 +112,34 @@ fun NavigationHost(
         
         // Employee Scope Dashboard
         composable(AppRoutes.EmployeeHome.route) {
-            mx.edu.utez.jyps.ui.screens.employee.EmployeeDashboardScreen(
+            EmployeeDashboardScreen(
                 onLogoutClick = { loginViewModel.logout() },
-                onHistoryClick = { navController.navigate(AppRoutes.History.route) }
+                onHistoryClick = { navController.navigate(AppRoutes.History.route) },
+                onProfileClick = { navController.navigate(AppRoutes.Profile.route) }
             )
         }
 
         // Employee History
         composable(AppRoutes.History.route) {
-            mx.edu.utez.jyps.ui.screens.employee.EmployeeHistoryScreen(
+            EmployeeHistoryScreen(
                 onLogoutClick = { loginViewModel.logout() },
-                onHomeClick = { navController.popBackStack() }
+                onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
+                onProfileClick = { navController.navigate(AppRoutes.Profile.route) }
+            )
+        }
+
+        // Employee Profile
+        composable(AppRoutes.Profile.route) {
+            ProfileScreen(
+                onLogoutClick = { loginViewModel.logout() },
+                onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
+                onHistoryClick = { navController.navigate(AppRoutes.History.route) }
             )
         }
         
         // Security Guard Scope Dashboard
         composable(AppRoutes.SecurityScanner.route) {
-            mx.edu.utez.jyps.ui.screens.security.ScannerScreen(
+            ScannerScreen(
                 onLogoutClick = { loginViewModel.logout() }
             )
         }

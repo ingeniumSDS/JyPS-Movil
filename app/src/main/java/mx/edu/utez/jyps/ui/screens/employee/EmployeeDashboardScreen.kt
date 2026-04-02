@@ -26,11 +26,18 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun EmployeeDashboardScreen(
     onLogoutClick: () -> Unit = {},
-    onHistoryClick: () -> Unit = {}
+    onHistoryClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
 ) {
     Scaffold(
         topBar = { EmployeeHeader(userName = "Juan", onLogoutClick = onLogoutClick) },
-        bottomBar = { AppBottomNavigation(selectedRoute = "inicio", onHistoryClick = onHistoryClick) },
+        bottomBar = { 
+            AppBottomNavigation(
+                selectedRoute = "inicio", 
+                onHistoryClick = onHistoryClick,
+                onProfileClick = onProfileClick
+            ) 
+        },
         containerColor = Color(0xFFF8F9FA)
     ) { padding ->
 // ... (rest of column)
@@ -134,11 +141,31 @@ fun InfoCard() {
 }
 
 @Composable
-fun AppBottomNavigation(selectedRoute: String, onHistoryClick: () -> Unit = {}, onHomeClick: () -> Unit = {}) {
+fun AppBottomNavigation(
+    selectedRoute: String,
+    onHomeClick: () -> Unit = {},
+    onHistoryClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
+) {
     NavigationBar(containerColor = Color.White, tonalElevation = 8.dp) {
-        NavigationBarItem(selectedRoute == "inicio", onHomeClick, { Icon(Icons.Default.Home, null) }, label = { Text("Inicio") })
-        NavigationBarItem(selectedRoute == "historial", onHistoryClick, { Icon(Icons.Default.History, null) }, label = { Text("Historial") })
-        NavigationBarItem(selectedRoute == "perfil", {}, { Icon(Icons.Default.Person, null) }, label = { Text("Perfil") })
+        NavigationBarItem(
+            selected = selectedRoute == "inicio",
+            onClick = onHomeClick,
+            icon = { Icon(Icons.Default.Home, null) },
+            label = { Text("Inicio") }
+        )
+        NavigationBarItem(
+            selected = selectedRoute == "historial",
+            onClick = onHistoryClick,
+            icon = { Icon(Icons.Default.History, null) },
+            label = { Text("Historial") }
+        )
+        NavigationBarItem(
+            selected = selectedRoute == "perfil",
+            onClick = onProfileClick,
+            icon = { Icon(Icons.Default.Person, null) },
+            label = { Text("Perfil") }
+        )
     }
 }
 

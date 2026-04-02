@@ -40,7 +40,8 @@ data class HistoryItem(
 @Composable
 fun EmployeeHistoryScreen(
     onLogoutClick: () -> Unit = {},
-    onHomeClick: () -> Unit = {}
+    onHomeClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
 ) {
     var selectedFilter by remember { mutableStateOf(HistoryFilter.PASES) }
     
