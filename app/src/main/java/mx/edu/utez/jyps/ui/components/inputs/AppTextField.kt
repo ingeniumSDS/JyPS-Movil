@@ -1,5 +1,7 @@
 package mx.edu.utez.jyps.ui.components.inputs
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -25,6 +27,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
 
 /**
@@ -36,15 +39,23 @@ import mx.edu.utez.jyps.ui.theme.JyPSTheme
  * @param placeholder The placeholder text inside the input.
  * @param modifier The modifier to be applied.
  * @param isPassword Whether this is a password field.
+ * @param enabled Whether the text field is enabled.
+ * @param readOnly Whether the text field is read-only (can't be edited but can be clicked/focused).
+ * @param trailingIcon A composable to show at the end of the input (overrides password eye).
+ * @param onClick Optional callback when the field is clicked (useful for pickers over readOnly fields).
  */
 @Composable
 fun AppTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    placeholder: String,
+    placeholder: String = "",
     modifier: Modifier = Modifier,
-    isPassword: Boolean = false
+    isPassword: Boolean = false,
+    enabled: Boolean = true,
+    readOnly: Boolean = false,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -57,36 +68,53 @@ fun AppTextField(
             modifier = Modifier.padding(bottom = 8.dp)
         )
         
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { 
-                Text(
-                    text = placeholder,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                ) 
-            },
-            visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
-            trailingIcon = {
-                if (isPassword) {
-                    val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                    val description = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+        Box(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = enabled,
+                readOnly = readOnly,
+                placeholder = { 
+                    Text(
+                        text = placeholder,
+                        maxLines = 1,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    ) 
+                },
+                visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
+                trailingIcon = trailingIcon ?: if (isPassword) {
+                    {
+                        val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                        val description = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
 
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(imageVector = image, contentDescription = description)
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(imageVector = image, contentDescription = description)
+                        }
                     }
-                }
-            },
-            shape = RoundedCornerShape(8.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedContainerColor = MaterialTheme.colorScheme.surface
-            ),
-            singleLine = true
-        )
+                } else null,
+                shape = RoundedCornerShape(8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = Color(0xFFF3F4F6),
+                    disabledBorderColor = Color(0xFFD1D5DC),
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledTrailingIconColor = Color(0xFF6A7282)
+                ),
+                singleLine = true
+            )
+            
+            if (onClick != null) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { onClick() }
+                )
+            }
+        }
     }
 }
 

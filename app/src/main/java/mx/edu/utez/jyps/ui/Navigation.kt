@@ -37,6 +37,7 @@ sealed class AppRoutes(val route: String) {
     object Profile : AppRoutes("profile")
     object SecurityScanner : AppRoutes("security_scanner")
     object ForgotPassword : AppRoutes("forgot_password")
+    object PassRequest : AppRoutes("pass_request")
 }
 
 /**
@@ -115,7 +116,15 @@ fun NavigationHost(
             EmployeeDashboardScreen(
                 onLogoutClick = { loginViewModel.logout() },
                 onHistoryClick = { navController.navigate(AppRoutes.History.route) },
-                onProfileClick = { navController.navigate(AppRoutes.Profile.route) }
+                onProfileClick = { navController.navigate(AppRoutes.Profile.route) },
+                onRequestPassClick = { navController.navigate(AppRoutes.PassRequest.route) }
+            )
+        }
+
+        // Pass Request
+        composable(AppRoutes.PassRequest.route) {
+            mx.edu.utez.jyps.ui.screens.employee.PassRequestScreen(
+                onBackClick = { navController.navigateUp() }
             )
         }
 
