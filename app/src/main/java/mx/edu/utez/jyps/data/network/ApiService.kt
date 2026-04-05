@@ -1,45 +1,46 @@
 package mx.edu.utez.jyps.data.network
 
-import mx.edu.utez.jyps.data.model.User
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
-import retrofit2.http.DELETE
+import mx.edu.utez.jyps.data.model.CuentaResponse
+import mx.edu.utez.jyps.data.model.Departamento
+import mx.edu.utez.jyps.data.model.EstadoCuentaResponse
+import mx.edu.utez.jyps.data.model.LoginRequest
+import mx.edu.utez.jyps.data.model.LoginResponse
+import mx.edu.utez.jyps.data.model.Usuario
+import mx.edu.utez.jyps.data.model.UserRequest
+import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.GET
-import retrofit2.http.Multipart
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
-import retrofit2.http.Part
 import retrofit2.http.Path
 
-interface ApiService { // De momento solo sirve de referencia
+interface ApiService {
 
-    @GET("users")
-    suspend fun getUsers(): List<User>
+    // ── Autenticación ───────────────────────────────
+    @POST("api/v1/usuarios/login")
+    suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
-    @GET("users/{id}")
-    suspend fun getUserById(@Path("id") id: Int): User
+    // ── Usuarios ────────────────────────────────────
+    @GET("api/v1/usuarios")
+    suspend fun getUsuarios(): List<Usuario>
 
-    @Multipart
-    @POST("users")
-    suspend fun addUser(
-        @Part("nombre") nombre: RequestBody,
-        @Part("descripcion") descripcion: RequestBody,
-        @Part("numPases") numPases: RequestBody,
-        @Part("fechaPase") fechaPase: RequestBody,
-        @Part imagen: MultipartBody.Part? // El servidor espera 'imagen', no 'image'
-    ): User
+    @GET("api/v1/usuarios/{id}")
+    suspend fun getUsuarioPorId(@Path("id") id: Long): Usuario
 
-    @Multipart
-    @PUT("users/{id}")
-    suspend fun updateUser(
-        @Path("id") id: Int,
-        @Part("nombre") nombre: RequestBody,
-        @Part("descripcion") descripcion: RequestBody,
-        @Part("numPases") numPases: RequestBody,
-        @Part("fechaPase") fechaPase: RequestBody,
-        @Part imagen: MultipartBody.Part?
-    ): User
+    @POST("api/v1/usuarios")
+    suspend fun registrarUsuario(@Body request: UserRequest): Response<Usuario>
 
-    @DELETE("users/{id}")
-    suspend fun deleteUser(@Path("id") id: Int)
+    @PUT("api/v1/usuarios/{id}")
+    suspend fun actualizarUsuario(@Path("id") id: Long, @Body request: UserRequest): Response<Usuario>
+
+    @PATCH("api/v1/usuarios/{id}/estado")
+    suspend fun toggleEstadoUsuario(@Path("id") id: Long): Response<EstadoCuentaResponse>
+
+    @GET("api/v1/usuarios/{id}/cuenta")
+    suspend fun getCuentaUsuario(@Path("id") id: Long): CuentaResponse
+
+    // ── Departamentos ──────────────────────────────
+    @GET("api/v1/departamentos")
+    suspend fun getDepartamentos(): List<Departamento>
 }

@@ -1,6 +1,5 @@
 package mx.edu.utez.jyps.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -12,32 +11,41 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = PrimaryColor,
+    secondary = SecondaryColor,
+    tertiary = TertiaryColor,
+    background = TextColorMain,
+    surface = TertiaryColor,
+    onPrimary = BackgroundWhite,
+    onSecondary = BackgroundWhite,
+    onTertiary = BackgroundWhite,
+    onBackground = BackgroundWhite,
+    onSurface = BackgroundWhite
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = PrimaryColor,
+    secondary = SecondaryColor,
+    tertiary = TertiaryColor,
+    background = BackgroundWhite,
+    surface = BackgroundWhite,
+    onPrimary = BackgroundWhite,
+    onSecondary = BackgroundWhite,
+    onTertiary = BackgroundWhite,
+    onBackground = TextColorMain,
+    onSurface = TextColorMain,
+    outline = BorderColor
 )
 
+/**
+ * JyPSTheme defines the visual essence of the application.
+ * It follows Material 3 guidelines using the project's specific color palette.
+ */
 @Composable
 fun JyPSTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Dynamic color is disabled to maintain brand identity from Figma
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
