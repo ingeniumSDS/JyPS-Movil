@@ -22,7 +22,8 @@ fun EmployeeDashboardScreen(
     onLogoutClick: () -> Unit = {},
     onHistoryClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onRequestPassClick: () -> Unit = {}
+    onRequestPassClick: () -> Unit = {},
+    onRequestJustificationClick: () -> Unit = {}
 ) {
     Scaffold(
         topBar = { EmployeeHeader(userName = "Juan", onLogoutClick = onLogoutClick) },
@@ -58,7 +59,7 @@ fun EmployeeDashboardScreen(
                 description = "Justifica una falta o inasistencia",
                 icon = Icons.Default.Description,
                 iconColor = Color(0xFF28A745),
-                onClick = {}
+                onClick = onRequestJustificationClick
             )
             
             InfoCard()

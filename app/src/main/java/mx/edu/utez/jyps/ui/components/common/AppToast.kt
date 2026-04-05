@@ -6,6 +6,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -21,6 +23,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
+enum class ToastType {
+    INFO, ERROR, SUCCESS
+}
+
 /**
  * Small floating notification displayed at the bottom of the screen for feedback.
  *
@@ -28,13 +34,15 @@ import kotlinx.coroutines.delay
  * @param isVisible Control for showing/hiding the toast with animation.
  * @param onDismiss Callback to clear the message after duration.
  * @param modifier Optional modifier for relative positioning.
+ * @param type Indicates whether the toast is INFO, ERROR or SUCCESS.
  */
 @Composable
 fun AppToast(
     message: String?,
     isVisible: Boolean,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    type: ToastType = ToastType.INFO
 ) {
     LaunchedEffect(isVisible) {
         if (isVisible) {
@@ -60,11 +68,17 @@ fun AppToast(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Representative Icon matching Figma mockup
+            val (icon, color) = when (type) {
+                ToastType.SUCCESS -> Pair(Icons.Default.CheckCircle, Color(0xFF28A745))
+                ToastType.ERROR -> Pair(Icons.Default.Error, Color(0xFFDC3545))
+                ToastType.INFO -> Pair(Icons.Default.Info, Color(0xFF0A0A0A))
+            }
+            
+            // Representative Icon matching Figma mockup or custom state
             Icon(
-                imageVector = Icons.Default.Info,
+                imageVector = icon,
                 contentDescription = null,
-                tint = Color(0xFF0A0A0A),
+                tint = color,
                 modifier = Modifier.size(20.dp)
             )
             

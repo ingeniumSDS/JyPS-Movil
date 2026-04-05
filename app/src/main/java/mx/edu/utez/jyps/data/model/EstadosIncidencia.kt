@@ -9,5 +9,7 @@ enum class EstadosIncidencia {
     APROBADO,
     RECHAZADO,
     CADUCADO,
-    USADO
+    USADO,
+    A_TIEMPO,
+    RETARDO
 }

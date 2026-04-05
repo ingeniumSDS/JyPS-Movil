@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +22,8 @@ import mx.edu.utez.jyps.ui.screens.admin.AdminDashboardScreen
 import mx.edu.utez.jyps.ui.screens.employee.EmployeeDashboardScreen
 import mx.edu.utez.jyps.ui.screens.employee.EmployeeHistoryScreen
 import mx.edu.utez.jyps.ui.screens.employee.ProfileScreen
+import mx.edu.utez.jyps.ui.screens.employee.PassRequestScreen
+import mx.edu.utez.jyps.ui.screens.employee.JustificationRequestScreen
 import mx.edu.utez.jyps.ui.screens.security.ScannerScreen
 import mx.edu.utez.jyps.viewmodel.AdminViewModel
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordViewModel
@@ -38,6 +41,7 @@ sealed class AppRoutes(val route: String) {
     object SecurityScanner : AppRoutes("security_scanner")
     object ForgotPassword : AppRoutes("forgot_password")
     object PassRequest : AppRoutes("pass_request")
+    object JustificationRequest : AppRoutes("justification_request")
 }
 
 /**
@@ -65,7 +69,7 @@ fun NavigationHost(
         }
     }
 
-    androidx.compose.runtime.LaunchedEffect(targetRoute) {
+    LaunchedEffect(targetRoute) {
         if (targetRoute == AppRoutes.Login.route) {
             if (navController.currentDestination?.route != AppRoutes.Login.route &&
                 navController.currentDestination?.route != AppRoutes.ForgotPassword.route) {
@@ -117,13 +121,21 @@ fun NavigationHost(
                 onLogoutClick = { loginViewModel.logout() },
                 onHistoryClick = { navController.navigate(AppRoutes.History.route) },
                 onProfileClick = { navController.navigate(AppRoutes.Profile.route) },
-                onRequestPassClick = { navController.navigate(AppRoutes.PassRequest.route) }
+                onRequestPassClick = { navController.navigate(AppRoutes.PassRequest.route) },
+                onRequestJustificationClick = { navController.navigate(AppRoutes.JustificationRequest.route) }
             )
         }
 
         // Pass Request
         composable(AppRoutes.PassRequest.route) {
-            mx.edu.utez.jyps.ui.screens.employee.PassRequestScreen(
+            PassRequestScreen(
+                onBackClick = { navController.navigateUp() }
+            )
+        }
+        
+        // Justification Request
+        composable(AppRoutes.JustificationRequest.route) {
+            JustificationRequestScreen(
                 onBackClick = { navController.navigateUp() }
             )
         }
