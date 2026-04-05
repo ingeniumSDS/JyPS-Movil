@@ -56,12 +56,20 @@ import java.time.ZoneId
 @Composable
 fun JustificationRequestScreen(
     viewModel: JustificationRequestViewModel = viewModel(),
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onSuccessSubmit: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
     var localValidationToast by remember { mutableStateOf<String?>(null) }
+
+    androidx.compose.runtime.LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            viewModel.resetSuccess()
+            onSuccessSubmit("Solicitud registrada con éxito.")
+        }
+    }
 
     // Launchers for Gallery and Camera
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -445,17 +453,6 @@ fun JustificationRequestScreen(
         isVisible = uiState.error != null,
         onDismiss = { viewModel.clearError() },
         type = ToastType.ERROR,
-        modifier = Modifier.align(Alignment.BottomCenter)
-    )
-
-    AppToast(
-        message = if (uiState.isSuccess) "Solicitud registrada con éxito." else null,
-        isVisible = uiState.isSuccess,
-        onDismiss = { 
-            viewModel.resetSuccess() 
-            onBackClick() 
-        },
-        type = ToastType.SUCCESS,
         modifier = Modifier.align(Alignment.BottomCenter)
     )
 

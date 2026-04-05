@@ -35,6 +35,8 @@ import java.time.LocalTime
 import java.time.ZoneId
 
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
+import mx.edu.utez.jyps.ui.components.common.AppToast
+import mx.edu.utez.jyps.ui.components.common.ToastType
 
 /**
  * Screen that allows an employee to request a pass for leaving the establishment.
@@ -46,9 +48,17 @@ import mx.edu.utez.jyps.ui.components.inputs.AppTextField
 @Composable
 fun PassRequestScreen(
     viewModel: PassRequestViewModel = viewModel(),
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onSuccessSubmit: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    androidx.compose.runtime.LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            viewModel.resetSuccess()
+            onSuccessSubmit("Solicitud registrada con éxito.")
+        }
+    }
     
     if (uiState.showTimePicker) {
         val timePickerState = rememberTimePickerState()
@@ -72,7 +82,8 @@ fun PassRequestScreen(
         )
     }
 
-    Scaffold(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
         topBar = {
             Column {
                 // Header (App Name and User welcome)
@@ -202,7 +213,7 @@ fun PassRequestScreen(
                                 "${uiState.details.length}/${uiState.detailsLimit}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = if (uiState.details.length >= uiState.detailsLimit) Color.Red else Color(0xFF6A7282)
+                                color = if (uiState.details.length !in uiState.detailsMinLimit..uiState.detailsLimit) Color.Red else Color(0xFF6A7282)
                             )
                         }
                         
@@ -278,6 +289,23 @@ fun PassRequestScreen(
                 )
             }
         }
+    }
+
+    AppToast(
+        message = if (uiState.hasActivePassError) "Aún cuenta con una Solicitud de Pase de salida pendiente para el día de hoy" else uiState.error,
+        isVisible = uiState.hasActivePassError || uiState.error != null,
+        onDismiss = {
+            if (uiState.hasActivePassError) {
+                viewModel.clearActivePassError()
+                onBackClick()
+            } else {
+                viewModel.clearError()
+            }
+        },
+        type = ToastType.ERROR,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    )
+
     }
 }
 

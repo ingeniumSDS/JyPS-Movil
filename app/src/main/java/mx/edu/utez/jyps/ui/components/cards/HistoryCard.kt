@@ -41,7 +41,11 @@ data class HistoryItem(
  * @param item The HistoryItem data object containing all details for this history entry.
  */
 @Composable
-fun HistoryCard(item: HistoryItem) {
+fun HistoryCard(
+    item: HistoryItem,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {}
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -138,14 +142,14 @@ fun HistoryCard(item: HistoryItem) {
                 if (item.status == HistoryStatus.PENDIENTE) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
-                            onClick = {},
+                            onClick = onEdit,
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text("Editar", fontSize = 12.sp)
                         }
                         OutlinedButton(
-                            onClick = {},
+                            onClick = onDelete,
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)

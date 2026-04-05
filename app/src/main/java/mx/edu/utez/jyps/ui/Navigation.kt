@@ -116,27 +116,48 @@ fun NavigationHost(
         }
         
         // Employee Scope Dashboard
-        composable(AppRoutes.EmployeeHome.route) {
-            EmployeeDashboardScreen(
-                onLogoutClick = { loginViewModel.logout() },
-                onHistoryClick = { navController.navigate(AppRoutes.History.route) },
-                onProfileClick = { navController.navigate(AppRoutes.Profile.route) },
-                onRequestPassClick = { navController.navigate(AppRoutes.PassRequest.route) },
-                onRequestJustificationClick = { navController.navigate(AppRoutes.JustificationRequest.route) }
-            )
+        composable(AppRoutes.EmployeeHome.route) { backStackEntry ->
+            val savedStateHandle = backStackEntry.savedStateHandle
+            val successMessage by savedStateHandle.getStateFlow<String?>("success_message", null).collectAsStateWithLifecycle()
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                EmployeeDashboardScreen(
+                    onLogoutClick = { loginViewModel.logout() },
+                    onHistoryClick = { navController.navigate(AppRoutes.History.route) },
+                    onProfileClick = { navController.navigate(AppRoutes.Profile.route) },
+                    onRequestPassClick = { navController.navigate(AppRoutes.PassRequest.route) },
+                    onRequestJustificationClick = { navController.navigate(AppRoutes.JustificationRequest.route) }
+                )
+
+                mx.edu.utez.jyps.ui.components.common.AppToast(
+                    message = successMessage,
+                    isVisible = successMessage != null,
+                    onDismiss = { savedStateHandle["success_message"] = null },
+                    type = mx.edu.utez.jyps.ui.components.common.ToastType.SUCCESS,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
         }
 
         // Pass Request
         composable(AppRoutes.PassRequest.route) {
             PassRequestScreen(
-                onBackClick = { navController.navigateUp() }
+                onBackClick = { navController.navigateUp() },
+                onSuccessSubmit = { msg ->
+                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
+                    navController.navigateUp()
+                }
             )
         }
         
         // Justification Request
         composable(AppRoutes.JustificationRequest.route) {
             JustificationRequestScreen(
-                onBackClick = { navController.navigateUp() }
+                onBackClick = { navController.navigateUp() },
+                onSuccessSubmit = { msg ->
+                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
+                    navController.navigateUp()
+                }
             )
         }
 

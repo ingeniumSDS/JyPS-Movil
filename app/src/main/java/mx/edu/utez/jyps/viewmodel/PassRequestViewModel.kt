@@ -18,10 +18,12 @@ data class PassRequestState(
     val selectedDate: LocalDate = LocalDate.now(),
     val selectedTime: LocalTime? = null,
     val details: String = "",
-    val detailsLimit: Int = 500,
+    val detailsMinLimit: Int = 25,
+    val detailsLimit: Int = 255,
     val showTimePicker: Boolean = false,
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
+    val hasActivePassError: Boolean = false,
     val error: String? = null
 ) {
     val dateDisplay: String
@@ -31,7 +33,7 @@ data class PassRequestState(
         get() = selectedTime?.format(DateTimeFormatter.ofPattern("hh:mm a")) ?: ""
 
     val isFormValid: Boolean
-        get() = selectedTime != null && details.isNotBlank() && details.length <= detailsLimit
+        get() = !isLoading && selectedTime != null && details.length in detailsMinLimit..detailsLimit
 }
 
 /**
@@ -40,6 +42,23 @@ data class PassRequestState(
 class PassRequestViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(PassRequestState())
     val uiState: StateFlow<PassRequestState> = _uiState.asStateFlow()
+
+    init {
+        checkActivePasses()
+    }
+
+    private fun checkActivePasses() {
+        // Dummy check for DFR rule: "el sistema impide la creación de un nuevo pase únicamente si ya existe una solicitud..."
+        val hasActivePass = false // Toggle this to test the blockade
+        if (hasActivePass) {
+            _uiState.update { 
+                it.copy(
+                    hasActivePassError = true, 
+                    error = "Aún cuenta con una Solicitud de Pase de salida pendiente para el día de hoy"
+                )
+            }
+        }
+    }
 
     fun onTimeClick() {
         _uiState.update { it.copy(showTimePicker = true) }
@@ -67,7 +86,7 @@ class PassRequestViewModel : ViewModel() {
     fun onSubmit() {
         if (!_uiState.value.isFormValid) return
         
-        _uiState.update { it.copy(isLoading = true) }
+        _uiState.update { it.copy(isLoading = true, error = null) }
         
         // Simulating API call (Dummy Data rule)
         _uiState.update { 
@@ -76,6 +95,14 @@ class PassRequestViewModel : ViewModel() {
                 isSuccess = true
             ) 
         }
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
+    fun clearActivePassError() {
+        _uiState.update { it.copy(hasActivePassError = false) }
     }
 
     fun resetSuccess() {
