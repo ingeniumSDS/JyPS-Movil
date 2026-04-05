@@ -28,6 +28,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import mx.edu.utez.jyps.ui.components.navigation.AppBottomNavigationBar
 import mx.edu.utez.jyps.ui.components.header.EmployeeHeader
 import mx.edu.utez.jyps.ui.components.rows.InfoRow
+import mx.edu.utez.jyps.ui.components.dialogs.ChangePasswordDialog
+import mx.edu.utez.jyps.ui.components.common.AppToast
+import mx.edu.utez.jyps.ui.components.common.ToastType
 import mx.edu.utez.jyps.viewmodel.ProfileViewModel
 
 /**
@@ -47,7 +50,15 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
+    if (uiState.showChangePasswordDialog) {
+        ChangePasswordDialog(
+            onDismissRequest = { viewModel.dismissChangePassword() },
+            onSave = { current, new, confirm -> viewModel.updatePassword(current, new, confirm) }
+        )
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
         topBar = {
             EmployeeHeader(
                 userName = uiState.name.split(" ").firstOrNull() ?: "",
@@ -194,6 +205,15 @@ fun ProfileScreen(
             }
         }
     }
+        
+    AppToast(
+        message = uiState.passwordOpMessage,
+        isVisible = uiState.passwordOpMessage != null,
+        onDismiss = { viewModel.clearOpMessage() },
+        type = if (uiState.isPasswordOpSuccess) ToastType.SUCCESS else ToastType.ERROR,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    )
+}
 }
 
 @Preview(showSystemUi = true)

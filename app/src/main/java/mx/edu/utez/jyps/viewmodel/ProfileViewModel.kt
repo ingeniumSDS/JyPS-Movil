@@ -17,7 +17,10 @@ data class ProfileUiState(
     val name: String = "Juan Pérez García",
     val role: String = "Trabajador",
     val email: String = "juan.perez@utez.edu.mx",
-    val phone: String = "777-123-4567"
+    val phone: String = "777-123-4567",
+    val showChangePasswordDialog: Boolean = false,
+    val isPasswordOpSuccess: Boolean = false,
+    val passwordOpMessage: String? = null
 )
 
 /**
@@ -27,10 +30,30 @@ class ProfileViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    /**
-     * Dummy function to simulate password change request.
-     */
     fun changePassword() {
-        // Implementation for future sprint
+        _uiState.value = _uiState.value.copy(showChangePasswordDialog = true)
+    }
+
+    fun dismissChangePassword() {
+        _uiState.value = _uiState.value.copy(showChangePasswordDialog = false)
+    }
+
+    fun updatePassword(current: String, new: String, confirm: String) {
+        val dummyAuth = "Actual123"
+        // Dummy Validation (Backend-side emulated)
+        if (current != dummyAuth) {
+            _uiState.value = _uiState.value.copy(passwordOpMessage = "Contraseña actual incorrecta (Usar: Actual123)")
+            return
+        }
+
+        _uiState.value = _uiState.value.copy(
+            showChangePasswordDialog = false,
+            isPasswordOpSuccess = true,
+            passwordOpMessage = "Contraseña actualizada exitosamente."
+        )
+    }
+
+    fun clearOpMessage() {
+        _uiState.value = _uiState.value.copy(isPasswordOpSuccess = false, passwordOpMessage = null)
     }
 }
