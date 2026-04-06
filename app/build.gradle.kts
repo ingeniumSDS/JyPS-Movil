@@ -95,6 +95,11 @@ dependencies {
     implementation(libs.zxing.core)
     implementation(libs.play.services.pay)
     implementation(libs.java.jwt)
+    // CameraX for real camera preview and image analysis
+    implementation(libs.camera.core)
+    implementation(libs.camera.camera2)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.camera.view)
 
     // Add the dependencies for any other desired Firebase products
     // https://firebase.google.com/docs/android/setup#available-libraries

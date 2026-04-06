@@ -1,9 +1,10 @@
 package mx.edu.utez.jyps.ui.components.scanner
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
@@ -18,17 +19,21 @@ import androidx.compose.ui.unit.sp
 import mx.edu.utez.jyps.viewmodel.ScannerStatus
 
 /**
- * Main card wrapping the scanning area and its controls.
+ * Card that wraps the [ScannerBox] and provides a title and subtitle context header.
+ * Passes camera callbacks down to [ScannerBox] to maintain strict state hoisting.
  *
- * This component abstracts a large UI block so the screen consumes it without
- * accumulating excessive lines of Compose, favoring maintainability.
- *
- * @param status Current dynamic status of the scan. Determines button states and visible texts.
- * @param modifier Base modifier for scalability with generic Compose layouts.
+ * @param status Current scanner status — used to determine if frame feedback is active.
+ * @param isQrInFrame Whether the analyzer currently detects a QR in frame.
+ * @param onQrDetected Callback forwarded to [ScannerBox] → [CameraPreview] → [QRCodeAnalyzer].
+ * @param onFrameWithQr Forwarded to [ScannerBox] to toggle the scanning overlay.
+ * @param modifier External modifier for layout flexibility.
  */
 @Composable
 fun ScannerCard(
     status: ScannerStatus,
+    isQrInFrame: Boolean = false,
+    onQrDetected: (String) -> Unit = {},
+    onFrameWithQr: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -40,22 +45,31 @@ fun ScannerCard(
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Simulated camera scanner visual region. Assuming automatic scanning.
-            ScannerBox(isScanning = true)
+            Text(
+                text = "Escanear Código QR",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F2C59)
+            )
+            Text(
+                text = "Apunta la cámara al código QR del pase del empleado",
+                fontSize = 13.sp,
+                color = Color(0xFF64748B)
+            )
 
-            // Injected status sub-component (temporary feedback)
-            when (status) {
-                is ScannerStatus.ValidQR -> StatusText(isValid = true, code = status.code)
-                is ScannerStatus.InvalidQR -> StatusText(isValid = false, code = status.error)
-                else -> Spacer(modifier = Modifier.height(16.dp))
-            }
+            // Real camera with golden overlay and animated QR indicator
+            ScannerBox(
+                isQrInFrame = isQrInFrame,
+                onQrDetected = onQrDetected,
+                onFrameWithQr = onFrameWithQr
+            )
         }
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun ScannerCardPreview() {
     ScannerCard(status = ScannerStatus.Idle)

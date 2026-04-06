@@ -129,6 +129,11 @@ fun ManualCodeCard(
                         fontSize = 12.sp
                     )
                     Text(
+                        text = "❌ USED - Usado",
+                        color = Color(0xFF193CB8),
+                        fontSize = 12.sp
+                    )
+                    Text(
                         text = "❌ INVALID - Código no válido",
                         color = Color(0xFF193CB8),
                         fontSize = 12.sp
