@@ -24,6 +24,7 @@ import mx.edu.utez.jyps.ui.screens.employee.EmployeeHistoryScreen
 import mx.edu.utez.jyps.ui.screens.employee.ProfileScreen
 import mx.edu.utez.jyps.ui.screens.employee.PassRequestScreen
 import mx.edu.utez.jyps.ui.screens.employee.JustificationRequestScreen
+import mx.edu.utez.jyps.ui.screens.departmenthead.EmployeeManagementScreen
 import mx.edu.utez.jyps.ui.screens.security.ScannerScreen
 import mx.edu.utez.jyps.viewmodel.AdminViewModel
 import mx.edu.utez.jyps.viewmodel.DepartmentHeadViewModel
@@ -49,6 +50,7 @@ sealed class AppRoutes(val route: String) {
     object DeptHeadJustificationRequest : AppRoutes("dept_head_justification_request")
     object DeptHeadHistory : AppRoutes("dept_head_history")
     object DeptHeadProfile : AppRoutes("dept_head_profile")
+    object DeptHeadEmployees : AppRoutes("dept_head_employees")
 }
 
 /**
@@ -228,9 +230,33 @@ fun NavigationHost(
                         "justification_request" -> navController.navigate(AppRoutes.DeptHeadJustificationRequest.route)
                         "history" -> navController.navigate(AppRoutes.DeptHeadHistory.route)
                         "profile" -> navController.navigate(AppRoutes.DeptHeadProfile.route)
-                        else -> { /* "dept_employees" — TODO: future screen */ }
+                        "dept_employees" -> navController.navigate(AppRoutes.DeptHeadEmployees.route)
+                        else -> { /* Unknown route */ }
                     }
                 }
+            )
+        }
+
+        // Department Head: Employee Management
+        composable(AppRoutes.DeptHeadEmployees.route) {
+            val employeeViewModel: mx.edu.utez.jyps.viewmodel.EmployeeManagementViewModel = viewModel()
+            EmployeeManagementScreen(
+                viewModel = employeeViewModel,
+                onLogoutClick = { loginViewModel.logout() },
+                onNavigate = { route ->
+                    when (route) {
+                        "department_head_dashboard" -> navController.navigate(AppRoutes.DeptHeadDashboard.route) {
+                            popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
+                        }
+                        "pass_request" -> navController.navigate(AppRoutes.DeptHeadPassRequest.route)
+                        "justification_request" -> navController.navigate(AppRoutes.DeptHeadJustificationRequest.route)
+                        "history" -> navController.navigate(AppRoutes.DeptHeadHistory.route)
+                        "profile" -> navController.navigate(AppRoutes.DeptHeadProfile.route)
+                        else -> { /* Already here */ }
+                    }
+                },
+                userName = currentUser,
+                userEmail = currentUserEmail
             )
         }
 
