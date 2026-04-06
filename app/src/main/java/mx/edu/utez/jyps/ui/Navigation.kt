@@ -163,10 +163,12 @@ fun NavigationHost(
 
         // Employee History
         composable(AppRoutes.History.route) {
+            val historyViewModel: mx.edu.utez.jyps.viewmodel.EmployeeHistoryViewModel = viewModel()
             EmployeeHistoryScreen(
                 onLogoutClick = { loginViewModel.logout() },
                 onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
-                onProfileClick = { navController.navigate(AppRoutes.Profile.route) }
+                onProfileClick = { navController.navigate(AppRoutes.Profile.route) },
+                viewModel = historyViewModel
             )
         }
 

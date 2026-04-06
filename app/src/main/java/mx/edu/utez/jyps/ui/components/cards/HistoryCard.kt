@@ -1,5 +1,6 @@
 package mx.edu.utez.jyps.ui.components.cards
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -44,10 +45,15 @@ data class HistoryItem(
 fun HistoryCard(
     item: HistoryItem,
     onEdit: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    onShowQr: () -> Unit = {}
 ) {
+    val isClickable = item.status == HistoryStatus.APROBADO && item.type.contains("Pase")
+    
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (isClickable) Modifier.clickable { onShowQr() } else Modifier),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp)
@@ -136,6 +142,17 @@ fun HistoryCard(
                             color = textColor,
                             fontWeight = FontWeight.Bold
                         )
+                    }
+                }
+
+                if (item.status == HistoryStatus.APROBADO && item.type.contains("Pase")) {
+                    Button(
+                        onClick = onShowQr,
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF0F4FF))
+                    ) {
+                        Text("💡 Toca aquí para ver tu código QR", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
 
