@@ -23,10 +23,12 @@ fun EmployeeDashboardScreen(
     onHistoryClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onRequestPassClick: () -> Unit = {},
-    onRequestJustificationClick: () -> Unit = {}
+    onRequestJustificationClick: () -> Unit = {},
+    userName: String = "Juan",
+    userEmail: String = "juan.perez@utez.edu.mx"
 ) {
     Scaffold(
-        topBar = { EmployeeHeader(userName = "Juan", onLogoutClick = onLogoutClick) },
+        topBar = { EmployeeHeader(userName = userName.split(" ").firstOrNull() ?: "User", onLogoutClick = onLogoutClick) },
         bottomBar = { 
             AppBottomNavigationBar(
                 selectedRoute = "inicio", 
@@ -44,7 +46,7 @@ fun EmployeeDashboardScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            WelcomeHeroCard(name = "Juan Pérez García", email = "juan.perez@utez.edu.mx")
+            WelcomeHeroCard(name = userName, email = userEmail)
             
             DashboardActionCard(
                 title = "Pase de Salida",

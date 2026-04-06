@@ -43,6 +43,10 @@ class JustificationRequestViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(JustificationRequestState())
     val uiState: StateFlow<JustificationRequestState> = _uiState.asStateFlow()
 
+    fun setUserInfo(name: String, email: String) {
+        _uiState.update { it.copy(fullName = name, email = email) }
+    }
+
     fun onDateClick() {
         _uiState.update { it.copy(showDatePicker = true) }
     }

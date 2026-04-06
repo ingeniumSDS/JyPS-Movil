@@ -40,6 +40,7 @@ import coil.compose.AsyncImage
 import mx.edu.utez.jyps.ui.components.common.AppToast
 import mx.edu.utez.jyps.ui.components.common.ToastType
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
+import mx.edu.utez.jyps.ui.components.common.EmployeeModeBanner
 import mx.edu.utez.jyps.viewmodel.JustificationRequestViewModel
 import java.io.File
 import java.time.Instant
@@ -57,10 +58,18 @@ import java.time.ZoneId
 fun JustificationRequestScreen(
     viewModel: JustificationRequestViewModel = viewModel(),
     onBackClick: () -> Unit = {},
-    onSuccessSubmit: (String) -> Unit = {}
+    onSuccessSubmit: (String) -> Unit = {},
+    showEmployeeModeBanner: Boolean = false,
+    onReturnToRoleDashboard: () -> Unit = {},
+    userName: String = "Juan",
+    userEmail: String = "juan.perez@utez.edu.mx"
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    LaunchedEffect(userName, userEmail) {
+        viewModel.setUserInfo(userName, userEmail)
+    }
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
     var localValidationToast by remember { mutableStateOf<String?>(null) }
 
@@ -148,12 +157,17 @@ fun JustificationRequestScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Bienvenido, Juan", // Dummy name corresponding to dummy data
+                                "Bienvenido, $userName", // Dummy name corresponding to dummy data
                                 color = Color(0xFFE5E7EB),
                                 fontSize = 12.sp
                             )
                         }
                     }
+                }
+
+                // Employee Mode banner — shown when accessed from DeptHead or Admin
+                if (showEmployeeModeBanner) {
+                    EmployeeModeBanner(onBackClick = onReturnToRoleDashboard)
                 }
                 
                 Row(

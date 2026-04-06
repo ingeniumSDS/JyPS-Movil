@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 data class ProfileUiState(
     val name: String = "Juan Pérez García",
-    val role: String = "Trabajador",
+    val role: String = "Empleado",
     val email: String = "juan.perez@utez.edu.mx",
     val phone: String = "777-123-4567",
     val showChangePasswordDialog: Boolean = false,

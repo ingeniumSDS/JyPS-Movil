@@ -32,6 +32,7 @@ import mx.edu.utez.jyps.ui.components.header.EmployeeHeader
 import mx.edu.utez.jyps.ui.components.navigation.AppBottomNavigationBar
 import mx.edu.utez.jyps.ui.components.navigation.FilterTab
 import mx.edu.utez.jyps.data.model.HistoryFilter
+import mx.edu.utez.jyps.ui.components.common.EmployeeModeBanner
 import mx.edu.utez.jyps.utils.ImageUtils
 import mx.edu.utez.jyps.viewmodel.EmployeeHistoryViewModel
 
@@ -43,7 +44,10 @@ fun EmployeeHistoryScreen(
     onLogoutClick: () -> Unit,
     onHomeClick: () -> Unit,
     onProfileClick: () -> Unit,
-    viewModel: EmployeeHistoryViewModel
+    viewModel: EmployeeHistoryViewModel,
+    showEmployeeModeBanner: Boolean = false,
+    onReturnToRoleDashboard: () -> Unit = {},
+    userName: String = "Empleado"
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedFilter by remember { mutableStateOf(HistoryFilter.PASES) }
@@ -104,7 +108,7 @@ fun EmployeeHistoryScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            topBar = { EmployeeHeader(userName = "Empleado", onLogoutClick = onLogoutClick) },
+            topBar = { EmployeeHeader(userName = userName, onLogoutClick = onLogoutClick) },
             bottomBar = { 
                 AppBottomNavigationBar(
                     selectedRoute = "historial",
@@ -119,6 +123,11 @@ fun EmployeeHistoryScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
+                // Employee Mode banner — shown when accessed from DeptHead or Admin
+                if (showEmployeeModeBanner) {
+                    EmployeeModeBanner(onBackClick = onReturnToRoleDashboard)
+                }
+
                 // Filter Selection Row
                 Row(
                     modifier = Modifier

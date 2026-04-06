@@ -47,6 +47,10 @@ class PassRequestViewModel : ViewModel() {
         checkActivePasses()
     }
 
+    fun setUserInfo(name: String, email: String) {
+        _uiState.update { it.copy(fullName = name, email = email) }
+    }
+
     private fun checkActivePasses() {
         // Dummy check for DFR rule: "el sistema impide la creación de un nuevo pase únicamente si ya existe una solicitud..."
         val hasActivePass = false // Toggle this to test the blockade
