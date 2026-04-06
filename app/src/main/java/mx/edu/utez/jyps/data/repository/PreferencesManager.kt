@@ -1,6 +1,7 @@
 package mx.edu.utez.jyps.data.repository
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Base64
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -35,18 +36,40 @@ class PreferencesManager(private val context: Context) {
     init {
         // Initializes Google Tink registry for AEAD primitives
         AeadConfig.register()
-        
+
         // Builds the KeysetManager anchored to the Android Hardware Keystore.
-        // This guarantees that the cryptographic keys used to encrypt/decrypt the DataStore payload
-        // are hardware-backed and resilient against root-level extraction.
-        aead = AndroidKeysetManager.Builder()
+        // On fresh installs or after a factory reset the tink_master_key won't exist yet.
+        // In that case we wipe the stale SharedPrefs keyset (which references a now-missing key)
+        // so the Builder can generate a brand-new key on the next attempt.
+        aead = try {
+            buildKeysetManager()
+        } catch (e: Exception) {
+            // Clear the orphaned keyset entry that points to the deleted Keystore key
+            context.getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .remove("tink_keyset")
+                .apply()
+            // Also clear any tokens encrypted with the old key — they are unrecoverable
+            runBlocking {
+                context.dataStore.edit { it.clear() }
+            }
+            // Retry with a clean slate; this will generate a new hardware-backed key
+            buildKeysetManager()
+        }
+    }
+
+    /**
+     * Builds and returns the Tink [Aead] primitive backed by the Android Hardware Keystore.
+     * Extracted to avoid duplication in the init recovery block.
+     */
+    private fun buildKeysetManager(): Aead =
+        AndroidKeysetManager.Builder()
             .withSharedPref(context, "tink_keyset", "secure_prefs")
             .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
             .withMasterKeyUri("android-keystore://tink_master_key")
             .build()
             .keysetHandle
             .getPrimitive(Aead::class.java)
-    }
 
     companion object {
         /** Key alias mapping to the encrypted JWT token payload */

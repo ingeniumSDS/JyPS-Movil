@@ -29,6 +29,7 @@ analytics = "22.0.0"
 datastore = "1.1.7"
 tink = "1.8.0"
 zxing = "3.5.3"
+camerax = "1.3.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -70,6 +71,10 @@ tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 play-services-pay = { module = "com.google.android.gms:play-services-pay", version = "16.4.0" }
 java-jwt = { module = "com.auth0:java-jwt", version = "4.4.0" }
+camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
+camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

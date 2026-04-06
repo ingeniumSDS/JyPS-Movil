@@ -1,7 +1,18 @@
 package mx.edu.utez.jyps.ui.components.scanner
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -10,89 +21,131 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 
 /**
- * Visual container of the scanner simulating the camera view.
+ * Visual container for the scanner that renders:
+ * 1. The live [CameraPreview] cropped at square 1:1 from the center of the sensor.
+ * 2. A decorative overlay of golden corner brackets drawn on top via [Box] + [zIndex].
+ * 3. An animated "Escaneando..." overlay that only appears while a QR is in frame.
  *
- * Displays a central dark box, a representative icon, and 
- * golden corners indicating the focus zone as marked in Figma.
- * Uses a dark overlay to simulate scanning progress/wait state.
- * 
- * @param isScanning Determines if scanning is in progress, 
- *        displaying "Scanning..." text and changing feedback.
- * @param modifier Base modifier for size and external position adjustments.
+ * The camera fallback (permission denied) is handled internally by [CameraPreview].
+ *
+ * @param isQrInFrame Whether the analyzer currently sees a QR code in the camera frame.
+ *                    Controls the visibility of the scanning overlay.
+ * @param onQrDetected Callback forwarded to [CameraPreview] when a code is decoded.
+ * @param onFrameWithQr Forwarded to [CameraPreview] to update [isQrInFrame] in the ViewModel.
+ * @param modifier Base modifier for external sizing.
  */
 @Composable
 fun ScannerBox(
-    isScanning: Boolean = false,
+    isQrInFrame: Boolean = false,
+    onQrDetected: (String) -> Unit = {},
+    onFrameWithQr: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(1f) // Square aspect as in mockup
-            .background(Color(0xFF101828), RoundedCornerShape(8.dp)),
+            .aspectRatio(1f) // Enforces a 1:1 square frame matching the mockup
+            .clip(RoundedCornerShape(8.dp)),
         contentAlignment = Alignment.Center
     ) {
-        // Central object (Message and icon representing the scanner)
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.align(Alignment.Center)
-        ) {
-            Icon(
-                imageVector = Icons.Default.QrCodeScanner,
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.5f),
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = if (isScanning) "Escaneando..." else "Presiona para escanear",
-                color = Color.White.copy(alpha = if (isScanning) 1f else 0.75f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal
-            )
-        }
+        // Layer 1: Live camera preview (fills the square via FILL_CENTER crop)
+        CameraPreview(
+            onQrDetected = onQrDetected,
+            onFrameWithQr = onFrameWithQr,
+            modifier = Modifier.matchParentSize()
+        )
 
-        // Golden corners of the scanner viewbox
-        Box(
-            modifier = Modifier.size(192.dp)
-        ) {
-            val cornerColor = Color(0xFFD4AF37)
-            val stroke = 3.5.dp
-            val size = 24.dp
+        // Layer 2: Golden corner brackets — always visible over the camera feed
+        GoldenCornerOverlay(
+            modifier = Modifier
+                .size(192.dp)
+                .zIndex(1f)
+        )
 
-            // Top-Left corner
-            Box(modifier = Modifier.align(Alignment.TopStart).size(size)) {
-                Box(modifier = Modifier.fillMaxWidth().height(stroke).background(cornerColor).align(Alignment.TopStart))
-                Box(modifier = Modifier.fillMaxHeight().width(stroke).background(cornerColor).align(Alignment.TopStart))
-            }
-            // Top-Right corner
-            Box(modifier = Modifier.align(Alignment.TopEnd).size(size)) {
-                Box(modifier = Modifier.fillMaxWidth().height(stroke).background(cornerColor).align(Alignment.TopEnd))
-                Box(modifier = Modifier.fillMaxHeight().width(stroke).background(cornerColor).align(Alignment.TopEnd))
-            }
-            // Bottom-Left corner
-            Box(modifier = Modifier.align(Alignment.BottomStart).size(size)) {
-                Box(modifier = Modifier.fillMaxWidth().height(stroke).background(cornerColor).align(Alignment.BottomStart))
-                Box(modifier = Modifier.fillMaxHeight().width(stroke).background(cornerColor).align(Alignment.BottomStart))
-            }
-            // Bottom-Right corner
-            Box(modifier = Modifier.align(Alignment.BottomEnd).size(size)) {
-                Box(modifier = Modifier.fillMaxWidth().height(stroke).background(cornerColor).align(Alignment.BottomEnd))
-                Box(modifier = Modifier.fillMaxHeight().width(stroke).background(cornerColor).align(Alignment.BottomEnd))
+        // Layer 3: "Escaneando..." overlay — only visible when a QR is detected in frame
+        AnimatedVisibility(
+            visible = isQrInFrame,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.Center)
+                .zIndex(2f)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.QrCodeScanner,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(40.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Escaneando...",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
 }
 
-@Preview
+/**
+ * Draws four golden corner brackets positioned at each corner of the scanner viewbox.
+ * Rendered as independent [Box] elements to avoid Canvas complexity.
+ *
+ * @param cornerColor Color of the corner brackets (defaults to metallic gold).
+ * @param stroke Width of each bracket line.
+ * @param size Length of each bracket arm.
+ * @param modifier Modifier controlling the overall size and position of the bracket group.
+ */
+@Composable
+fun GoldenCornerOverlay(
+    cornerColor: Color = Color(0xFFD4AF37),
+    stroke: Dp = 3.5.dp,
+    size: Dp = 24.dp,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier) {
+        // Top-Left
+        Box(modifier = Modifier.align(Alignment.TopStart).size(size)) {
+            Box(Modifier.fillMaxWidth().height(stroke).background(cornerColor).align(Alignment.TopStart))
+            Box(Modifier.fillMaxHeight().width(stroke).background(cornerColor).align(Alignment.TopStart))
+        }
+        // Top-Right
+        Box(modifier = Modifier.align(Alignment.TopEnd).size(size)) {
+            Box(Modifier.fillMaxWidth().height(stroke).background(cornerColor).align(Alignment.TopEnd))
+            Box(Modifier.fillMaxHeight().width(stroke).background(cornerColor).align(Alignment.TopEnd))
+        }
+        // Bottom-Left
+        Box(modifier = Modifier.align(Alignment.BottomStart).size(size)) {
+            Box(Modifier.fillMaxWidth().height(stroke).background(cornerColor).align(Alignment.BottomStart))
+            Box(Modifier.fillMaxHeight().width(stroke).background(cornerColor).align(Alignment.BottomStart))
+        }
+        // Bottom-Right
+        Box(modifier = Modifier.align(Alignment.BottomEnd).size(size)) {
+            Box(Modifier.fillMaxWidth().height(stroke).background(cornerColor).align(Alignment.BottomEnd))
+            Box(Modifier.fillMaxHeight().width(stroke).background(cornerColor).align(Alignment.BottomEnd))
+        }
+    }
+}
+
+@Preview(showBackground = true)
 @Composable
 fun ScannerBoxPreview() {
-    ScannerBox()
+    ScannerBox(isQrInFrame = false)
 }
