@@ -12,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.NavigationBarItemDefaults
+import mx.edu.utez.jyps.ui.theme.PrimaryColor
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
 
 /**
@@ -34,19 +36,34 @@ fun AppBottomNavigationBar(
             selected = selectedRoute == "inicio",
             onClick = onHomeClick,
             icon = { Icon(Icons.Default.Home, null) },
-            label = { Text("Inicio") }
+            label = { Text("Inicio") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = PrimaryColor,
+                selectedTextColor = PrimaryColor,
+                indicatorColor = Color(0xFFF1F5F9) // Un azul muy claro/gris para el fondo del icono
+            )
         )
         NavigationBarItem(
             selected = selectedRoute == "historial",
             onClick = onHistoryClick,
             icon = { Icon(Icons.Default.History, null) },
-            label = { Text("Historial") }
+            label = { Text("Historial") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = PrimaryColor,
+                selectedTextColor = PrimaryColor,
+                indicatorColor = Color(0xFFF1F5F9)
+            )
         )
         NavigationBarItem(
             selected = selectedRoute == "perfil",
             onClick = onProfileClick,
             icon = { Icon(Icons.Default.Person, null) },
-            label = { Text("Perfil") }
+            label = { Text("Perfil") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = PrimaryColor,
+                selectedTextColor = PrimaryColor,
+                indicatorColor = Color(0xFFF1F5F9)
+            )
         )
     }
 }

@@ -17,6 +17,7 @@ data class EmployeeHistoryState(
     val requestToDelete: String? = null,
     val requestToEditPass: HistoryItem? = null,
     val requestToEditJustification: HistoryItem? = null,
+    val requestToShowQr: HistoryItem? = null,
     val isSuccessOp: Boolean = false,
     val opMessage: String? = null
 )
@@ -49,7 +50,7 @@ class EmployeeHistoryViewModel : ViewModel() {
         _uiState.update { it.copy(pases = pasesItems, justifications = justificantesItems) }
     }
 
-    // ACTIONS: Delete
+    // Delete process management
     fun promptDelete(id: String) {
         _uiState.update { it.copy(requestToDelete = id) }
     }
@@ -122,5 +123,29 @@ class EmployeeHistoryViewModel : ViewModel() {
 
     fun clearOpMessage() {
         _uiState.update { it.copy(isSuccessOp = false, opMessage = null) }
+    }
+
+    // QR View management
+    fun promptShowQr(item: HistoryItem) {
+        _uiState.update { it.copy(requestToShowQr = item) }
+    }
+
+    fun dismissShowQr() {
+        _uiState.update { it.copy(requestToShowQr = null) }
+    }
+
+    fun dispatchDownloadQrResult(isSuccess: Boolean) {
+        if (isSuccess) {
+            _uiState.update { it.copy(
+                requestToShowQr = null,
+                isSuccessOp = true,
+                opMessage = "QR descargado en la galería exitosamente."
+            ) }
+        } else {
+            _uiState.update { it.copy(
+                isSuccessOp = true, // Force toast
+                opMessage = "Error al intentar guardar el QR en la galería."
+            ) }
+        }
     }
 }
