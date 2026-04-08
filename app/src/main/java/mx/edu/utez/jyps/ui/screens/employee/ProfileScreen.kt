@@ -31,6 +31,7 @@ import mx.edu.utez.jyps.ui.components.rows.InfoRow
 import mx.edu.utez.jyps.ui.components.dialogs.ChangePasswordDialog
 import mx.edu.utez.jyps.ui.components.common.AppToast
 import mx.edu.utez.jyps.ui.components.common.ToastType
+import mx.edu.utez.jyps.ui.components.common.EmployeeModeBanner
 import mx.edu.utez.jyps.viewmodel.ProfileViewModel
 
 /**
@@ -46,7 +47,10 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = viewModel(),
     onLogoutClick: () -> Unit = {},
     onHomeClick: () -> Unit = {},
-    onHistoryClick: () -> Unit = {}
+    onHistoryClick: () -> Unit = {},
+    showEmployeeModeBanner: Boolean = false,
+    onReturnToRoleDashboard: () -> Unit = {},
+    userName: String = "Empleado"
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -61,7 +65,7 @@ fun ProfileScreen(
         Scaffold(
         topBar = {
             EmployeeHeader(
-                userName = uiState.name.split(" ").firstOrNull() ?: "",
+                userName = userName.split(" ").firstOrNull() ?: "",
                 onLogoutClick = onLogoutClick
             )
         },
@@ -83,6 +87,11 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            // Employee Mode banner — shown when accessed from DeptHead or Admin
+            if (showEmployeeModeBanner) {
+                EmployeeModeBanner(onBackClick = onReturnToRoleDashboard)
+            }
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -141,7 +150,7 @@ fun ProfileScreen(
 
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = uiState.name,
+                                text = userName,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,

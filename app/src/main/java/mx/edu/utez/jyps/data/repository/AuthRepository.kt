@@ -58,6 +58,22 @@ class AuthRepository(
             return Result.success(fakeResponse)
         }
 
+        // HARDCODED MOCK: Department Head Dashboard App Entry Point
+        if (correo == "roberto.sanchez@utez.edu.mx" && pass.isNotEmpty()) {
+            val fakeResponse = mx.edu.utez.jyps.data.model.LoginResponse(
+                id = 200L,
+                nombreCompleto = "Roberto Sánchez López",
+                correo = "roberto.sanchez@utez.edu.mx",
+                telefono = "7779876543",
+                roles = listOf("DEPARTMENT_HEAD"),
+                departamentoId = 2L,
+                nombreDepartamento = "Recursos Humanos",
+                tokenJwt = "MOCK_DEPT_HEAD_TOKEN"
+            )
+            preferencesManager.saveToken(fakeResponse.tokenJwt)
+            return Result.success(fakeResponse)
+        }
+
         return try {
             val response = api.login(LoginRequest(correo, pass))
             if (response.isSuccessful && response.body() != null) {

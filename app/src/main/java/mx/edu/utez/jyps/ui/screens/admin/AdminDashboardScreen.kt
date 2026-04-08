@@ -35,7 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import mx.edu.utez.jyps.ui.components.navigation.AdminNavigationDrawer
+import mx.edu.utez.jyps.ui.components.navigation.AppNavigationDrawer
+import mx.edu.utez.jyps.ui.components.navigation.AppTopBar
 import mx.edu.utez.jyps.ui.components.navigation.adminMenuOptions
 import mx.edu.utez.jyps.viewmodel.AdminViewModel
 
@@ -67,9 +68,13 @@ fun AdminDashboardScreen(
         }
     }
 
-    AdminNavigationDrawer(
+    AppNavigationDrawer(
         drawerState = drawerState,
+        menuItems = adminMenuOptions,
         currentRoute = selectedRoute,
+        userFullName = "Carlos Rodríguez Torres",
+        userEmail = "carlos.rodriguez@utez.edu.mx",
+        roleTitle = "Administrador",
         onNavigateTo = { route ->
             viewModel.selectDrawerItem(route)
             coroutineScope.launch { drawerState.close() }
@@ -81,18 +86,9 @@ fun AdminDashboardScreen(
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text(currentTitle) },
-                    navigationIcon = {
-                        IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Abrir Menú")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.White,
-                        titleContentColor = Color(0xFF0F2C59),
-                        navigationIconContentColor = Color(0xFF0F2C59)
-                    )
+                AppTopBar(
+                    title = "Sistema JyPS", // Consistent brand title instead of dynamic title
+                    onMenuClick = { coroutineScope.launch { drawerState.open() } }
                 )
             },
             snackbarHost = {

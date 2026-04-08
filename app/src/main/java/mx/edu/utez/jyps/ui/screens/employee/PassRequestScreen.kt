@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +38,7 @@ import java.time.ZoneId
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
 import mx.edu.utez.jyps.ui.components.common.AppToast
 import mx.edu.utez.jyps.ui.components.common.ToastType
+import mx.edu.utez.jyps.ui.components.common.EmployeeModeBanner
 
 /**
  * Screen that allows an employee to request a pass for leaving the establishment.
@@ -49,9 +51,17 @@ import mx.edu.utez.jyps.ui.components.common.ToastType
 fun PassRequestScreen(
     viewModel: PassRequestViewModel = viewModel(),
     onBackClick: () -> Unit = {},
-    onSuccessSubmit: (String) -> Unit = {}
+    onSuccessSubmit: (String) -> Unit = {},
+    showEmployeeModeBanner: Boolean = false,
+    onReturnToRoleDashboard: () -> Unit = {},
+    userName: String = "Juan",
+    userEmail: String = "juan.perez@utez.edu.mx"
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(userName, userEmail) {
+        viewModel.setUserInfo(userName, userEmail)
+    }
     
     androidx.compose.runtime.LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
@@ -106,12 +116,17 @@ fun PassRequestScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Bienvenido, Juan",
+                                "Bienvenido, $userName",
                                 color = Color(0xFFE5E7EB),
                                 fontSize = 12.sp
                             )
                         }
                     }
+                }
+
+                // Employee Mode banner — shown when accessed from DeptHead or Admin
+                if (showEmployeeModeBanner) {
+                    EmployeeModeBanner(onBackClick = onReturnToRoleDashboard)
                 }
                 
                 // Back Button and Tittle

@@ -17,8 +17,8 @@ android {
         applicationId = "mx.edu.utez.jyps"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.6"
+        versionCode = 4
+        versionName = "1.0.7-beta"
 
         // Wallet Secure Environment Injection
         val keystoreProperties = Properties()
