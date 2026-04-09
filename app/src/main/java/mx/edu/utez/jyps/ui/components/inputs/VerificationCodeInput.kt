@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -35,6 +33,7 @@ import mx.edu.utez.jyps.ui.theme.JyPSTheme
  *
  * @param value The current OTP value (string of digits).
  * @param onValueChange The callback when the value changes. Max 6 digits.
+ * @param modifier Optional Compose layout adjustments.
  * @param isError If true, displays red borders indicating an invalid code.
  */
 @Composable

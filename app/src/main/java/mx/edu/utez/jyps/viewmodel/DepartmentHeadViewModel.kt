@@ -61,6 +61,8 @@ class DepartmentHeadViewModel : ViewModel() {
 
     /**
      * Applies a new filter and recomputes the visible request list.
+     *
+     * @param filter The filter criterion describing which statuses should be visible.
      */
     fun onFilterChange(filter: RequestFilter) {
         _uiState.update { state ->
@@ -73,6 +75,8 @@ class DepartmentHeadViewModel : ViewModel() {
 
     /**
      * Opens the detail dialog for the given request.
+     *
+     * @param item The request item to be viewed in detail.
      */
     fun onRequestClick(item: RequestItem) {
         _uiState.update { it.copy(selectedItem = item) }
@@ -101,6 +105,8 @@ class DepartmentHeadViewModel : ViewModel() {
 
     /**
      * Approves a pending request — updates status to APPROVED, refreshes counters.
+     *
+     * @param id Tracking unique identifier of the approval action payload boundary.
      */
     fun approveRequest(id: String) {
         updateRequestStatus(id, RequestStatus.APPROVED)
@@ -121,6 +127,12 @@ class DepartmentHeadViewModel : ViewModel() {
 
     // region Internal helpers
 
+    /**
+     * Updates an arbitrary item.
+     *
+     * @param id The id payload target limit bounds mapping explicit mapping.
+     * @param newStatus Target payload value constraints metadata explicit status map.
+     */
     private fun updateRequestStatus(id: String, newStatus: RequestStatus) {
         _uiState.update { state ->
             val updated = state.requests.map { req ->
@@ -130,6 +142,12 @@ class DepartmentHeadViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Recreates execution array metadata state instance explicitly binding natively limits limits maps.
+     *
+     * @param requests Metadata string.
+     * @param filter Instance bound mapping limits values properties limits definition text mappings arrays.
+     */
     private fun rebuildState(
         requests: List<RequestItem>,
         filter: RequestFilter
@@ -147,6 +165,12 @@ class DepartmentHeadViewModel : ViewModel() {
         )
     }
 
+    /**
+     * Execution constraint filters mappings validation strings arrays mappings mapped explicitly.
+     *
+     * @param requests Map array boundaries execution native strings.
+     * @param filter Mapped variables targets properties logic execution payload limits mapping arrays definitions strings parameters bindings strings maps constraints map parameters bounds explicit array targets payload parameters limits property bounds constraints boolean maps limit strings boundaries array map.
+     */
     private fun applyFilter(
         requests: List<RequestItem>,
         filter: RequestFilter

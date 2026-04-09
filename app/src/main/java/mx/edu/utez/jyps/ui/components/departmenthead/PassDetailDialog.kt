@@ -17,13 +17,11 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,6 +38,7 @@ import androidx.compose.ui.window.DialogProperties
 import mx.edu.utez.jyps.data.model.RequestItem
 import mx.edu.utez.jyps.data.model.RequestStatus
 import mx.edu.utez.jyps.data.model.RequestType
+import androidx.compose.ui.graphics.SolidColor
 
 /**
  * Full-screen dialog showing the details of a pending **exit pass** request.
@@ -197,7 +196,7 @@ fun PassDetailDialog(
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         shape = RoundedCornerShape(10.dp),
                         border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
-                            brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFDC3545))
+                            brush = SolidColor(Color(0xFFDC3545))
                         )
                     ) {
                         Icon(Icons.Default.Close, contentDescription = null, tint = Color(0xFFDC3545))
@@ -216,6 +215,9 @@ fun PassDetailDialog(
 
 /**
  * Returns (backgroundColor, textColor, label) for a given status.
+ *
+ * @param status The input target state evaluating the condition.
+ * @return Defined tuple properties for rendering the badge state.
  */
 private fun statusConfig(status: RequestStatus): Triple<Color, Color, String> = when (status) {
     RequestStatus.PENDING -> Triple(Color(0xFFFEF9C2), Color(0xFF894B00), "Pendiente")
@@ -224,30 +226,7 @@ private fun statusConfig(status: RequestStatus): Triple<Color, Color, String> = 
     RequestStatus.USED -> Triple(Color(0xFFF3F4F6), Color(0xFF1E2939), "Usado")
 }
 
-/**
- * Reusable section header with an icon and a bold title.
- */
-@Composable
-internal fun SectionHeader(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp)
-        )
-        Text(
-            text = title,
-            fontWeight = FontWeight.Bold,
-            fontSize = 15.sp,
-            color = Color(0xFF1F2937),
-            modifier = Modifier.padding(start = 6.dp)
-        )
-    }
-}
+
 
 @Preview(showBackground = true)
 @Composable

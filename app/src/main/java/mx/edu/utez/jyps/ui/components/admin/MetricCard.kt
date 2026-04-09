@@ -29,6 +29,18 @@ import androidx.compose.ui.unit.sp
 import mx.edu.utez.jyps.ui.components.login.InfoNoticeCards
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
 
+/**
+ * Visual card summarizing a specific administrative metric.
+ * Supports both vertical and horizontal layouts.
+ *
+ * @param title Short descriptor mapping what the metric represents.
+ * @param value The numerical or string value representing the current count.
+ * @param icon The material icon associated with this metric category.
+ * @param iconContainerColor The background highlight color backing the icon.
+ * @param contentColor Secondary color applied to text and icon shading.
+ * @param modifier Optional layout modifier exposing padding or size properties.
+ * @param isVertical Determines internal component arrangement. If true, places icon above value.
+ */
 @Composable
 fun MetricCard(
     title: String,

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,10 +32,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
+import mx.edu.utez.jyps.ui.components.common.BulletText
 
 /**
  * View displayed when a user exceeds their login attempts.
  * Shows a red warning and a countdown timer.
+ *
+ * @param modifier Standard layout modifier.
+ * @param lockoutDurationSeconds Time penalty forced on the user out of actions.
  */
 @Composable
 fun LockedOutView(
@@ -164,17 +167,6 @@ fun LockedOutView(
             }
         }
     }
-}
-
-@Composable
-private fun BulletText(text: String) {
-    Text(
-        text = "• $text",
-        fontSize = 12.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        lineHeight = 16.sp,
-        modifier = Modifier.fillMaxWidth()
-    )
 }
 
 @Preview(showBackground = true)

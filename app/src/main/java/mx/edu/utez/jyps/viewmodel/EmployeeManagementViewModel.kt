@@ -58,22 +58,44 @@ class EmployeeManagementViewModel : ViewModel() {
         _uiState.update { it.copy(employees = mocks) }
     }
 
+    /**
+     * Updates the search filter.
+     *
+     * @param query The string typed by the user to find matches.
+     */
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
     }
 
+    /** Opens the modal for creating a new employee. */
     fun onCreateClick() {
         _uiState.update { it.copy(showCreateDialog = true) }
     }
 
+    /**
+     * Opens the modal to modify an existing employee.
+     *
+     * @param employee The [EmployeeItem] to act upon.
+     */
     fun onEditClick(employee: EmployeeItem) {
         _uiState.update { it.copy(selectedEmployee = employee) }
     }
 
+    /** Dismisses both create and edit modals safely without effect. */
     fun onDismissDialogs() {
         _uiState.update { it.copy(showCreateDialog = false, selectedEmployee = null) }
     }
 
+    /**
+     * Attaches a new employee into the internal list (Mock).
+     *
+     * @param name Full name.
+     * @param email Institutional email.
+     * @param phone Phone identifier.
+     * @param empId Institutional ID.
+     * @param pos Role or designation.
+     * @param dept Institutional department namespace.
+     */
     fun addEmployee(name: String, email: String, phone: String, empId: String, pos: String, dept: String) {
         val newEmployee = EmployeeItem(
             id = (_uiState.value.employees.maxOfOrNull { it.id } ?: 0) + 1,
@@ -92,6 +114,11 @@ class EmployeeManagementViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Overwrites an existing employee payload matching its ID.
+     *
+     * @param employee The mutated [EmployeeItem].
+     */
     fun updateEmployee(employee: EmployeeItem) {
         _uiState.update { state ->
             state.copy(
@@ -101,6 +128,11 @@ class EmployeeManagementViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Toggles the active/inactive authorization status mechanism.
+     *
+     * @param employeeId The target employee database identity.
+     */
     fun toggleEmployeeStatus(employeeId: Int) {
         _uiState.update { state ->
             state.copy(
@@ -111,6 +143,11 @@ class EmployeeManagementViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Hard-removes the member from the internal memory store.
+     *
+     * @param employeeId The target employee identity.
+     */
     fun deleteEmployee(employeeId: Int) {
         _uiState.update { state ->
             state.copy(employees = state.employees.filter { it.id != employeeId })

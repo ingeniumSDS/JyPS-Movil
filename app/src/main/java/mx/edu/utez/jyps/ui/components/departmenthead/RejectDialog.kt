@@ -20,8 +20,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,12 +59,14 @@ private val PRESET_REASONS = listOf(
  * @param employeeName Name displayed in the prompt.
  * @param onDismiss Callback to close without rejecting.
  * @param onConfirm Callback with the chosen/written reason string.
+ * @param modifier Optional Compose layout adjustments.
  */
 @Composable
 fun RejectDialog(
     employeeName: String,
     onDismiss: () -> Unit,
-    onConfirm: (reason: String) -> Unit
+    onConfirm: (reason: String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var selectedPreset by remember { mutableStateOf<String?>(null) }
     var customReason by remember { mutableStateOf("") }
@@ -79,7 +79,7 @@ fun RejectDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
             shape = RoundedCornerShape(16.dp),
@@ -137,30 +137,14 @@ fun RejectDialog(
 
                 // Preset radio buttons
                 PRESET_REASONS.forEach { reason ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
-                        RadioButton(
-                            selected = selectedPreset == reason,
-                            onClick = {
-                                selectedPreset = reason
-                                // Clear custom reason when preset is selected
-                                customReason = ""
-                            },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                        Text(
-                            text = reason,
-                            fontSize = 14.sp,
-                            color = Color(0xFF374151),
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                    }
+                    RejectReasonRow(
+                        reason = reason,
+                        isSelected = selectedPreset == reason,
+                        onClick = {
+                            selectedPreset = reason
+                            customReason = ""
+                        }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -229,6 +213,8 @@ fun RejectDialog(
         }
     }
 }
+
+
 
 @Preview(showBackground = true)
 @Composable

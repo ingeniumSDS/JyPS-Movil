@@ -38,14 +38,18 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
-import mx.edu.utez.jyps.ui.components.cards.HistoryItem
-import mx.edu.utez.jyps.ui.components.status.HistoryStatus
+import mx.edu.utez.jyps.data.model.HistoryItem
+import mx.edu.utez.jyps.data.model.EstadosIncidencia
 import mx.edu.utez.jyps.ui.theme.PrimaryColor
 import mx.edu.utez.jyps.utils.WalletTokenMockGenerator
 
 /**
  * Reusable layout for displaying the QR Matrix and payload info for an Approved pass.
  * Includes CTAs for saving the pass to Google Wallet or the local gallery.
+ *
+ * @param item Record structure containing required properties like code and description.
+ * @param onDismissRequest Triggered when the user wants to leave the viewer.
+ * @param onDownloadMock Triggered to locally download the generated bitmap.
  */
 @Composable
 fun ApprovedPassQrDialog(
@@ -249,7 +253,7 @@ fun ApprovedPassQrDialog(
 @Composable
 fun ApprovedPassQrDialogPreview() {
     ApprovedPassQrDialog(
-        item = HistoryItem("1", "Pase", HistoryStatus.APROBADO, "Salida Personal", "20/2/2026", "10:00", "PASE001"),
+        item = HistoryItem("1", "Pase", EstadosIncidencia.APROBADO, "Salida Personal", "20/2/2026", "10:00", "PASE001"),
         onDismissRequest = {},
         onDownloadMock = {}
     )

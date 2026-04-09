@@ -149,6 +149,8 @@ class ScannerViewModel : ViewModel() {
     /**
      * Called by [QRCodeAnalyzer] when a QR code string is decoded from a camera frame.
      * Delegates to [processCode] with the raw decoded value.
+     *
+     * @param rawValue Extracted string constraint mapped natively variables validation target explicit string value bounds text logic.
      */
     fun onQrCodeDetected(rawValue: String) {
         processCode(rawValue.trim().uppercase())
@@ -156,6 +158,8 @@ class ScannerViewModel : ViewModel() {
 
     /**
      * Updates the manual code text field. Clears any active error toast.
+     *
+     * @param newValue Mapped limits bounds constraints target logic string boundary value explicit property explicitly strings.
      */
     fun onManualCodeChange(newValue: String) {
         _uiState.value = _uiState.value.copy(manualCode = newValue, errorToast = null)
@@ -171,6 +175,8 @@ class ScannerViewModel : ViewModel() {
     /**
      * Updates the real-time flag indicating whether a QR is visible in the camera frame.
      * Used by the [QRCodeAnalyzer] overlay signal.
+     *
+     * @param isInFrame Targets mapped value limits explicitly metadata properties text parameter bound arrays sequences logic limit variables string mapping map mappings constraint bool explicit mapping explicit limits.
      */
     fun setQrInFrame(isInFrame: Boolean) {
         if (_uiState.value.isQrInFrame != isInFrame) {
@@ -189,6 +195,8 @@ class ScannerViewModel : ViewModel() {
      * 3. Is the code in [validCodes]?    → No → [ScannerStatus.InvalidCode]
      * 4. Is it in [exitRegistry]?        → No → first scan → [ExitGranted] or [ExitNoReturn]
      * 5. Is it in [exitRegistry]?        → Yes → second scan → [ReturnOnTime] or [ReturnLate]
+     *
+     * @param code The decoded alphanumeric sequence to validate against records.
      */
     private fun processCode(code: String) {
         // Check expired passes first

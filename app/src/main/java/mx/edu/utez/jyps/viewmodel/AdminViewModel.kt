@@ -9,13 +9,18 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.data.model.CuentaResponse
 import mx.edu.utez.jyps.data.model.Departamento
-import mx.edu.utez.jyps.data.model.LocalTimeInfo
 import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.data.model.UserRequest
 import mx.edu.utez.jyps.data.network.RetrofitInstance
 import mx.edu.utez.jyps.data.repository.LoadResult
 import mx.edu.utez.jyps.data.repository.UsuarioRepository
 
+/**
+ * ViewModel orchestrating the administrator dashboard UI state.
+ * Manages user CRUD, pagination, filtering, and role modifications.
+ *
+ * @property repository Repository providing network abstraction for user management.
+ */
 class AdminViewModel(
     private val repository: UsuarioRepository = UsuarioRepository(RetrofitInstance.api)
 ) : ViewModel() {

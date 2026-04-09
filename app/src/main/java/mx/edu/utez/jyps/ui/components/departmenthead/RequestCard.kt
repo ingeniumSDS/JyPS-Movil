@@ -119,34 +119,13 @@ fun RequestCard(
                     Text(text = item.time, fontSize = 13.sp, color = Color(0xFF6B7280))
                 }
 
-                StatusBadge(status = item.status)
+                RequestStatusBadge(status = item.status)
             }
         }
     }
 }
 
-/**
- * Coloured pill badge representing the request's lifecycle status.
- */
-@Composable
-private fun StatusBadge(status: RequestStatus) {
-    val (bgColor, textColor, label) = when (status) {
-        RequestStatus.PENDING -> Triple(Color(0xFFFEF9C2), Color(0xFF894B00), "Pendiente")
-        RequestStatus.APPROVED -> Triple(Color(0xFFDCFCE7), Color(0xFF016630), "Aprobado")
-        RequestStatus.REJECTED -> Triple(Color(0xFFFFE2E2), Color(0xFF9F0712), "Rechazado")
-        RequestStatus.USED -> Triple(Color(0xFFF3F4F6), Color(0xFF1E2939), "Usado")
-    }
 
-    Text(
-        text = label,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Medium,
-        color = textColor,
-        modifier = Modifier
-            .background(color = bgColor, shape = RoundedCornerShape(6.dp))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    )
-}
 
 @Preview(showBackground = true)
 @Composable

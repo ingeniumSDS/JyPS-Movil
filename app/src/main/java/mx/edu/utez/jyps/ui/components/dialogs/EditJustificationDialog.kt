@@ -1,6 +1,5 @@
 package mx.edu.utez.jyps.ui.components.dialogs
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,12 +19,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import mx.edu.utez.jyps.ui.components.cards.HistoryItem
+import mx.edu.utez.jyps.data.model.HistoryItem
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.tooling.preview.Preview
+import mx.edu.utez.jyps.data.model.EstadosIncidencia
 
 /**
  * Specialized internal view slot for AppFormDialog handling specific Justification limits.
+ *
+ * @param item Reference item containing baseline values for editing.
+ * @param onDismissRequest Triggered to close dialog without saving.
+ * @param onSave Triggered with the string rationale when save is confirmed.
  */
 @Composable
 fun EditJustificationDialog(
@@ -81,4 +86,11 @@ fun EditJustificationDialog(
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EditJustificationDialogPreview() {
+    val mockItem = HistoryItem(id = "1", type = "JUSTIFICATION", status = EstadosIncidencia.PENDIENTE, description = "Motivo de prueba", date = "10/10/2026", time = "10:00 AM", code = "N/A")
+    EditJustificationDialog(item = mockItem, onDismissRequest = {}, onSave = {})
 }

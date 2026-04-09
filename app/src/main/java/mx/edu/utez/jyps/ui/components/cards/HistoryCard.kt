@@ -18,28 +18,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import mx.edu.utez.jyps.ui.components.status.HistoryStatus
+import mx.edu.utez.jyps.data.model.EstadosIncidencia
 import mx.edu.utez.jyps.ui.components.status.StatusBadge
 import mx.edu.utez.jyps.ui.theme.*
 import androidx.compose.ui.tooling.preview.Preview
-
-data class HistoryItem(
-    val id: String,
-    val type: String,
-    val status: HistoryStatus,
-    val description: String,
-    val date: String,
-    val time: String,
-    val code: String,
-    val fileName: String? = null,
-    val rejectionReason: String? = null,
-    val internalInfo: String? = null
-)
+import mx.edu.utez.jyps.data.model.HistoryItem
 
 /**
  * Reusable card for history items (Passes or Justifications).
  *
  * @param item The HistoryItem data object containing all details for this history entry.
+ * @param onEdit Lambda executed when the user chooses to modify a pending request.
+ * @param onDelete Lambda executed when the user opts to discard a pending request.
+ * @param onShowQr Lambda displaying the generated visual matrix upon confirmation click.
  */
 @Composable
 fun HistoryCard(
@@ -48,7 +39,7 @@ fun HistoryCard(
     onDelete: () -> Unit = {},
     onShowQr: () -> Unit = {}
 ) {
-    val isClickable = item.status == HistoryStatus.APROBADO && item.type.contains("Pase")
+    val isClickable = item.status == EstadosIncidencia.APROBADO && item.type.contains("Pase")
     
     Card(
         modifier = Modifier
@@ -103,9 +94,9 @@ fun HistoryCard(
                     Text("📅 ${item.date}", fontSize = 12.sp, color = Color(0xFF6A7282))
                     Text("🕐 ${item.time}", fontSize = 12.sp, color = Color(0xFF6A7282))
                     
-                    if (item.status != HistoryStatus.PENDIENTE && 
-                        item.status != HistoryStatus.RECHAZADO && 
-                        item.status != HistoryStatus.CADUCADO) {
+                    if (item.status != EstadosIncidencia.PENDIENTE && 
+                        item.status != EstadosIncidencia.RECHAZADO && 
+                        item.status != EstadosIncidencia.CADUCADO) {
                         Text("🔑 ${item.code}", fontSize = 12.sp, color = Color(0xFF6A7282))
                     }
                 }
@@ -127,9 +118,9 @@ fun HistoryCard(
                 }
 
                 item.rejectionReason?.let {
-                    val label = if (item.status == HistoryStatus.RECHAZADO) "Motivo de rechazo: " else "Motivo: "
-                    val bgColor = if (item.status == HistoryStatus.CADUCADO) UsedGrayBg else ErrorRedBg
-                    val textColor = if (item.status == HistoryStatus.CADUCADO) SecondaryColor else ErrorRed
+                    val label = if (item.status == EstadosIncidencia.RECHAZADO) "Motivo de rechazo: " else "Motivo: "
+                    val bgColor = if (item.status == EstadosIncidencia.CADUCADO) UsedGrayBg else ErrorRedBg
+                    val textColor = if (item.status == EstadosIncidencia.CADUCADO) SecondaryColor else ErrorRed
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -145,7 +136,7 @@ fun HistoryCard(
                     }
                 }
 
-                if (item.status == HistoryStatus.APROBADO && item.type.contains("Pase")) {
+                if (item.status == EstadosIncidencia.APROBADO && item.type.contains("Pase")) {
                     Button(
                         onClick = onShowQr,
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -156,7 +147,7 @@ fun HistoryCard(
                     }
                 }
 
-                if (item.status == HistoryStatus.PENDIENTE) {
+                if (item.status == EstadosIncidencia.PENDIENTE) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
                             onClick = onEdit,
@@ -188,7 +179,7 @@ fun HistoryCardPreview() {
             item = HistoryItem(
                 id = "1",
                 type = "Pase de Salida",
-                status = HistoryStatus.APROBADO,
+                status = EstadosIncidencia.APROBADO,
                 description = "Reunión externa con cliente.",
                 date = "22/10/2026",
                 time = "10:30",

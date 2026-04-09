@@ -30,9 +30,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * Reusable layout for changing passwords injected to the AppFormDialog Slot.
+ *
+ * @param onDismissRequest Callback fired when dialog wishes to be dismissed.
+ * @param onSave Callback returning current, new, and confirm password strings.
  */
 @Composable
 fun ChangePasswordDialog(
@@ -171,4 +175,10 @@ fun ChangePasswordDialog(
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ChangePasswordDialogPreview() {
+    ChangePasswordDialog(onDismissRequest = {}, onSave = { _, _, _ -> })
 }

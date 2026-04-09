@@ -13,17 +13,26 @@ import mx.edu.utez.jyps.data.network.RetrofitInstance
 import mx.edu.utez.jyps.data.repository.AuthRepository
 import mx.edu.utez.jyps.data.repository.PreferencesManager
 
+/**
+ * ViewModel responsible for handling user authentication flows.
+ * Manages the reactive state of the login form and orchestrates authentication requests
+ * through the [AuthRepository] to issue and persist the JWT session token.
+ *
+ * @property application Android application context provided by the framework.
+ */
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private val preferencesManager = PreferencesManager(application)
     private val repository = AuthRepository(RetrofitInstance.api, preferencesManager)
 
-    // Token Reactivo para la Navegación (Si hay token, isLoggedIn = true)
+    /**
+     * Reactive flow indicating whether an active authenticated session exists.
+     * Evaluates to true when a non-empty JWT token is present in local storage.
+     */
     val isLoggedIn: StateFlow<Boolean> = repository.tokenFlow
         .map { !it.isNullOrEmpty() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    // Formulario de login
     private val _correo = MutableStateFlow("")
     val correo: StateFlow<String> = _correo
 
@@ -44,7 +53,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         val pwd = _password.value.trim()
 
         if (email.isBlank() || pwd.isBlank()) {
-            _errorMessage.value = "Por favor ingresa correo y contraseña"
+            _errorMessage.value = "Por favor ingresa correo y contraseña" // Sent to UI directly
             return
         }
 

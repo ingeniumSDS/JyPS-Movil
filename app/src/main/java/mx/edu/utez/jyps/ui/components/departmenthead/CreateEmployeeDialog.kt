@@ -1,12 +1,10 @@
 package mx.edu.utez.jyps.ui.components.departmenthead
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PersonAdd
@@ -22,6 +20,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
 import mx.edu.utez.jyps.ui.components.inputs.AppDropdown
+import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * Redesigned CreateEmployeeDialog following Figma mockup.
@@ -167,4 +166,10 @@ fun CreateEmployeeDialog(
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CreateEmployeeDialogPreview() {
+    CreateEmployeeDialog(onDismiss = {}, onConfirm = { _, _, _, _, _, _ -> })
 }

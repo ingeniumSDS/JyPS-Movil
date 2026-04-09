@@ -17,6 +17,18 @@ import mx.edu.utez.jyps.ui.components.cards.WelcomeHeroCard
 import mx.edu.utez.jyps.ui.components.navigation.AppBottomNavigationBar
 import mx.edu.utez.jyps.ui.components.header.EmployeeHeader
 
+/**
+ * Primary dashboard view for Employees.
+ * Offers quick actions to request exit passes and justifications, displaying user context.
+ *
+ * @param onLogoutClick Callback to end the user session.
+ * @param onHistoryClick Callback to navigate to the request history screen.
+ * @param onProfileClick Callback to navigate to the user's profile view.
+ * @param onRequestPassClick Callback to navigate to the exit pass creation screen.
+ * @param onRequestJustificationClick Callback to navigate to the justification creation screen.
+ * @param userName Full name of the currently authenticated employee.
+ * @param userEmail Institutional email of the currently authenticated employee.
+ */
 @Composable
 fun EmployeeDashboardScreen(
     onLogoutClick: () -> Unit = {},

@@ -17,6 +17,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
+import mx.edu.utez.jyps.ui.components.common.BulletText
+
+/**
+ * Educational modal displaying the privacy policy terms.
+ *
+ * @param onDismissRequest Triggered request to close the Dialog overlay.
+ */
 
 @Composable
 fun PrivacyPolicyModal(

@@ -2,7 +2,6 @@ package mx.edu.utez.jyps.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,8 +27,12 @@ import mx.edu.utez.jyps.ui.screens.departmenthead.EmployeeManagementScreen
 import mx.edu.utez.jyps.ui.screens.security.ScannerScreen
 import mx.edu.utez.jyps.viewmodel.AdminViewModel
 import mx.edu.utez.jyps.viewmodel.DepartmentHeadViewModel
+import mx.edu.utez.jyps.viewmodel.EmployeeHistoryViewModel
+import mx.edu.utez.jyps.viewmodel.EmployeeManagementViewModel
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordViewModel
 import mx.edu.utez.jyps.viewmodel.LoginViewModel
+import mx.edu.utez.jyps.ui.components.common.AppToast
+import mx.edu.utez.jyps.ui.components.common.ToastType
 
 /**
  * AppRoutes defines the navigation destinations for the application.
@@ -51,6 +54,11 @@ sealed class AppRoutes(val route: String) {
     object DeptHeadHistory : AppRoutes("dept_head_history")
     object DeptHeadProfile : AppRoutes("dept_head_profile")
     object DeptHeadEmployees : AppRoutes("dept_head_employees")
+    // Admin scoped employee screens with "Modo Empleado" banner
+    object AdminPassRequest : AppRoutes("admin_pass")
+    object AdminJustificationRequest : AppRoutes("admin_excuse")
+    object AdminHistory : AppRoutes("admin_history")
+    object AdminProfile : AppRoutes("admin_profile")
 }
 
 /**
@@ -69,13 +77,13 @@ fun NavigationHost(
 ) {
     val sessionToken by loginViewModel.sessionToken.collectAsStateWithLifecycle()
     
-    val (targetRoute, currentUser, currentUserEmail) = remember(sessionToken) {
+    val (targetRoute, currentUser, currentUserEmail, currentRole) = remember(sessionToken) {
         when (sessionToken) {
-            "MOCK_SECURITY_TOKEN" -> Triple(AppRoutes.SecurityScanner.route, "María González Hernández", "m.gonzalez@utez.edu.mx")
-            "MOCK_EMPLOYEE_TOKEN" -> Triple(AppRoutes.EmployeeHome.route, "Juan Pérez García", "juan.perez@utez.edu.mx")
-            "MOCK_DEPT_HEAD_TOKEN" -> Triple(AppRoutes.DeptHeadDashboard.route, "Roberto Sánchez López", "roberto.sanchez@utez.edu.mx")
-            null, "" -> Triple(AppRoutes.Login.route, "", "")
-            else -> Triple(AppRoutes.Home.route, "Carlos Rodríguez Torres", "carlos.rodriguez@utez.edu.mx")
+            "MOCK_SECURITY_TOKEN" -> listOf(AppRoutes.SecurityScanner.route, "María González Hernández", "m.gonzalez@utez.edu.mx", "Guardia de Seguridad")
+            "MOCK_EMPLOYEE_TOKEN" -> listOf(AppRoutes.EmployeeHome.route, "Juan Pérez García", "juan.perez@utez.edu.mx", "Empleado")
+            "MOCK_DEPT_HEAD_TOKEN" -> listOf(AppRoutes.DeptHeadDashboard.route, "Roberto Sánchez López", "roberto.sanchez@utez.edu.mx", "Jefe de Departamento")
+            null, "" -> listOf(AppRoutes.Login.route, "", "", "")
+            else -> listOf(AppRoutes.Home.route, "Carlos Rodríguez Torres", "carlos.rodriguez@utez.edu.mx", "Administrador")
         }
     }
 
@@ -141,11 +149,11 @@ fun NavigationHost(
                     userEmail = currentUserEmail
                 )
 
-                mx.edu.utez.jyps.ui.components.common.AppToast(
+                AppToast(
                     message = successMessage,
                     isVisible = successMessage != null,
                     onDismiss = { savedStateHandle["success_message"] = null },
-                    type = mx.edu.utez.jyps.ui.components.common.ToastType.SUCCESS,
+                    type = ToastType.SUCCESS,
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
@@ -179,7 +187,7 @@ fun NavigationHost(
 
         // Employee History
         composable(AppRoutes.History.route) {
-            val historyViewModel: mx.edu.utez.jyps.viewmodel.EmployeeHistoryViewModel = viewModel()
+            val historyViewModel: EmployeeHistoryViewModel = viewModel()
             EmployeeHistoryScreen(
                 onLogoutClick = { loginViewModel.logout() },
                 onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
@@ -195,7 +203,9 @@ fun NavigationHost(
                 onLogoutClick = { loginViewModel.logout() },
                 onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
                 onHistoryClick = { navController.navigate(AppRoutes.History.route) },
-                userName = currentUser
+                userName = currentUser,
+                userEmail = currentUserEmail,
+                roleTitle = currentRole
             )
         }
         
@@ -213,6 +223,9 @@ fun NavigationHost(
                 viewModel = adminViewModel,
                 onLogoutSuccess = {
                     loginViewModel.logout()
+                },
+                onNavigateToEmployeeFunction = { route ->
+                    navController.navigate(route)
                 }
             )
         }
@@ -239,7 +252,7 @@ fun NavigationHost(
 
         // Department Head: Employee Management
         composable(AppRoutes.DeptHeadEmployees.route) {
-            val employeeViewModel: mx.edu.utez.jyps.viewmodel.EmployeeManagementViewModel = viewModel()
+            val employeeViewModel: EmployeeManagementViewModel = viewModel()
             EmployeeManagementScreen(
                 viewModel = employeeViewModel,
                 onLogoutClick = { loginViewModel.logout() },
@@ -300,7 +313,7 @@ fun NavigationHost(
 
         // Dept Head → Employee Mode: History
         composable(AppRoutes.DeptHeadHistory.route) {
-            val historyViewModel: mx.edu.utez.jyps.viewmodel.EmployeeHistoryViewModel = viewModel()
+            val historyViewModel: EmployeeHistoryViewModel = viewModel()
             EmployeeHistoryScreen(
                 onLogoutClick = { loginViewModel.logout() },
                 onHomeClick = { navController.navigate(AppRoutes.DeptHeadDashboard.route) },
@@ -328,7 +341,83 @@ fun NavigationHost(
                         popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
                     }
                 },
+                userName = currentUser,
+                userEmail = currentUserEmail,
+                roleTitle = currentRole
+            )
+        }
+
+        // Admin → Employee Mode: Pass Request
+        composable(AppRoutes.AdminPassRequest.route) {
+            PassRequestScreen(
+                onBackClick = { navController.navigateUp() },
+                onSuccessSubmit = { msg ->
+                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
+                    navController.navigateUp()
+                },
+                showEmployeeModeBanner = true,
+                onReturnToRoleDashboard = {
+                    navController.navigate(AppRoutes.Home.route) {
+                        popUpTo(AppRoutes.Home.route) { inclusive = false }
+                    }
+                },
+                userName = currentUser,
+                userEmail = currentUserEmail
+            )
+        }
+
+        // Admin → Employee Mode: Justification Request
+        composable(AppRoutes.AdminJustificationRequest.route) {
+            JustificationRequestScreen(
+                onBackClick = { navController.navigateUp() },
+                onSuccessSubmit = { msg ->
+                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
+                    navController.navigateUp()
+                },
+                showEmployeeModeBanner = true,
+                onReturnToRoleDashboard = {
+                    navController.navigate(AppRoutes.Home.route) {
+                        popUpTo(AppRoutes.Home.route) { inclusive = false }
+                    }
+                },
+                userName = currentUser,
+                userEmail = currentUserEmail
+            )
+        }
+
+        // Admin → Employee Mode: History
+        composable(AppRoutes.AdminHistory.route) {
+            val historyViewModel: EmployeeHistoryViewModel = viewModel()
+            EmployeeHistoryScreen(
+                onLogoutClick = { loginViewModel.logout() },
+                onHomeClick = { navController.navigate(AppRoutes.Home.route) },
+                onProfileClick = { navController.navigate(AppRoutes.AdminProfile.route) },
+                viewModel = historyViewModel,
+                showEmployeeModeBanner = true,
+                onReturnToRoleDashboard = {
+                    navController.navigate(AppRoutes.Home.route) {
+                        popUpTo(AppRoutes.Home.route) { inclusive = false }
+                    }
+                },
                 userName = currentUser
+            )
+        }
+
+        // Admin → Employee Mode: Profile
+        composable(AppRoutes.AdminProfile.route) {
+            ProfileScreen(
+                onLogoutClick = { loginViewModel.logout() },
+                onHomeClick = { navController.navigate(AppRoutes.Home.route) },
+                onHistoryClick = { navController.navigate(AppRoutes.AdminHistory.route) },
+                showEmployeeModeBanner = true,
+                onReturnToRoleDashboard = {
+                    navController.navigate(AppRoutes.Home.route) {
+                        popUpTo(AppRoutes.Home.route) { inclusive = false }
+                    }
+                },
+                userName = currentUser,
+                userEmail = currentUserEmail,
+                roleTitle = currentRole
             )
         }
     }

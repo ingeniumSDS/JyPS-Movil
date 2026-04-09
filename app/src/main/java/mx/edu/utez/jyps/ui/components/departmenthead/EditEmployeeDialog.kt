@@ -1,6 +1,5 @@
 package mx.edu.utez.jyps.ui.components.departmenthead
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +20,7 @@ import androidx.compose.ui.window.DialogProperties
 import mx.edu.utez.jyps.data.model.EmployeeItem
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
 import mx.edu.utez.jyps.ui.components.inputs.AppDropdown
+import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * Redesigned EditEmployeeDialog following Figma mockup.
@@ -163,4 +163,11 @@ fun EditEmployeeDialog(
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EditEmployeeDialogPreview() {
+    val mockEmp = EmployeeItem(1, "Juan Perez", "juan@utez.edu.mx", "7771234567", "EMP-001", "Guardia", "DAMI", true)
+    EditEmployeeDialog(employee = mockEmp, onDismiss = {}, onConfirm = {})
 }

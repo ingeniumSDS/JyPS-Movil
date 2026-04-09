@@ -3,6 +3,16 @@ package mx.edu.utez.jyps.data.model
 /**
  * Matches the server's UsuarioResponse JSON exactly.
  * horaEntrada / horaSalida come as Strings ("HH:mm:ss") from GET endpoints.
+ *
+ * @property id The unique identifier of the user.
+ * @property nombreCompleto Real name of the employee or admin.
+ * @property correo The institutional email address for login and notifications.
+ * @property telefono User's contact phone number.
+ * @property horaEntrada Formatted string representing standard clock-in time.
+ * @property horaSalida Formatted string representing standard clock-out time.
+ * @property roles Granted domain authorities logic access.
+ * @property departamentoId Associated department structural identifier.
+ * @property nombreDepartamento The readable name of the user's mapped department.
  */
 data class Usuario(
     val id: Long = 0,
@@ -62,6 +72,11 @@ private fun String.toAmPm(): String {
 
 /**
  * Used only for POST/PUT requests where the server expects { hour, minute, second, nano }.
+ *
+ * @property hour Hours component of the time.
+ * @property minute Minutes component of the time.
+ * @property second Seconds component of the time.
+ * @property nano Nanoseconds component.
  */
 data class LocalTimeInfo(
     @com.google.gson.annotations.SerializedName("hour")
@@ -82,6 +97,11 @@ data class LocalTimeInfo(
 
 /**
  * Matches CuentaResponse: { nombreCompleto, activa, intentosFallidos, bloqueada }
+ *
+ * @property nombreCompleto Real name mapped from the identity.
+ * @property activa Defines if the account credential logic is allowed.
+ * @property intentosFallidos Current sequential failed login attempt count.
+ * @property bloqueada Marks if the account is blocked due to excessive failures or bans.
  */
 data class CuentaResponse(
     val nombreCompleto: String = "",
@@ -92,6 +112,10 @@ data class CuentaResponse(
 
 /**
  * Matches EstadoCuentaResponse: { nombreCompleto, activa, message }
+ *
+ * @property nombreCompleto Real name associated with the account.
+ * @property activa Defines if the account is active.
+ * @property message System message indicating current status restrictions.
  */
 data class EstadoCuentaResponse(
     val nombreCompleto: String = "",

@@ -11,6 +11,19 @@ import java.time.format.DateTimeFormatter
 
 /**
  * State class for the Pass Request screen.
+ *
+ * @property fullName Automatically injected from user session.
+ * @property email Automatically injected from user session.
+ * @property selectedDate The designated exit day (default: today).
+ * @property selectedTime Transformed instance tracking hour/minute choice.
+ * @property details Textual details describing the reasoning.
+ * @property detailsMinLimit Hard validation limit for UI bounds check.
+ * @property detailsLimit Hard absolute limit.
+ * @property showTimePicker Flags the display sequence of the material TimePicker.
+ * @property isLoading Indicates if network submission is blocking UI.
+ * @property isSuccess Lifecycle state evaluating to correct completion.
+ * @property hasActivePassError True if user violates DFR limit per day.
+ * @property error Active error message string if request crashed.
  */
 data class PassRequestState(
     val fullName: String = "Juan Pérez García", // Injected from session in real app
@@ -47,6 +60,12 @@ class PassRequestViewModel : ViewModel() {
         checkActivePasses()
     }
 
+    /**
+     * Bootstraps session info into the request template.
+     *
+     * @param name Name representing the auth.
+     * @param email Verified email.
+     */
     fun setUserInfo(name: String, email: String) {
         _uiState.update { it.copy(fullName = name, email = email) }
     }
@@ -64,14 +83,21 @@ class PassRequestViewModel : ViewModel() {
         }
     }
 
+    /** Engages the material OS time selection widget. */
     fun onTimeClick() {
         _uiState.update { it.copy(showTimePicker = true) }
     }
 
+    /** Hides the time selection widget natively. */
     fun onTimeDismiss() {
         _uiState.update { it.copy(showTimePicker = false) }
     }
 
+    /**
+     * Locks in the time choice picked by the user format.
+     *
+     * @param time Explicit Java time construct.
+     */
     fun onTimeSelected(time: LocalTime) {
         _uiState.update { 
             it.copy(
@@ -81,12 +107,21 @@ class PassRequestViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Appends reason text evaluating bounds checking continuously.
+     *
+     * @param newDetails Raw input string snippet.
+     */
     fun onDetailsChanged(newDetails: String) {
         if (newDetails.length <= _uiState.value.detailsLimit) {
             _uiState.update { it.copy(details = newDetails) }
         }
     }
 
+    /**
+     * Assembles payload assuming all state transitions map clearly 
+     * out of the scope and performs IO task mapping.
+     */
     fun onSubmit() {
         if (!_uiState.value.isFormValid) return
         
@@ -101,14 +136,17 @@ class PassRequestViewModel : ViewModel() {
         }
     }
 
+    /** Dips error state back to clean canvas constraints. */
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
 
+    /** Resets blockade constraints. */
     fun clearActivePassError() {
         _uiState.update { it.copy(hasActivePassError = false) }
     }
 
+    /** Destroys active completion signals. */
     fun resetSuccess() {
         _uiState.update { it.copy(isSuccess = false) }
     }

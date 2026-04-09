@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -54,8 +55,12 @@ fun AppTextField(
     isPassword: Boolean = false,
     enabled: Boolean = true,
     readOnly: Boolean = false,
+    leadingIcon: ImageVector? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    singleLine: Boolean = true,
+    minLines: Int = 1,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -78,9 +83,12 @@ fun AppTextField(
                 placeholder = { 
                     Text(
                         text = placeholder,
-                        maxLines = 1,
+                        maxLines = maxLines,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     ) 
+                },
+                leadingIcon = leadingIcon?.let {
+                    { Icon(imageVector = it, contentDescription = null) }
                 },
                 visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
                 trailingIcon = trailingIcon ?: if (isPassword) {
@@ -104,7 +112,9 @@ fun AppTextField(
                     disabledTextColor = MaterialTheme.colorScheme.onSurface,
                     disabledTrailingIconColor = Color(0xFF6A7282)
                 ),
-                singleLine = true
+                singleLine = singleLine,
+                minLines = minLines,
+                maxLines = maxLines
             )
             
             if (onClick != null) {
@@ -131,6 +141,9 @@ fun AppTextFieldPreview() {
     }
 }
 
+/**
+ * Preview for the password variant of the text field.
+ */
 @Preview(showBackground = true)
 @Composable
 fun AppPasswordFieldPreview() {

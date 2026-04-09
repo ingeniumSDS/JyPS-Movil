@@ -5,11 +5,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import mx.edu.utez.jyps.ui.components.cards.HistoryItem
-import mx.edu.utez.jyps.ui.components.status.HistoryStatus
+import mx.edu.utez.jyps.data.model.HistoryItem
+import mx.edu.utez.jyps.data.model.EstadosIncidencia
 
 /**
  * State representing the global employee history list and active modal overlays.
+ *
+ * @property pases List of registered exit passes for the employee.
+ * @property justifications List of registered justifications for the employee.
+ * @property requestToDelete ID of the item currently pending deletion confirmation.
+ * @property requestToEditPass Item staged for edition in the pass dialog.
+ * @property requestToEditJustification Item staged for edition in the justification dialog.
+ * @property requestToShowQr Item requesting its QR to be displayed.
+ * @property isSuccessOp Indicates if the last CRUD operation was successful.
+ * @property opMessage Status message detailing the outcome of the last operation.
  */
 data class EmployeeHistoryState(
     val pases: List<HistoryItem> = emptyList(),
@@ -36,29 +45,36 @@ class EmployeeHistoryViewModel : ViewModel() {
 
     private fun loadDummyData() {
         val pasesItems = listOf(
-            HistoryItem("4", "Pase de Salida", HistoryStatus.APROBADO, "Salida a reunión externa", "27/3/2026", "11:00", "PASE004"),
-            HistoryItem("5", "Pase de Salida", HistoryStatus.PENDIENTE, "Cita con dentista - Limpieza dental programada", "28/2/2026", "10:00", "PASE005", fileName = "comprobante_cita_dental.pdf"),
-            HistoryItem("1", "Pase de Salida", HistoryStatus.USADO, "Trámite bancario - Gestión de crédito hipotecario", "25/2/2026", "14:30", "PASE001", internalInfo = "Este pase ya fue utilizado y no se puede usar más."),
-            HistoryItem("2", "Pase de Salida", HistoryStatus.RECHAZADO, "Urgencia personal", "22/2/2026", "15:00", "PASE002", rejectionReason = "Motivo insuficiente. Se requiere documentación y más detalle sobre la urgencia."),
-            HistoryItem("3", "Pase de Salida", HistoryStatus.CADUCADO, "Salida a comer", "20/2/2026", "13:00", "PASE003", rejectionReason = "Pase no utilizado durante la jornada.")
+            HistoryItem("4", "Pase de Salida", EstadosIncidencia.APROBADO, "Salida a reunión externa", "27/3/2026", "11:00", "PASE004"),
+            HistoryItem("5", "Pase de Salida", EstadosIncidencia.PENDIENTE, "Cita con dentista - Limpieza dental programada", "28/2/2026", "10:00", "PASE005", fileName = "comprobante_cita_dental.pdf"),
+            HistoryItem("1", "Pase de Salida", EstadosIncidencia.USADO, "Trámite bancario - Gestión de crédito hipotecario", "25/2/2026", "14:30", "PASE001", internalInfo = "Este pase ya fue utilizado y no se puede usar más."),
+            HistoryItem("2", "Pase de Salida", EstadosIncidencia.RECHAZADO, "Urgencia personal", "22/2/2026", "15:00", "PASE002", rejectionReason = "Motivo insuficiente. Se requiere documentación y más detalle sobre la urgencia."),
+            HistoryItem("3", "Pase de Salida", EstadosIncidencia.CADUCADO, "Salida a comer", "20/2/2026", "13:00", "PASE003", rejectionReason = "Pase no utilizado durante la jornada.")
         )
         val justificantesItems = listOf(
-            HistoryItem("10", "Justificante", HistoryStatus.APROBADO, "Consulta médica general - Revisión periódica", "24/2/2026", "10:00", "JUST001", fileName = "receta_medica.pdf"),
-            HistoryItem("11", "Justificante", HistoryStatus.PENDIENTE, "Cita con dentista - Limpieza dental programada", "28/2/2026", "10:00", "JUST002", fileName = "comprobante_cita_dental.pdf"),
-            HistoryItem("12", "Justificante", HistoryStatus.RECHAZADO, "Asunto personal sin documentación", "23/2/2026", "09:15", "JUST003", rejectionReason = "No se proporcionó evidencia médica o motivo válido.")
+            HistoryItem("10", "Justificante", EstadosIncidencia.APROBADO, "Consulta médica general - Revisión periódica", "24/2/2026", "10:00", "JUST001", fileName = "receta_medica.pdf"),
+            HistoryItem("11", "Justificante", EstadosIncidencia.PENDIENTE, "Cita con dentista - Limpieza dental programada", "28/2/2026", "10:00", "JUST002", fileName = "comprobante_cita_dental.pdf"),
+            HistoryItem("12", "Justificante", EstadosIncidencia.RECHAZADO, "Asunto personal sin documentación", "23/2/2026", "09:15", "JUST003", rejectionReason = "No se proporcionó evidencia médica o motivo válido.")
         )
         _uiState.update { it.copy(pases = pasesItems, justifications = justificantesItems) }
     }
 
     // Delete process management
+    /**
+     * Prompts the deletion confirmation dialog for a specific item.
+     *
+     * @param id The unique identifier of the request to be deleted.
+     */
     fun promptDelete(id: String) {
         _uiState.update { it.copy(requestToDelete = id) }
     }
 
+    /** Hides the deletion confirmation dialog. */
     fun dismissDelete() {
         _uiState.update { it.copy(requestToDelete = null) }
     }
 
+    /** Permanently removes the selected request from the UI state. */
     fun confirmDelete() {
         val targetId = _uiState.value.requestToDelete ?: return
         
@@ -76,14 +92,27 @@ class EmployeeHistoryViewModel : ViewModel() {
     }
 
     // ACTIONS: Edit Pass
+    /**
+     * Prepares an exit pass for edition and opens the dialog.
+     *
+     * @param item The target [HistoryItem] to be edited.
+     */
     fun promptEditPass(item: HistoryItem) {
         _uiState.update { it.copy(requestToEditPass = item) }
     }
 
+    /** Closes the pass edit dialog. */
     fun dismissEditPass() {
         _uiState.update { it.copy(requestToEditPass = null) }
     }
 
+    /**
+     * Saves the modified exit pass details.
+     *
+     * @param id The unique identifier of the pass.
+     * @param newDetails The updated textual justification details.
+     * @param newTime The updated scheduled exit time.
+     */
     fun saveEditPass(id: String, newDetails: String, newTime: String) {
         _uiState.update { state ->
             val updatedPases = state.pases.map { 
@@ -98,15 +127,26 @@ class EmployeeHistoryViewModel : ViewModel() {
         }
     }
 
-    // ACTIONS: Edit Justification
+    /**
+     * Prepares a justification for edition and opens the dialog.
+     *
+     * @param item The target [HistoryItem] to be edited.
+     */
     fun promptEditJustification(item: HistoryItem) {
         _uiState.update { it.copy(requestToEditJustification = item) }
     }
 
+    /** Closes the justification edit dialog. */
     fun dismissEditJustification() {
         _uiState.update { it.copy(requestToEditJustification = null) }
     }
 
+    /**
+     * Saves the modified justification details.
+     *
+     * @param id The unique identifier of the justification.
+     * @param newDetails The updated textual explanation.
+     */
     fun saveEditJustification(id: String, newDetails: String) {
         _uiState.update { state ->
             val updated = state.justifications.map { 
@@ -121,19 +161,30 @@ class EmployeeHistoryViewModel : ViewModel() {
         }
     }
 
+    /** Clears any active operation status message from the screen. */
     fun clearOpMessage() {
         _uiState.update { it.copy(isSuccessOp = false, opMessage = null) }
     }
 
-    // QR View management
+    /**
+     * Requests the visualization of the QR code for a specific pass.
+     *
+     * @param item The pass whose QR will be displayed.
+     */
     fun promptShowQr(item: HistoryItem) {
         _uiState.update { it.copy(requestToShowQr = item) }
     }
 
+    /** Closes the QR code dialog. */
     fun dismissShowQr() {
         _uiState.update { it.copy(requestToShowQr = null) }
     }
 
+    /**
+     * Handles the callback when a user tries to download the QR code to their gallery.
+     *
+     * @param isSuccess True if the IO operation saved the image successfully.
+     */
     fun dispatchDownloadQrResult(isSuccess: Boolean) {
         if (isSuccess) {
             _uiState.update { it.copy(

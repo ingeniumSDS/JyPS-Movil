@@ -1,26 +1,18 @@
 package mx.edu.utez.jyps.ui.screens.admin
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,16 +30,31 @@ import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.ui.components.navigation.AppNavigationDrawer
 import mx.edu.utez.jyps.ui.components.navigation.AppTopBar
 import mx.edu.utez.jyps.ui.components.navigation.adminMenuOptions
+import mx.edu.utez.jyps.ui.components.dialogs.CreateUserDialog
+import mx.edu.utez.jyps.ui.components.dialogs.EditUserDialog
+import mx.edu.utez.jyps.ui.components.dialogs.UserDetailDialog
 import mx.edu.utez.jyps.viewmodel.AdminViewModel
+import mx.edu.utez.jyps.viewmodel.DepartmentManagementViewModel
+import mx.edu.utez.jyps.ui.theme.JyPSTheme
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
+import mx.edu.utez.jyps.ui.components.dialogs.CreateDepartmentDialog
+import mx.edu.utez.jyps.ui.components.dialogs.EditDepartmentDialog
+import mx.edu.utez.jyps.ui.components.dialogs.ToggleDepartmentStatusDialogs
 
 /**
  * Main wrapper screen for the Administrator dashboard.
+ *
+ * @param viewModel ViewModel tracking view state for the Admin role.
+ * @param onLogoutSuccess Callback executed upon successful session logout.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminDashboardScreen(
     viewModel: AdminViewModel,
-    onLogoutSuccess: () -> Unit
+    deptViewModel: DepartmentManagementViewModel = viewModel(),
+    onLogoutSuccess: () -> Unit,
+    onNavigateToEmployeeFunction: (String) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
@@ -76,8 +83,14 @@ fun AdminDashboardScreen(
         userEmail = "carlos.rodriguez@utez.edu.mx",
         roleTitle = "Administrador",
         onNavigateTo = { route ->
-            viewModel.selectDrawerItem(route)
-            coroutineScope.launch { drawerState.close() }
+            if (route.startsWith("admin_pass") || route.startsWith("admin_excuse") || 
+                route.startsWith("admin_history") || route.startsWith("admin_profile")) {
+                coroutineScope.launch { drawerState.close() }
+                onNavigateToEmployeeFunction(route)
+            } else {
+                viewModel.selectDrawerItem(route)
+                coroutineScope.launch { drawerState.close() }
+            }
         },
         onLogout = {
             viewModel.onLogout()
@@ -119,6 +132,17 @@ fun AdminDashboardScreen(
             ) {
                 when (selectedRoute) {
                     "admin_users" -> UserManagementContent(viewModel)
+                    "admin_departments" -> {
+                        val deptUiState by deptViewModel.uiState.collectAsStateWithLifecycle()
+                        DepartmentManagementContent(
+                            uiState = deptUiState,
+                            onSearchQueryChange = deptViewModel::onSearchQueryChange,
+                            onFilterChange = deptViewModel::onFilterChange,
+                            onAddClick = deptViewModel::openCreate,
+                            onEditClick = deptViewModel::openEdit,
+                            onToggleStatusClick = deptViewModel::requestToggleStatus
+                        )
+                    }
                     else -> {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             Text("Pantalla en Construcción: $selectedRoute")
@@ -133,6 +157,14 @@ fun AdminDashboardScreen(
         EditUserDialog(viewModel)
         UserDetailDialog(viewModel)
 
+        // Department Dialogs
+        CreateDepartmentDialog(deptViewModel)
+        EditDepartmentDialog(deptViewModel)
+        ToggleDepartmentStatusDialogs(
+            viewModel = deptViewModel,
+            onManageEmployees = { viewModel.selectDrawerItem("admin_users") }
+        )
+
         // Processing overlay
         if (isProcessing) {
             Surface(modifier = Modifier.fillMaxSize(), color = Color.Black.copy(alpha = 0.3f)) {
@@ -140,6 +172,19 @@ fun AdminDashboardScreen(
                     CircularProgressIndicator(color = Color.White)
                 }
             }
+        }
+    }
+}
+
+/**
+ * Preview for the Administrator dashboard boundary.
+ */
+@Preview(showBackground = true)
+@Composable
+fun AdminDashboardScreenPreview() {
+    JyPSTheme {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Vista previa (Preview) no disponible nativamente para el Screen principal.")
         }
     }
 }

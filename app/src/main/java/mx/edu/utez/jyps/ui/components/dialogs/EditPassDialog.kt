@@ -29,14 +29,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import mx.edu.utez.jyps.ui.components.cards.HistoryItem
+import mx.edu.utez.jyps.data.model.HistoryItem
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
 import androidx.compose.foundation.layout.Arrangement
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.tooling.preview.Preview
+import mx.edu.utez.jyps.data.model.EstadosIncidencia
 
 /**
  * Specialized internal view slot for AppFormDialog handling specific Pass limits.
+ *
+ * @param item Reference item containing baseline values for Pass editing.
+ * @param onDismissRequest Triggered to close dialog without saving.
+ * @param onSave Callback providing strings for rationale and time selected.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -130,4 +136,11 @@ fun EditPassDialog(
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EditPassDialogPreview() {
+    val mockItem = HistoryItem(id = "1", type = "PASS", status = EstadosIncidencia.PENDIENTE, description = "Test Reason Data Required Length 25 Chars", date = "10/10/2026", time = "10:00 AM", code = "N/A")
+    EditPassDialog(item = mockItem, onDismissRequest = {}, onSave = { _, _ -> })
 }

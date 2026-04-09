@@ -41,6 +41,9 @@ import mx.edu.utez.jyps.viewmodel.ProfileViewModel
  * @param onLogoutClick Callback to handle session termination.
  * @param onHomeClick Navigation to home dashboard.
  * @param onHistoryClick Navigation to history screen.
+ * @param showEmployeeModeBanner Flag to display the contextual mode banner.
+ * @param onReturnToRoleDashboard Callback to close the employee context.
+ * @param userName Current session user's full name.
  */
 @Composable
 fun ProfileScreen(
@@ -50,9 +53,15 @@ fun ProfileScreen(
     onHistoryClick: () -> Unit = {},
     showEmployeeModeBanner: Boolean = false,
     onReturnToRoleDashboard: () -> Unit = {},
-    userName: String = "Empleado"
+    userName: String = "Empleado",
+    userEmail: String = "empleado@utez.edu.mx",
+    roleTitle: String = "Empleado"
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    androidx.compose.runtime.LaunchedEffect(userName, userEmail, roleTitle) {
+        viewModel.setUserInfo(userName, userEmail, roleTitle)
+    }
 
     if (uiState.showChangePasswordDialog) {
         ChangePasswordDialog(
