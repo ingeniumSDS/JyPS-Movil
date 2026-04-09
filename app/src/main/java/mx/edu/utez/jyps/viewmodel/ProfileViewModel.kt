@@ -65,6 +65,17 @@ class ProfileViewModel : ViewModel() {
         )
     }
 
+    /**
+     * Updates the session user information.
+     * 
+     * @param name Full name to display.
+     * @param email Institutional email address.
+     * @param role User's occupation/role description.
+     */
+    fun setUserInfo(name: String, email: String, role: String) {
+        _uiState.value = _uiState.value.copy(name = name, email = email, role = role)
+    }
+
     /** Clears any active notification overlay. */
     fun clearOpMessage() {
         _uiState.value = _uiState.value.copy(isPasswordOpSuccess = false, passwordOpMessage = null)

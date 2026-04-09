@@ -54,6 +54,11 @@ sealed class AppRoutes(val route: String) {
     object DeptHeadHistory : AppRoutes("dept_head_history")
     object DeptHeadProfile : AppRoutes("dept_head_profile")
     object DeptHeadEmployees : AppRoutes("dept_head_employees")
+    // Admin scoped employee screens with "Modo Empleado" banner
+    object AdminPassRequest : AppRoutes("admin_pass")
+    object AdminJustificationRequest : AppRoutes("admin_excuse")
+    object AdminHistory : AppRoutes("admin_history")
+    object AdminProfile : AppRoutes("admin_profile")
 }
 
 /**
@@ -72,13 +77,13 @@ fun NavigationHost(
 ) {
     val sessionToken by loginViewModel.sessionToken.collectAsStateWithLifecycle()
     
-    val (targetRoute, currentUser, currentUserEmail) = remember(sessionToken) {
+    val (targetRoute, currentUser, currentUserEmail, currentRole) = remember(sessionToken) {
         when (sessionToken) {
-            "MOCK_SECURITY_TOKEN" -> Triple(AppRoutes.SecurityScanner.route, "María González Hernández", "m.gonzalez@utez.edu.mx")
-            "MOCK_EMPLOYEE_TOKEN" -> Triple(AppRoutes.EmployeeHome.route, "Juan Pérez García", "juan.perez@utez.edu.mx")
-            "MOCK_DEPT_HEAD_TOKEN" -> Triple(AppRoutes.DeptHeadDashboard.route, "Roberto Sánchez López", "roberto.sanchez@utez.edu.mx")
-            null, "" -> Triple(AppRoutes.Login.route, "", "")
-            else -> Triple(AppRoutes.Home.route, "Carlos Rodríguez Torres", "carlos.rodriguez@utez.edu.mx")
+            "MOCK_SECURITY_TOKEN" -> listOf(AppRoutes.SecurityScanner.route, "María González Hernández", "m.gonzalez@utez.edu.mx", "Guardia de Seguridad")
+            "MOCK_EMPLOYEE_TOKEN" -> listOf(AppRoutes.EmployeeHome.route, "Juan Pérez García", "juan.perez@utez.edu.mx", "Empleado")
+            "MOCK_DEPT_HEAD_TOKEN" -> listOf(AppRoutes.DeptHeadDashboard.route, "Roberto Sánchez López", "roberto.sanchez@utez.edu.mx", "Jefe de Departamento")
+            null, "" -> listOf(AppRoutes.Login.route, "", "", "")
+            else -> listOf(AppRoutes.Home.route, "Carlos Rodríguez Torres", "carlos.rodriguez@utez.edu.mx", "Administrador")
         }
     }
 
@@ -198,7 +203,9 @@ fun NavigationHost(
                 onLogoutClick = { loginViewModel.logout() },
                 onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
                 onHistoryClick = { navController.navigate(AppRoutes.History.route) },
-                userName = currentUser
+                userName = currentUser,
+                userEmail = currentUserEmail,
+                roleTitle = currentRole
             )
         }
         
@@ -216,6 +223,9 @@ fun NavigationHost(
                 viewModel = adminViewModel,
                 onLogoutSuccess = {
                     loginViewModel.logout()
+                },
+                onNavigateToEmployeeFunction = { route ->
+                    navController.navigate(route)
                 }
             )
         }
@@ -331,7 +341,83 @@ fun NavigationHost(
                         popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
                     }
                 },
+                userName = currentUser,
+                userEmail = currentUserEmail,
+                roleTitle = currentRole
+            )
+        }
+
+        // Admin → Employee Mode: Pass Request
+        composable(AppRoutes.AdminPassRequest.route) {
+            PassRequestScreen(
+                onBackClick = { navController.navigateUp() },
+                onSuccessSubmit = { msg ->
+                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
+                    navController.navigateUp()
+                },
+                showEmployeeModeBanner = true,
+                onReturnToRoleDashboard = {
+                    navController.navigate(AppRoutes.Home.route) {
+                        popUpTo(AppRoutes.Home.route) { inclusive = false }
+                    }
+                },
+                userName = currentUser,
+                userEmail = currentUserEmail
+            )
+        }
+
+        // Admin → Employee Mode: Justification Request
+        composable(AppRoutes.AdminJustificationRequest.route) {
+            JustificationRequestScreen(
+                onBackClick = { navController.navigateUp() },
+                onSuccessSubmit = { msg ->
+                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
+                    navController.navigateUp()
+                },
+                showEmployeeModeBanner = true,
+                onReturnToRoleDashboard = {
+                    navController.navigate(AppRoutes.Home.route) {
+                        popUpTo(AppRoutes.Home.route) { inclusive = false }
+                    }
+                },
+                userName = currentUser,
+                userEmail = currentUserEmail
+            )
+        }
+
+        // Admin → Employee Mode: History
+        composable(AppRoutes.AdminHistory.route) {
+            val historyViewModel: EmployeeHistoryViewModel = viewModel()
+            EmployeeHistoryScreen(
+                onLogoutClick = { loginViewModel.logout() },
+                onHomeClick = { navController.navigate(AppRoutes.Home.route) },
+                onProfileClick = { navController.navigate(AppRoutes.AdminProfile.route) },
+                viewModel = historyViewModel,
+                showEmployeeModeBanner = true,
+                onReturnToRoleDashboard = {
+                    navController.navigate(AppRoutes.Home.route) {
+                        popUpTo(AppRoutes.Home.route) { inclusive = false }
+                    }
+                },
                 userName = currentUser
+            )
+        }
+
+        // Admin → Employee Mode: Profile
+        composable(AppRoutes.AdminProfile.route) {
+            ProfileScreen(
+                onLogoutClick = { loginViewModel.logout() },
+                onHomeClick = { navController.navigate(AppRoutes.Home.route) },
+                onHistoryClick = { navController.navigate(AppRoutes.AdminHistory.route) },
+                showEmployeeModeBanner = true,
+                onReturnToRoleDashboard = {
+                    navController.navigate(AppRoutes.Home.route) {
+                        popUpTo(AppRoutes.Home.route) { inclusive = false }
+                    }
+                },
+                userName = currentUser,
+                userEmail = currentUserEmail,
+                roleTitle = currentRole
             )
         }
     }

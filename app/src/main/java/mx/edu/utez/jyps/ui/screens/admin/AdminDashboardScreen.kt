@@ -53,7 +53,8 @@ import mx.edu.utez.jyps.ui.components.dialogs.ToggleDepartmentStatusDialogs
 fun AdminDashboardScreen(
     viewModel: AdminViewModel,
     deptViewModel: DepartmentManagementViewModel = viewModel(),
-    onLogoutSuccess: () -> Unit
+    onLogoutSuccess: () -> Unit,
+    onNavigateToEmployeeFunction: (String) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
@@ -82,8 +83,14 @@ fun AdminDashboardScreen(
         userEmail = "carlos.rodriguez@utez.edu.mx",
         roleTitle = "Administrador",
         onNavigateTo = { route ->
-            viewModel.selectDrawerItem(route)
-            coroutineScope.launch { drawerState.close() }
+            if (route.startsWith("admin_pass") || route.startsWith("admin_excuse") || 
+                route.startsWith("admin_history") || route.startsWith("admin_profile")) {
+                coroutineScope.launch { drawerState.close() }
+                onNavigateToEmployeeFunction(route)
+            } else {
+                viewModel.selectDrawerItem(route)
+                coroutineScope.launch { drawerState.close() }
+            }
         },
         onLogout = {
             viewModel.onLogout()
