@@ -41,6 +41,9 @@ import mx.edu.utez.jyps.viewmodel.ProfileViewModel
  * @param onLogoutClick Callback to handle session termination.
  * @param onHomeClick Navigation to home dashboard.
  * @param onHistoryClick Navigation to history screen.
+ * @param showEmployeeModeBanner Flag to display the contextual mode banner.
+ * @param onReturnToRoleDashboard Callback to close the employee context.
+ * @param userName Current session user's full name.
  */
 @Composable
 fun ProfileScreen(

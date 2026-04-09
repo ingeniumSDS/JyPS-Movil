@@ -11,14 +11,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import mx.edu.utez.jyps.data.model.EstadosIncidencia
 import mx.edu.utez.jyps.ui.theme.*
 import androidx.compose.ui.tooling.preview.Preview
-
-enum class HistoryStatus { USADO, PENDIENTE, RECHAZADO, CADUCADO, APROBADO }
 
 /**
  * Reusable badge to display status with colors and icons.
@@ -26,13 +24,15 @@ enum class HistoryStatus { USADO, PENDIENTE, RECHAZADO, CADUCADO, APROBADO }
  * @param status The status enum value to be displayed.
  */
 @Composable
-fun StatusBadge(status: HistoryStatus) {
+fun StatusBadge(status: EstadosIncidencia) {
     val (bgColor, textColor, icon) = when (status) {
-        HistoryStatus.USADO -> Triple(UsedGrayBg, UsedGray, Icons.Default.CheckCircle)
-        HistoryStatus.PENDIENTE -> Triple(PendingYellowBg, PendingYellow, Icons.Default.Schedule)
-        HistoryStatus.RECHAZADO -> Triple(ErrorRedBg, ErrorRed, Icons.Default.Cancel)
-        HistoryStatus.CADUCADO -> Triple(UsedGrayBg, SecondaryColor, Icons.Default.TimerOff)
-        HistoryStatus.APROBADO -> Triple(SuccessGreenBg, SuccessGreen, Icons.Default.CheckCircle)
+        EstadosIncidencia.USADO -> Triple(UsedGrayBg, UsedGray, Icons.Default.CheckCircle)
+        EstadosIncidencia.PENDIENTE -> Triple(PendingYellowBg, PendingYellow, Icons.Default.Schedule)
+        EstadosIncidencia.RECHAZADO -> Triple(ErrorRedBg, ErrorRed, Icons.Default.Cancel)
+        EstadosIncidencia.CADUCADO -> Triple(UsedGrayBg, SecondaryColor, Icons.Default.TimerOff)
+        EstadosIncidencia.APROBADO -> Triple(SuccessGreenBg, SuccessGreen, Icons.Default.CheckCircle)
+        EstadosIncidencia.A_TIEMPO -> Triple(SuccessGreenBg, SuccessGreen, Icons.Default.CheckCircle)
+        EstadosIncidencia.RETARDO -> Triple(PendingYellowBg, PendingYellow, Icons.Default.Schedule)
     }
     
     Surface(
@@ -64,6 +64,6 @@ fun StatusBadge(status: HistoryStatus) {
 @Composable
 fun StatusBadgePreview() {
     JyPSTheme {
-        StatusBadge(status = HistoryStatus.PENDIENTE)
+        StatusBadge(status = EstadosIncidencia.PENDIENTE)
     }
 }

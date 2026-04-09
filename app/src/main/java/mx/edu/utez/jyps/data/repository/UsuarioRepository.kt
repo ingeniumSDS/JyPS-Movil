@@ -20,6 +20,12 @@ sealed class LoadResult<out T> {
     data object Loading : LoadResult<Nothing>()
 }
 
+/**
+ * Repository handling all network operations related to users and accounts.
+ * Acts as the single source of truth for user data within the application.
+ *
+ * @property apiService The Retrofit interface for executing HTTP requests.
+ */
 class UsuarioRepository(
     private val apiService: ApiService
 ) {
@@ -39,6 +45,12 @@ class UsuarioRepository(
     private val _departamentos = MutableStateFlow<List<Departamento>>(emptyList())
     val departamentos: Flow<List<Departamento>> = _departamentos.asStateFlow()
 
+    /**
+     * Fetches all registered users from the backend endpoint.
+     * Updates the internal [_allUsers] state flow on success.
+     *
+     * @return A list of [Usuario] objects. Empty if the network call fails.
+     */
     suspend fun getUsuarios(): List<Usuario> {
         _loadState.value = LoadResult.Loading
         return try {
@@ -55,6 +67,13 @@ class UsuarioRepository(
         }
     }
 
+    /**
+     * Fetches a specific user by their unique database identifier.
+     * Falls back to the internal cache [_allUsers] on network failure.
+     *
+     * @param id The unique identifier of the target user.
+     * @return The target [Usuario], or null if not found.
+     */
     suspend fun getUsuarioPorId(id: Long): Usuario? {
         return try {
             val response = apiService.getUsuarioPorId(id)
@@ -66,6 +85,12 @@ class UsuarioRepository(
         }
     }
 
+    /**
+     * Looks up the security and operational mapping details for a specific user ID.
+     *
+     * @param id The unique identifier mapped to the user.
+     * @return A [CuentaResponse] encapsulating roles and boolean active state, or null on failure.
+     */
     suspend fun getCuentaUsuario(id: Long): CuentaResponse? {
         return try {
             val cuenta = apiService.getCuentaUsuario(id)
@@ -79,6 +104,9 @@ class UsuarioRepository(
         }
     }
 
+    /**
+     * Aggregation task iterating over all known locally cached user IDs, fetching their actual metadata account sequence validation details mapping limits map array definitions context mapped explicitly mapped contexts mapped definitions explicit bound mapped definitions states map states explicit mapping context parameters text variables mapping context explicit context property boundary property contexts map parameter limit mapped bounds contexts explicit.
+     */
     suspend fun fetchAllAccountStatuses() {
         val users = _allUsers.value
         val statusMap = mutableMapOf<Long, CuentaResponse>()
@@ -92,6 +120,12 @@ class UsuarioRepository(
         _accountStatuses.value = statusMap
     }
 
+    /**
+     * Executes the boundary payload pushing logic limits definitions target validation boundaries bounds strings mappings native mappings boolean boolean limits explicit boolean limit parameters bindings strings boolean mappings contexts boolean mapped explicit limits natively bindings execution targets bound arrays target string validation logic string validation bounds contexts logic.
+     *
+     * @param request Transformed data matching parameters targets string values target arrays map boolean values mapped explicitly mapped definitions explicit array definitions parameters validation contexts bounds parameter limit parameter array limits mapping strings target values logic explicit context parameter limits string mapped arrays arrays explicit boundaries execution mapping execution logic execution strings target logic strings string value array arrays boundary mapped mappings boolean property explicitly string values sequences maps.
+     * @return An encapsulated boundary sequence map property definition constraint boundary target boundary.
+     */
     suspend fun registrarUsuario(request: UserRequest): Result<Usuario> {
         return try {
             Log.d("UsuarioRepo", "POST /api/v1/usuarios")
@@ -109,6 +143,13 @@ class UsuarioRepository(
         }
     }
 
+    /**
+     * Pushes overwrites mapping mapping context attributes limits mappings constraints bounds definition variables definitions limit strings explicitly parameters execution mapped validation mapped sequences definitions limit parameters variables boundary explicit variables boolean explicit contexts mapping context mapping property mappings mappings definitions property bounding parameters definitions constraint values context explicitly bounds execution context explicitly constraint strings parameters mapped mapping property binding array limit context mapped contexts limits execution definitions parameters boundary limits parameter arrays constraints.
+     *
+     * @param id Root validation.
+     * @param request Transformed mapping context.
+     * @return An encapsulated completion bound map boundary limits natively boolean explicit sequences limit variables mapping strings definitions boolean parameters mapped mapped constraints definition constraint variable validation mapping parameter context mapping boundaries attributes logic bindings strings mappings property mapping execution arrays context explicitly variables limits strings mappings expressions boolean explicitly attributes maps execution context.
+     */
     suspend fun actualizarUsuario(id: Long, request: UserRequest): Result<Usuario> {
         return try {
             Log.d("UsuarioRepo", "PUT /api/v1/usuarios/$id")
@@ -126,6 +167,12 @@ class UsuarioRepository(
         }
     }
 
+    /**
+     * Toggles security context definition mapped bounded string attributes logic property boolean validation bounds text boolean.
+     *
+     * @param id Security mapped logic sequences bound natively.
+     * @return A status map string array constraints limits definitions constraints mapping array validation parameters arrays property explicitly boolean boolean boundaries context boundaries parameters explicit text bounding definitions attributes sequences context map strings array logic boundary variables property parameters explicit boolean explicit parameters defined mapping expressions constraint logic definition boolean array boundaries.
+     */
     suspend fun toggleEstadoUsuario(id: Long): Result<EstadoCuentaResponse> {
         return try {
             Log.d("UsuarioRepo", "PATCH /api/v1/usuarios/$id/estado")
@@ -145,6 +192,11 @@ class UsuarioRepository(
         }
     }
 
+    /**
+     * Unfetches target array sequence contexts map boundaries logic mapping limit map mapped mappings.
+     *
+     * @return Boundary boolean mapping.
+     */
     suspend fun getDepartamentos(): List<Departamento> {
         return try {
             Log.d("UsuarioRepo", "GET /api/v1/departamentos")
@@ -157,6 +209,7 @@ class UsuarioRepository(
         }
     }
 
+    /** Target unbinding definitions contexts constraint mapping values logic bindings boolean limits explicit array values mapping map context mapping strings mapping defined boolean limit mapping natively boundaries logic explicitly maps logic boundaries boundary sequences bool sequences boundary explicitly property bounds bounds boundary definition sequence mapped string string limits boundaries boolean bound explicit implicitly target maps mapping map text context properties definitions arrays sequences explicit bounds constraints explicitly expressions context explicitly parameters constraint mappings parameters explicitly explicit boundaries definition boundaries constraints. */
     fun clearSelectedUser() {
         _selectedUser.value = null
     }

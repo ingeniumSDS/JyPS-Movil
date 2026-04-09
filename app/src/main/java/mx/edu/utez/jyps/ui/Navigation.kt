@@ -2,7 +2,6 @@ package mx.edu.utez.jyps.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,8 +27,12 @@ import mx.edu.utez.jyps.ui.screens.departmenthead.EmployeeManagementScreen
 import mx.edu.utez.jyps.ui.screens.security.ScannerScreen
 import mx.edu.utez.jyps.viewmodel.AdminViewModel
 import mx.edu.utez.jyps.viewmodel.DepartmentHeadViewModel
+import mx.edu.utez.jyps.viewmodel.EmployeeHistoryViewModel
+import mx.edu.utez.jyps.viewmodel.EmployeeManagementViewModel
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordViewModel
 import mx.edu.utez.jyps.viewmodel.LoginViewModel
+import mx.edu.utez.jyps.ui.components.common.AppToast
+import mx.edu.utez.jyps.ui.components.common.ToastType
 
 /**
  * AppRoutes defines the navigation destinations for the application.
@@ -141,11 +144,11 @@ fun NavigationHost(
                     userEmail = currentUserEmail
                 )
 
-                mx.edu.utez.jyps.ui.components.common.AppToast(
+                AppToast(
                     message = successMessage,
                     isVisible = successMessage != null,
                     onDismiss = { savedStateHandle["success_message"] = null },
-                    type = mx.edu.utez.jyps.ui.components.common.ToastType.SUCCESS,
+                    type = ToastType.SUCCESS,
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
@@ -179,7 +182,7 @@ fun NavigationHost(
 
         // Employee History
         composable(AppRoutes.History.route) {
-            val historyViewModel: mx.edu.utez.jyps.viewmodel.EmployeeHistoryViewModel = viewModel()
+            val historyViewModel: EmployeeHistoryViewModel = viewModel()
             EmployeeHistoryScreen(
                 onLogoutClick = { loginViewModel.logout() },
                 onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
@@ -239,7 +242,7 @@ fun NavigationHost(
 
         // Department Head: Employee Management
         composable(AppRoutes.DeptHeadEmployees.route) {
-            val employeeViewModel: mx.edu.utez.jyps.viewmodel.EmployeeManagementViewModel = viewModel()
+            val employeeViewModel: EmployeeManagementViewModel = viewModel()
             EmployeeManagementScreen(
                 viewModel = employeeViewModel,
                 onLogoutClick = { loginViewModel.logout() },
@@ -300,7 +303,7 @@ fun NavigationHost(
 
         // Dept Head → Employee Mode: History
         composable(AppRoutes.DeptHeadHistory.route) {
-            val historyViewModel: mx.edu.utez.jyps.viewmodel.EmployeeHistoryViewModel = viewModel()
+            val historyViewModel: EmployeeHistoryViewModel = viewModel()
             EmployeeHistoryScreen(
                 onLogoutClick = { loginViewModel.logout() },
                 onHomeClick = { navController.navigate(AppRoutes.DeptHeadDashboard.route) },

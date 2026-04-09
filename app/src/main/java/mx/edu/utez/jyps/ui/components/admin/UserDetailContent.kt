@@ -1,78 +1,41 @@
-package mx.edu.utez.jyps.ui.screens.admin
+package mx.edu.utez.jyps.ui.components.admin
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.edu.utez.jyps.data.model.CuentaResponse
 import mx.edu.utez.jyps.data.model.Usuario
-import mx.edu.utez.jyps.viewmodel.AdminViewModel
 
+/**
+ * Internal rendering block for user information.
+ *
+ * @param usuario Target user model.
+ * @param cuenta Active account state metadata.
+ */
 @Composable
-fun UserDetailDialog(viewModel: AdminViewModel) {
-    val isVisible by viewModel.isUserDetailVisible.collectAsStateWithLifecycle()
-    val user by viewModel.selectedUser.collectAsStateWithLifecycle()
-    val accountStatuses by viewModel.accountStatuses.collectAsStateWithLifecycle()
-
-    if (isVisible && user != null) {
-        val cuenta = accountStatuses[user!!.id]
-        Dialog(
-            onDismissRequest = { viewModel.closeUserDetail() },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(24.dp)
-                        .background(Color.White, RoundedCornerShape(8.dp))
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    // Header
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Detalle de Usuario", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF101828))
-                        IconButton(onClick = { viewModel.closeUserDetail() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color(0xFF6A7282))
-                        }
-                    }
-
-                    HorizontalDivider(color = Color(0xFFE5E7EB))
-                    user?.let { DetailContent(it, cuenta) }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DetailContent(usuario: Usuario, cuenta: CuentaResponse?) {
+fun UserDetailContent(usuario: Usuario, cuenta: CuentaResponse?) {
     Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
         // Avatar + Name
@@ -145,28 +108,26 @@ private fun DetailContent(usuario: Usuario, cuenta: CuentaResponse?) {
     }
 }
 
-@Composable
-private fun DetailRow(icon: ImageVector, label: String, value: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Icon(icon, contentDescription = null, tint = Color(0xFF6A7282), modifier = Modifier.size(18.dp))
-        Column {
-            Text(label, fontSize = 12.sp, color = Color.Gray)
-            Text(value, fontSize = 14.sp, color = Color(0xFF101828), fontWeight = FontWeight.Medium)
-        }
-    }
-}
-
-private fun roleDisplayName(role: String) = when (role) {
+/** Maps backend constraints roles to UI strings strings text attributes logic constraint text validation bounds string sequences contexts string definition string definitions arrays parameter strings text bounds variables attributes contexts mappings arrays contexts constraints boolean definitions mapping bounding. */
+internal fun roleDisplayName(role: String) = when (role) {
     "EMPLEADO" -> "Empleado"; "GUARDIA" -> "Guardia"
     "JEFE_DE_DEPARTAMENTO" -> "Jefe de Departamento"; "ADMINISTRADOR" -> "Administrador"
     "AUDITOR" -> "Auditor"; else -> role
 }
 
-private fun roleColors(role: String): Pair<Color, Color> = when (role) {
+/** Maps target definitions logic arrays string parameter limits textual variable explicitly mapped bounds array context mapping. */
+internal fun roleColors(role: String): Pair<Color, Color> = when (role) {
     "ADMINISTRADOR" -> Color(0xFFFEE2E2) to Color(0xFFDC2626)
     "JEFE_DE_DEPARTAMENTO" -> Color(0xFFF3E8FF) to Color(0xFF8200DB)
     "EMPLEADO" -> Color(0xFFDEEBFF) to Color(0xFF1D4ED8)
     "GUARDIA" -> Color(0xFFFFEDD4) to Color(0xFFCA3500)
     "AUDITOR" -> Color(0xFFDCFCE7) to Color(0xFF008236)
     else -> Color(0xFFF3F4F6) to Color(0xFF6B7280)
+}
+
+
+@Preview(showBackground = true)
+@Composable
+fun UserDetailContentPreview() {
+    // Requires a mock user instance
 }

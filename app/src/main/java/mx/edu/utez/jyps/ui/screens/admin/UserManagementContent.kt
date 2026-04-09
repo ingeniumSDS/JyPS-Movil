@@ -1,6 +1,5 @@
 package mx.edu.utez.jyps.ui.screens.admin
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,12 +37,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.tooling.preview.Preview
 import mx.edu.utez.jyps.data.repository.LoadResult
 import mx.edu.utez.jyps.ui.components.admin.MetricCard
 import mx.edu.utez.jyps.ui.components.admin.UserCard
 import mx.edu.utez.jyps.ui.components.admin.UserFilterRow
 import mx.edu.utez.jyps.viewmodel.AdminViewModel
+import mx.edu.utez.jyps.ui.theme.JyPSTheme
 
+/**
+ * Renders the primary user management dashboard for administrators.
+ * Displays user metrics, filtering controls, and the list of user cards.
+ *
+ * @param viewModel Administrator ViewModel holding the users and metrics state.
+ */
 @Composable
 fun UserManagementContent(viewModel: AdminViewModel) {
     val users by viewModel.users.collectAsStateWithLifecycle()
@@ -204,5 +211,16 @@ fun UserManagementContent(viewModel: AdminViewModel) {
                 }
             }
         }
+    }
+}
+
+/**
+ * Preview for the User Management screen content.
+ */
+@Preview(showBackground = true)
+@Composable
+fun UserManagementContentPreview() {
+    JyPSTheme {
+        Text("Vista previa (Preview) no disponible nativamente porque la función requiere instanciar AdminViewModel, el cual tiene dependencias de red de Retrofit y contexto de aplicación.")
     }
 }

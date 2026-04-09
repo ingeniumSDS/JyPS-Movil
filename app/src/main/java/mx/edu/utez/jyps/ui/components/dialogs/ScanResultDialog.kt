@@ -3,8 +3,6 @@ package mx.edu.utez.jyps.ui.components.dialogs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -27,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -161,41 +158,16 @@ fun ScanResultDialog(
 }
 
 /**
- * Single row inside the pass info grid.
- *
- * @param label Descriptive label on the left.
- * @param value Formatted value on the right.
- * @param valueColor Optional override color for the value text.
- * @param isMono Renders [value] in a monospace font for code-like fields.
- */
-@Composable
-private fun ScanDetailRow(
-    label: String,
-    value: String,
-    valueColor: Color = Color(0xFF0F2C59),
-    isMono: Boolean = false
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(text = label, fontSize = 13.sp, color = Color(0xFF64748B), modifier = Modifier.weight(0.45f))
-        Text(
-            text = value,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = valueColor,
-            fontFamily = if (isMono) FontFamily.Monospace else FontFamily.Default,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(0.55f)
-        )
-    }
-}
-
-/**
  * Maps each [ScannerStatus] subclass to display configuration for the dialog.
  * Returns null for [ScannerStatus.Idle] since no dialog should be shown.
+ *
+ * @property icon The header symbol defining the mapping sequence.
+ * @property accentColor Global tint overlay constraint property maps.
+ * @property headerBg Surface bounds limits mappings definition mappings.
+ * @property title Header target.
+ * @property subtitle Property sequences bounding contexts definitions.
+ * @property bodyMessage Additional explicitly textual context definition mapping contexts.
+ * @property passInfo Resolved tuple boolean mapping object context explicitly mapping bound expressions parameters explicit definitions limits logic boundary.
  */
 private data class ScanDialogConfig(
     val icon: ImageVector,
@@ -207,6 +179,12 @@ private data class ScanDialogConfig(
     val passInfo: ScannedPassInfo? = null
 )
 
+/**
+ * Explicit boundary definition arrays string tuples map property bounds.
+ *
+ * @param status Target bound sequences contexts limits explicit limits contexts bounding definition constraint values explicitly constraint contexts explicitly property bounds maps binding mappings explicitly definitions logic map bindings explicitly explicitly bounded parameter definitions variable constraint mapping boolean arrays limits bounds values explicitly context property mapping contexts explicitly maps limits explicit contexts mappings mappings expressions explicit bounding maps.
+ * @return Context constraint mapping property bounding expressions definitions limits bounded explicitly variables definitions implicitly mapped definitions strings explicit boundary tuples constraint explicitly.
+ */
 private fun scanDialogConfig(status: ScannerStatus): ScanDialogConfig? = when (status) {
     is ScannerStatus.Idle -> null
 

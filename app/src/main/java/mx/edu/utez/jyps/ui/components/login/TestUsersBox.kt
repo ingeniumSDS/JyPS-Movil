@@ -19,6 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
 
+/**
+ * Temporary mock user credential display card for demo access.
+ *
+ * @param modifier Optional Compose layout constraints.
+ */
 @Composable
 fun TestUsersBox(modifier: Modifier = Modifier) {
     Column(
@@ -62,20 +67,6 @@ fun TestUsersBox(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(top = 4.dp)
         )
     }
-}
-
-@Composable
-private fun TestUserRow(
-    role: String,
-    email: String,
-    isError: Boolean = false
-) {
-    Text(
-        text = "• $role: $email",
-        fontSize = 12.sp,
-        color = if (isError) Color(0xFFE7000B) else Color(0xFF6A7282),
-        lineHeight = 16.sp
-    )
 }
 
 @Preview(showBackground = true)

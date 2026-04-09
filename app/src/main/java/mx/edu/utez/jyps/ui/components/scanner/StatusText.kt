@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
  * 
  * @param isValid Indicates if the code was successfully validated.
  * @param code The resulting text to display.
+ * @param modifier Optional Compose layout adjustments.
  */
 @Composable
 fun StatusText(

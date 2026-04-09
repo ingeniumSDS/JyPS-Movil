@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -38,6 +39,14 @@ import mx.edu.utez.jyps.viewmodel.EmployeeHistoryViewModel
 
 /**
  * Screen displaying the employee's history of exit passes and justifications.
+ *
+ * @param onLogoutClick Callback to end the user session.
+ * @param onHomeClick Callback to navigate to the home dashboard.
+ * @param onProfileClick Callback to navigate to the user profile.
+ * @param viewModel ViewModel tracking history state.
+ * @param showEmployeeModeBanner Flag to display the contextual mode banner.
+ * @param onReturnToRoleDashboard Callback to close the employee context.
+ * @param userName Injected session name.
  */
 @Composable
 fun EmployeeHistoryScreen(
@@ -177,4 +186,15 @@ fun EmployeeHistoryScreen(
             }
         }
     }
+}
+
+@Preview(showSystemUi = true)
+@Composable
+fun EmployeeHistoryPreview() {
+    EmployeeHistoryScreen(
+        onLogoutClick = {},
+        onHomeClick = {},
+        onProfileClick = {},
+        viewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    )
 }

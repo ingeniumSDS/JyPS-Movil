@@ -20,6 +20,13 @@ enum class ForgotPasswordStep {
 
 /**
  * UI State for the Forgot Password screen.
+ *
+ * @property email The email address inputted by the user.
+ * @property verificationCode The 6-digit confirmation code.
+ * @property currentStep The current phase of the recovery phase.
+ * @property isLoading Indicates if a network request is executing.
+ * @property emailErrorMessage Validation error message for the email field.
+ * @property codeErrorMessage Validation error message for the code field.
  */
 data class ForgotPasswordUiState(
     val email: String = "",
@@ -38,10 +45,20 @@ class ForgotPasswordViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(ForgotPasswordUiState())
     val uiState: StateFlow<ForgotPasswordUiState> = _uiState.asStateFlow()
 
+    /**
+     * Updates the user's email input and clears any previous error.
+     *
+     * @param newEmail The new text in the email field.
+     */
     fun onEmailChange(newEmail: String) {
         _uiState.update { it.copy(email = newEmail, emailErrorMessage = null) }
     }
 
+    /**
+     * Updates the verification code up to 6 numerical digits.
+     *
+     * @param newCode The new text in the code field.
+     */
     fun onCodeChange(newCode: String) {
         // Ensure only numbers and max 6 digits
         val filteredCode = newCode.filter { it.isDigit() }.take(6)

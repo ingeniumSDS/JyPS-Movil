@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +24,8 @@ import mx.edu.utez.jyps.ui.theme.JyPSTheme
 
 /**
  * AppLogo is a visual component representing the JyPS identity.
+ *
+ * @param modifier Optional modifier to configure layout bounds or behavior.
  */
 @Composable
 fun AppLogo(modifier: Modifier = Modifier) {

@@ -10,6 +10,10 @@ import mx.edu.utez.jyps.data.network.RetrofitInstance
 import mx.edu.utez.jyps.ui.NavigationHost
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
 
+/**
+ * Main entry point of the JyPS application.
+ * Bootstraps the dependency injection, sets up Edge-to-Edge display, and initializes the App Navigation.
+ */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,6 +27,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Preview for the main activity structure.
+ */
 @Preview(showBackground = true)
 @Composable
 fun MainActivityPreview() {

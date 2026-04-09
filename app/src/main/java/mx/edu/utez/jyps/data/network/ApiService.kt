@@ -15,6 +15,10 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 
+/**
+ * Central interface defining all Retrofit HTTP operations.
+ * Maps the mobile app requests directly to the REST backend endpoints.
+ */
 interface ApiService {
 
     // ── Autenticación ───────────────────────────────

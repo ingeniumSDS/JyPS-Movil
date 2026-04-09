@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * Reusable Top Bar for administrative screens (Admin and DeptHead).
@@ -82,4 +83,10 @@ fun AppTopBar(
         ),
         modifier = Modifier.padding(top = 4.dp) // Subtle spacing to match design
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AppTopBarPreview() {
+    AppTopBar(onMenuClick = {})
 }

@@ -6,12 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,6 +21,17 @@ import androidx.compose.ui.unit.sp
 import mx.edu.utez.jyps.data.model.CuentaResponse
 import mx.edu.utez.jyps.data.model.Usuario
 
+import androidx.compose.ui.tooling.preview.Preview
+
+/**
+ * A highly interactive card summarizing a User profile in the admin list.
+ *
+ * @param usuario Current serialized user model from API.
+ * @param cuenta Status wrapper associated with the particular user containing blocked statuses.
+ * @param onEditClick Fired to bootstrap edit modifications to this user.
+ * @param onToggleStatusClick Fired to ban/unban the user profile access.
+ * @param onViewDetail Optional dispatch logic indicating request to open detail overlay.
+ */
 @Composable
 fun UserCard(
     usuario: Usuario,
@@ -132,50 +141,9 @@ fun UserCard(
     }
 }
 
+@Preview(showBackground = true)
 @Composable
-private fun RolePill(role: String) {
-    val (bgColor, textColor) = when (role) {
-        "Administrador" -> Pair(Color(0xFFFFE2E2), Color(0xFFC10007))
-        "Empleado" -> Pair(Color(0xFFDBEAFE), Color(0xFF1447E6))
-        "Jefe de Departamento" -> Pair(Color(0xFFF3E8FF), Color(0xFF8200DB))
-        "Auditor" -> Pair(Color(0xFFDCFCE7), Color(0xFF008236))
-        "Guardia" -> Pair(Color(0xFFFFEDD4), Color(0xFFCA3500))
-        else -> Pair(Color(0xFFF3F4F6), Color(0xFF4A5565))
-    }
-    Box(modifier = Modifier.background(bgColor, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 4.dp)) {
-        Text(text = role, color = textColor, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-@Composable
-private fun DeptPill(dept: String) {
-    Row(
-        modifier = Modifier.background(Color(0xFFF3F4F6), RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(Icons.Default.Business, contentDescription = null, tint = Color(0xFF364153), modifier = Modifier.size(12.dp))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(text = dept, color = Color(0xFF364153), fontSize = 12.sp)
-    }
-}
-
-@Composable
-private fun StatusPill(status: String, textColor: Color, bgColor: Color) {
-    Row(
-        modifier = Modifier.background(bgColor, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(Icons.Default.Warning, contentDescription = null, tint = textColor, modifier = Modifier.size(12.dp))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(text = status, color = textColor, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-@Composable
-private fun ContactRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, dimmed: Boolean = false) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = Color(0xFF99A1AF), modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = text, color = if (dimmed) Color(0xFF6A7282) else Color(0xFF4A5565), fontSize = 14.sp)
-    }
+fun UserCardPreview() {
+    val mockUser = Usuario(id = 1L, nombreCompleto = "Juan Perez Gomez", correo = "juan@utez.edu.mx", telefono = "1234567890", roles = listOf("EMPLEADO"))
+    UserCard(usuario = mockUser, cuenta = null, onEditClick = {}, onToggleStatusClick = {})
 }

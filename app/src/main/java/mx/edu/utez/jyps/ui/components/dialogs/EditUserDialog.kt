@@ -1,5 +1,6 @@
-package mx.edu.utez.jyps.ui.screens.admin
+package mx.edu.utez.jyps.ui.components.dialogs
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,14 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,8 +29,20 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.tooling.preview.Preview
+import mx.edu.utez.jyps.ui.components.admin.DialogHeader
+import mx.edu.utez.jyps.ui.components.admin.ErrorBanner
+import mx.edu.utez.jyps.ui.components.admin.FormField
+import mx.edu.utez.jyps.ui.components.admin.RolesSelector
+import mx.edu.utez.jyps.ui.components.admin.DepartmentDropdown
+import mx.edu.utez.jyps.ui.components.admin.TimeFieldWithPicker
 import mx.edu.utez.jyps.viewmodel.AdminViewModel
 
+/**
+ * Dialog overlay to edit an existing user's attributes.
+ *
+ * @param viewModel The ViewModel providing the user's mutable state context.
+ */
 @Composable
 fun EditUserDialog(viewModel: AdminViewModel) {
     val isVisible by viewModel.isEditUserVisible.collectAsStateWithLifecycle()
@@ -57,7 +68,7 @@ fun EditUserDialog(viewModel: AdminViewModel) {
                     val scrollState = rememberScrollState()
                     val scrollToTopTrigger by viewModel.scrollToTopTrigger.collectAsStateWithLifecycle()
 
-                    androidx.compose.runtime.LaunchedEffect(scrollToTopTrigger) {
+                    LaunchedEffect(scrollToTopTrigger) {
                         if (scrollToTopTrigger > 0) {
                             scrollState.animateScrollTo(0)
                         }
@@ -134,7 +145,7 @@ fun EditUserDialog(viewModel: AdminViewModel) {
                                     onClick = { viewModel.closeEditUser() },
                                     modifier = Modifier.weight(1f).height(48.dp),
                                     shape = RoundedCornerShape(8.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF6A7282))
+                                    border = BorderStroke(1.5.dp, Color(0xFF6A7282))
                                 ) {
                                     Text("Cancelar", color = Color(0xFF6A7282), fontWeight = FontWeight.Medium, fontSize = 14.sp)
                                 }
@@ -145,4 +156,10 @@ fun EditUserDialog(viewModel: AdminViewModel) {
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EditUserDialogPreview() {
+    // Preview requires mocked AdminViewModel
 }

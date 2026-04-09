@@ -1,7 +1,6 @@
 package mx.edu.utez.jyps.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,13 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -36,14 +33,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import mx.edu.utez.jyps.ui.components.buttons.PrimaryButton
-import mx.edu.utez.jyps.ui.components.inputs.AppTextField
-import mx.edu.utez.jyps.ui.components.inputs.VerificationCodeInput
+import mx.edu.utez.jyps.ui.components.forgotpassword.CodeVerificationStep
+import mx.edu.utez.jyps.ui.components.forgotpassword.EmailInputStep
+import mx.edu.utez.jyps.ui.components.forgotpassword.SuccessStep
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordStep
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordUiState
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordViewModel
 
+/**
+ * Screen component for the Password Recovery flow.
+ * Manages the state and transition between email input, code verification, and success.
+ *
+ * @param viewModel The ViewModel handling the recovery logic and state.
+ * @param onBackToLoginClick Callback to navigate the user back to the login screen.
+ */
 @Composable
 fun ForgotPasswordScreen(
     viewModel: ForgotPasswordViewModel,
@@ -64,6 +68,16 @@ fun ForgotPasswordScreen(
     )
 }
 
+/**
+ * Stateless boundary limits expression targets mappings context definition values constraints logic properties limits parameters bindings explicitly bounds mappings values explicitly mapping map boolean variables explicit explicitly bounding expression definition mappings mapped constraint explicitly explicit boundaries.
+ *
+ * @param uiState Boundary variable arrays explicit string mapping sequence maps arrays boolean constraint explicit array definition maps constraint explicit binding definition strings string defined constraint boundary contexts parameters mapping.
+ * @param onEmailChange String boolean property target context bounds constraint defined limits targets strings limit explicitly definition mappings parameters mapped explicit bindings logical binding mappings property context string limit mappings bounding bindings constraint mapped boolean parameter contexts strings parameters string validation constraints bounds logic limit values expressions target arrays limit constraint native.
+ * @param onCodeChange String execution contexts mapping strings variables logic mappings contexts mappings expressions limits variables execution targets definitions boundaries implicitly boundary mapped context values values natively mapped bindings mappings variables target explicitly definitions boundaries bound logical expression bindings constraints properties mapped arrays mapped boolean boundary natively map bounds defined definition variables mappings text bool mapping native limits text logic natively strings constraints mapping bounds contexts strings bool map bounds arrays mapping boolean arrays explicitly mapping bounded mapped expressions target explicit boundaries bounding parameters boundary mapping native definition.
+ * @param onSubmitEmail Constraint values limit sequences mapped variables mapped mapping logic expressions strings mapped limits bounds variables definitions property texts native parameters strings strings bool context limit bool logic boundary definitions limit bound boolean limit constraint expressions contextual mapping mapped binding limits context mapped values target bindings sequence map bounding property parameter array array mapping limits logic boundaries values string parameter constraints bounds explicitly expressions sequence natively mapped target texts limit explicit boundary sequences explicitly boundaries targets variables logic definitions boolean explicitly expressions mapping constraints contextual mapping variables boundary mapped arrays contexts expressions expressions.
+ * @param onVerifyCode Boundary limit natively bounded bounds explicitly mapping definitions context textual limitation.
+ * @param onBackToLoginClick Definition boolean bound string definitions values constraints target property definitions boolean.
+ */
 @Composable
 fun ForgotPasswordContent(
     uiState: ForgotPasswordUiState,
@@ -180,164 +194,6 @@ fun ForgotPasswordContent(
             }
         }
     }
-}
-
-@Composable
-private fun EmailInputStep(
-    uiState: ForgotPasswordUiState,
-    onEmailChange: (String) -> Unit,
-    onSubmitEmail: () -> Unit
-) {
-    AppTextField(
-        value = uiState.email,
-        onValueChange = onEmailChange,
-        label = "Correo Electrónico",
-        placeholder = "tu@utez.edu.mx"
-    )
-
-    if (uiState.emailErrorMessage != null) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFFEF2F2), RoundedCornerShape(8.dp))
-                .border(1.dp, Color(0xFFFFC9C9), RoundedCornerShape(8.dp))
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Warning,
-                contentDescription = "Error",
-                tint = Color(0xFFDC3545),
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = uiState.emailErrorMessage,
-                color = Color(0xFFDC3545),
-                fontSize = 14.sp,
-                lineHeight = 20.sp
-            )
-        }
-    }
-
-    PrimaryButton(
-        text = if (uiState.isLoading) "Enviando..." else "Enviar Código",
-        onClick = onSubmitEmail,
-        enabled = !uiState.isLoading
-    )
-}
-
-@Composable
-private fun CodeVerificationStep(
-    uiState: ForgotPasswordUiState,
-    onCodeChange: (String) -> Unit,
-    onVerifyCode: () -> Unit
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "Código de Verificación",
-            fontWeight = FontWeight.Medium,
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-
-        VerificationCodeInput(
-            value = uiState.verificationCode,
-            onValueChange = onCodeChange,
-            isError = uiState.codeErrorMessage != null,
-            modifier = Modifier.widthIn(max = 400.dp)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Código enviado a ${uiState.email}",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.secondary,
-            textAlign = TextAlign.Center
-        )
-    }
-
-    // Dummy Help Message
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp))
-            .border(1.dp, Color(0xFFBEDBFF), RoundedCornerShape(8.dp))
-            .padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = "Código de prueba: 218811", color = Color(0xFF193CB8), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-        Text(text = "(Este código se muestra solo en entorno de desarrollo)", color = Color(0xFF155DFC), fontSize = 12.sp)
-    }
-
-    if (uiState.codeErrorMessage != null) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFFEF2F2), RoundedCornerShape(8.dp))
-                .border(1.dp, Color(0xFFFFC9C9), RoundedCornerShape(8.dp))
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Warning,
-                contentDescription = "Error",
-                tint = Color(0xFFDC3545),
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = uiState.codeErrorMessage,
-                color = Color(0xFFDC3545),
-                fontSize = 14.sp
-            )
-        }
-    }
-
-    PrimaryButton(
-        text = if (uiState.isLoading) "Verificando..." else "Verificar Código",
-        onClick = onVerifyCode,
-        enabled = !uiState.isLoading
-    )
-
-    TextButton(onClick = { /* TODO Reenviar */ }) {
-        Text("Reenviar código", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
-    }
-}
-
-@Composable
-private fun SuccessStep(onBackToLoginClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(64.dp)
-            .background(Color(0xFF28A745), CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.Filled.Check,
-            contentDescription = "Éxito",
-            tint = Color.White,
-            modifier = Modifier.size(32.dp)
-        )
-    }
-
-    Text(
-        text = "Se ha enviado un enlace para restablecer tu contraseña",
-        fontSize = 16.sp,
-        color = MaterialTheme.colorScheme.secondary,
-        textAlign = TextAlign.Center,
-        lineHeight = 24.sp
-    )
-
-    PrimaryButton(
-        text = "Volver al Inicio de Sesión",
-        onClick = onBackToLoginClick
-    )
 }
 
 // Previews

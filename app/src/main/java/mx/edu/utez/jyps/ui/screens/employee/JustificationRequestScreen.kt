@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -52,6 +51,11 @@ import java.time.ZoneId
  *
  * @param viewModel The ViewModel managing the state.
  * @param onBackClick Callback to navigate back.
+ * @param onSuccessSubmit Callback triggered when the request is successfully submitted.
+ * @param showEmployeeModeBanner Flag to show the context banner.
+ * @param onReturnToRoleDashboard Callback to exit employee mode.
+ * @param userName Injected user name.
+ * @param userEmail Injected user email.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -483,6 +487,9 @@ fun JustificationRequestScreen(
 /**
  * Utility function to create a dummy Uri file targeting the App Cache.
  * Used internally by camera logic.
+ *
+ * @param context Environment context used to resolve the FileProvider.
+ * @return The constructed local cache URI.
  */
 private fun createImageUri(context: Context): Uri {
     val imageDir = File(context.cacheDir, "images")
@@ -494,6 +501,10 @@ private fun createImageUri(context: Context): Uri {
 
 /**
  * Utility function to extract real file name from a Uri.
+ *
+ * @param context Environment context used to query the content resolver.
+ * @param uri The target content pointer.
+ * @return The human-readable string name of the file.
  */
 private fun getFileName(context: Context, uri: Uri): String {
     var result: String? = null

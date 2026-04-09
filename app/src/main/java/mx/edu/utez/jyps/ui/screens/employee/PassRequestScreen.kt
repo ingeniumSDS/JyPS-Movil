@@ -1,9 +1,6 @@
 package mx.edu.utez.jyps.ui.screens.employee
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,7 +16,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -30,11 +26,7 @@ import mx.edu.utez.jyps.ui.theme.InfoBlue
 import mx.edu.utez.jyps.ui.theme.InfoBlueBg
 import mx.edu.utez.jyps.ui.theme.InfoBlueBorder
 import mx.edu.utez.jyps.viewmodel.PassRequestViewModel
-import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalTime
-import java.time.ZoneId
-
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
 import mx.edu.utez.jyps.ui.components.common.AppToast
 import mx.edu.utez.jyps.ui.components.common.ToastType
@@ -45,6 +37,11 @@ import mx.edu.utez.jyps.ui.components.common.EmployeeModeBanner
  *
  * @param viewModel The ViewModel managing the pass request state and logic.
  * @param onBackClick Callback that navigates to the previous screen.
+ * @param onSuccessSubmit Callback triggered when the request is successfully submitted.
+ * @param showEmployeeModeBanner Flag to show the context banner.
+ * @param onReturnToRoleDashboard Callback to exit employee mode.
+ * @param userName Injected user name.
+ * @param userEmail Injected user email.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

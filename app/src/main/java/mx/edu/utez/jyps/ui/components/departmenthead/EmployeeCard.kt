@@ -1,6 +1,5 @@
 package mx.edu.utez.jyps.ui.components.departmenthead
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.edu.utez.jyps.data.model.EmployeeItem
+import androidx.compose.ui.graphics.SolidColor
 
 /**
  * Redesigned EmployeeCard following Figma mockup strictly.
@@ -107,7 +107,7 @@ fun EmployeeCard(
                 onClick = onEditClick,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
-                border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF0F2C59))),
+                border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(Color(0xFF0F2C59))),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF0F2C59))
             ) {
                 Icon(
@@ -126,62 +126,7 @@ fun EmployeeCard(
     }
 }
 
-@Composable
-private fun EmployeeBadge(
-    text: String,
-    containerColor: Color,
-    contentColor: Color,
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null
-) {
-    Surface(
-        color = containerColor,
-        shape = RoundedCornerShape(4.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = contentColor,
-                    modifier = Modifier.size(12.dp)
-                )
-            }
-            Text(
-                text = text,
-                color = contentColor,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
 
-@Composable
-private fun ContactInfoRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = Color(0xFF6A7282),
-            modifier = Modifier.size(14.dp)
-        )
-        Text(
-            text = text,
-            fontSize = 12.sp,
-            color = Color(0xFF6A7282)
-        )
-    }
-}
 
 @Preview
 @Composable

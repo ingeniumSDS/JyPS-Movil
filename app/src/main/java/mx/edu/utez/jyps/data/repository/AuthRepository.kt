@@ -28,7 +28,7 @@ class AuthRepository(
     suspend fun login(correo: String, pass: String): Result<LoginResponse> {
         // HARDCODED MOCK: Security Guard App Entry Point
         if (correo == "maria.gonzalez@utez.edu.mx" && pass.isNotEmpty()) {
-            val fakeResponse = mx.edu.utez.jyps.data.model.LoginResponse(
+            val fakeResponse = LoginResponse(
                 id = 999L,
                 nombreCompleto = "María González Hernández",
                 correo = "maria.gonzalez@utez.edu.mx",
@@ -44,7 +44,7 @@ class AuthRepository(
 
         // HARDCODED MOCK: Employee Dashboard App Entry Point
         if (correo == "juan.perez@utez.edu.mx" && pass.isNotEmpty()) {
-            val fakeResponse = mx.edu.utez.jyps.data.model.LoginResponse(
+            val fakeResponse = LoginResponse(
                 id = 100L,
                 nombreCompleto = "Juan Pérez García",
                 correo = "juan.perez@utez.edu.mx",
@@ -60,7 +60,7 @@ class AuthRepository(
 
         // HARDCODED MOCK: Department Head Dashboard App Entry Point
         if (correo == "roberto.sanchez@utez.edu.mx" && pass.isNotEmpty()) {
-            val fakeResponse = mx.edu.utez.jyps.data.model.LoginResponse(
+            val fakeResponse = LoginResponse(
                 id = 200L,
                 nombreCompleto = "Roberto Sánchez López",
                 correo = "roberto.sanchez@utez.edu.mx",
