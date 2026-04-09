@@ -12,5 +12,6 @@ data class Departamento(
     val id: Long = 0,
     val nombre: String = "",
     val descripcion: String = "",
-    val jefeId: Long = 0
+    val jefeId: Long = 0,
+    val estaActivo: Boolean = true
 )

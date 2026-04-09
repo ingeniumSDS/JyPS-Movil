@@ -133,21 +133,25 @@ fun CreateUserDialog(viewModel: AdminViewModel) {
 
                         PasswordInfoBox()
 
-                        // Actions: 2 buttons
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // Actions: Stacked buttons for consistency
+                        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             OutlinedButton(
                                 onClick = { viewModel.setCreateUserVisible(false) },
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
                                 shape = RoundedCornerShape(8.dp),
                                 border = BorderStroke(1.5.dp, Color(0xFF0F2C59))
-                            ) { Text("Cancelar", color = Color(0xFF0F2C59), fontWeight = FontWeight.Medium) }
+                            ) { 
+                                Text("Cancelar", color = Color(0xFF0F2C59), fontWeight = FontWeight.Medium) 
+                            }
 
                             Button(
                                 onClick = { viewModel.saveNewUser() },
-                                modifier = Modifier.weight(1f).height(48.dp),
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28A745))
-                            ) { Text("Crear Usuario", color = Color.White, fontWeight = FontWeight.Medium) }
+                            ) { 
+                                Text("Crear Usuario", color = Color.White, fontWeight = FontWeight.Medium) 
+                            }
                         }
                     }
                 }

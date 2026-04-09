@@ -30,12 +30,17 @@ import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.ui.components.navigation.AppNavigationDrawer
 import mx.edu.utez.jyps.ui.components.navigation.AppTopBar
 import mx.edu.utez.jyps.ui.components.navigation.adminMenuOptions
-import mx.edu.utez.jyps.viewmodel.AdminViewModel
-import mx.edu.utez.jyps.ui.theme.JyPSTheme
-import androidx.compose.ui.tooling.preview.Preview
 import mx.edu.utez.jyps.ui.components.dialogs.CreateUserDialog
 import mx.edu.utez.jyps.ui.components.dialogs.EditUserDialog
 import mx.edu.utez.jyps.ui.components.dialogs.UserDetailDialog
+import mx.edu.utez.jyps.viewmodel.AdminViewModel
+import mx.edu.utez.jyps.viewmodel.DepartmentManagementViewModel
+import mx.edu.utez.jyps.ui.theme.JyPSTheme
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
+import mx.edu.utez.jyps.ui.components.dialogs.CreateDepartmentDialog
+import mx.edu.utez.jyps.ui.components.dialogs.EditDepartmentDialog
+import mx.edu.utez.jyps.ui.components.dialogs.ToggleDepartmentStatusDialogs
 
 /**
  * Main wrapper screen for the Administrator dashboard.
@@ -47,6 +52,7 @@ import mx.edu.utez.jyps.ui.components.dialogs.UserDetailDialog
 @Composable
 fun AdminDashboardScreen(
     viewModel: AdminViewModel,
+    deptViewModel: DepartmentManagementViewModel = viewModel(),
     onLogoutSuccess: () -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -119,6 +125,17 @@ fun AdminDashboardScreen(
             ) {
                 when (selectedRoute) {
                     "admin_users" -> UserManagementContent(viewModel)
+                    "admin_departments" -> {
+                        val deptUiState by deptViewModel.uiState.collectAsStateWithLifecycle()
+                        DepartmentManagementContent(
+                            uiState = deptUiState,
+                            onSearchQueryChange = deptViewModel::onSearchQueryChange,
+                            onFilterChange = deptViewModel::onFilterChange,
+                            onAddClick = deptViewModel::openCreate,
+                            onEditClick = deptViewModel::openEdit,
+                            onToggleStatusClick = deptViewModel::requestToggleStatus
+                        )
+                    }
                     else -> {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             Text("Pantalla en Construcción: $selectedRoute")
@@ -132,6 +149,14 @@ fun AdminDashboardScreen(
         CreateUserDialog(viewModel)
         EditUserDialog(viewModel)
         UserDetailDialog(viewModel)
+
+        // Department Dialogs
+        CreateDepartmentDialog(deptViewModel)
+        EditDepartmentDialog(deptViewModel)
+        ToggleDepartmentStatusDialogs(
+            viewModel = deptViewModel,
+            onManageEmployees = { viewModel.selectDrawerItem("admin_users") }
+        )
 
         // Processing overlay
         if (isProcessing) {
@@ -151,6 +176,8 @@ fun AdminDashboardScreen(
 @Composable
 fun AdminDashboardScreenPreview() {
     JyPSTheme {
-        Text("Vista previa (Preview) no disponible nativamente porque la función requiere instanciar AdminViewModel, el cual tiene dependencias de red de Retrofit y contexto de aplicación.")
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Vista previa (Preview) no disponible nativamente para el Screen principal.")
+        }
     }
 }

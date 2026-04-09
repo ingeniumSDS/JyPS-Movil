@@ -128,9 +128,17 @@ fun EditUserDialog(viewModel: AdminViewModel) {
                             TimeFieldWithPicker(label = "Hora Fin Jornada *", hour = endH, minute = endM, onTimeSelected = viewModel::onEditEndTimeChange)
                         }
 
-                        // Actions: 3 buttons — Responsive layout
+                        // Actions: Stacked buttons for consistency
                         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            // Primary Action: Guardar
+                            OutlinedButton(
+                                onClick = { viewModel.closeEditUser() },
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.7.dp, Color(0xFF0F2C59))
+                            ) {
+                                Text("Cancelar", color = Color(0xFF0F2C59), fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                            }
+
                             Button(
                                 onClick = { viewModel.saveEditUser() },
                                 modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -138,17 +146,6 @@ fun EditUserDialog(viewModel: AdminViewModel) {
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F2C59))
                             ) {
                                 Text("Guardar Cambios", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            }
-
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                OutlinedButton(
-                                    onClick = { viewModel.closeEditUser() },
-                                    modifier = Modifier.weight(1f).height(48.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(1.5.dp, Color(0xFF6A7282))
-                                ) {
-                                    Text("Cancelar", color = Color(0xFF6A7282), fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                                }
                             }
                         }
                     }
