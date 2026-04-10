@@ -27,16 +27,15 @@ import androidx.compose.ui.tooling.preview.Preview
  * Detailed read-only view of a given user's information.
  * Lists schedule, roles, department, and current account access status.
  *
- * @param viewModel AdminViewModel providing the selected user data.
+ * @param viewModel AdminViewModel providing the selected user data and account details.
  */
 @Composable
 fun UserDetailDialog(viewModel: AdminViewModel) {
     val isVisible by viewModel.isUserDetailVisible.collectAsStateWithLifecycle()
     val user by viewModel.selectedUser.collectAsStateWithLifecycle()
-    val accountStatuses by viewModel.accountStatuses.collectAsStateWithLifecycle()
+    val selectedAccount by viewModel.selectedUserAccount.collectAsStateWithLifecycle()
 
     if (isVisible && user != null) {
-        val cuenta = accountStatuses[user!!.id]
         Dialog(
             onDismissRequest = { viewModel.closeUserDetail() },
             properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -48,7 +47,7 @@ fun UserDetailDialog(viewModel: AdminViewModel) {
                 Column(
                     modifier = Modifier
                         .padding(24.dp)
-                        .background(Color.White, RoundedCornerShape(8.dp))
+                        .background(Color.White, RoundedCornerShape(12.dp))
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
                 ) {
@@ -58,14 +57,24 @@ fun UserDetailDialog(viewModel: AdminViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Detalle de Usuario", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF101828))
+                        Text(
+                            text = "Detalle de Usuario", 
+                            fontSize = 20.sp, 
+                            fontWeight = FontWeight.Bold, 
+                            color = Color(0xFF0F2C59)
+                        )
                         IconButton(onClick = { viewModel.closeUserDetail() }) {
                             Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color(0xFF6A7282))
                         }
                     }
 
                     HorizontalDivider(color = Color(0xFFE5E7EB))
-                    user?.let { UserDetailContent(it, cuenta) }
+                    
+                    // Main Content: Combines user profile and security account info
+                    UserDetailContent(
+                        usuario = user!!, 
+                        cuenta = selectedAccount
+                    )
                 }
             }
         }

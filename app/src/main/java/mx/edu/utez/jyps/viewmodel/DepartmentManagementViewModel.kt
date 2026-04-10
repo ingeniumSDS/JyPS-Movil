@@ -1,11 +1,13 @@
 package mx.edu.utez.jyps.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import mx.edu.utez.jyps.data.model.CreateDepartmentRequest
 import mx.edu.utez.jyps.data.model.DepartamentoResponse
@@ -13,17 +15,11 @@ import mx.edu.utez.jyps.data.model.UpdateDepartmentRequest
 import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.data.network.RetrofitInstance
 import mx.edu.utez.jyps.data.repository.DepartmentRepository
+import mx.edu.utez.jyps.data.repository.UsuarioRepository
 import kotlinx.coroutines.launch
 
 /**
  * UI State for the Department Management screen.
- *
- * @property departments List of departments to display.
- * @property searchQuery Current text in the search bar.
- * @property selectedFilter Active filter (Todos, Activos, Inactivos).
- * @property totalCount Overall number of departments.
- * @property activeCount Number of active departments.
- * @property inactiveCount Number of inactive departments.
  */
 data class DepartmentUiState(
     val departments: List<DepartamentoResponse> = emptyList(),
@@ -38,11 +34,17 @@ data class DepartmentUiState(
 
 /**
  * ViewModel managing the state and logic for Department Management.
- * Uses dummy data as requested for initial implementation.
+ * Follows strict efficiency guidelines by avoiding redundant network calls.
+ *
+ * @param repository Repository for department operations.
+ * @param userRepository Shared user repository to access global user lists.
  */
 class DepartmentManagementViewModel(
-    private val repository: DepartmentRepository = DepartmentRepository(RetrofitInstance.api)
+    private val repository: DepartmentRepository = DepartmentRepository(RetrofitInstance.api),
+    private val userRepository: UsuarioRepository = UsuarioRepository(RetrofitInstance.api)
 ) : ViewModel() {
+
+    private val TAG = "DeptViewModel"
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -100,11 +102,11 @@ class DepartmentManagementViewModel(
     private val _selectedDept = MutableStateFlow<DepartamentoResponse?>(null)
     val selectedDept: StateFlow<DepartamentoResponse?> = _selectedDept
 
-    // Potenciales jefes elegibles
+    // Eligible potential heads
     private val _availableHeads = MutableStateFlow<List<Usuario>>(emptyList())
     val availableHeads: StateFlow<List<Usuario>> = _availableHeads
 
-    // Usuarios vinculados actuales (para warning de desactivación)
+    // Current linked active users (for deactivation warning)
     private val _linkedUsers = MutableStateFlow<List<Usuario>>(emptyList())
     val linkedUsers: StateFlow<List<Usuario>> = _linkedUsers
 
@@ -129,13 +131,18 @@ class DepartmentManagementViewModel(
         loadPotentialHeads()
     }
 
+    /**
+     * Loads the master list of departments.
+     */
     fun loadDepartments() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
             try {
+                Log.d(TAG, "Cargando lista global de departamentos")
                 _rawDepartments.value = repository.getDepartamentos()
             } catch (e: Exception) {
+                Log.e(TAG, "Error loadDepartments: ${e.message}")
                 _errorMessage.value = "Error al conectar con el servidor"
             } finally {
                 _isLoading.value = false
@@ -143,11 +150,13 @@ class DepartmentManagementViewModel(
         }
     }
 
+    /**
+     * Orchestrates eligible heads filtering based on department context.
+     */
     private fun loadPotentialHeads(currentDeptId: Long? = null) {
         viewModelScope.launch {
+            Log.d(TAG, "Consultando jefes disponibles")
             val allJefes = repository.getJefesDisponibles()
-            // Filtramos: usuarios que no tienen depto (0L) 
-            // O que pertenecen al departamento que estamos editando actualmente
             _availableHeads.value = allJefes.filter { user ->
                 user.departamentoId == 0L || (currentDeptId != null && user.departamentoId == currentDeptId)
             }
@@ -177,10 +186,7 @@ class DepartmentManagementViewModel(
         _formDescription.value = dept.descripcion
         _formJefeId.value = dept.jefeId
         _formErrors.value = emptyMap()
-        
-        // Recargamos jefes filtrando para este departamento específico
         loadPotentialHeads(dept.id)
-        
         _isEditVisible.value = true
     }
 
@@ -189,12 +195,14 @@ class DepartmentManagementViewModel(
         _selectedDept.value = null
     }
 
+    /**
+     * Pushes department changes to the server.
+     */
     fun saveDepartment() {
         if (!validateForm()) return
 
         viewModelScope.launch {
             _isProcessing.value = true
-            
             val isEdit = _isEditVisible.value
             val result = if (isEdit) {
                 val request = UpdateDepartmentRequest(
@@ -216,8 +224,8 @@ class DepartmentManagementViewModel(
             }
 
             result.onSuccess {
+                Log.d(TAG, "Departamento guardado exitosamente")
                 loadDepartments()
-                loadPotentialHeads() // Refresh generic eligible list after assigning
                 closeCreate()
                 closeEdit()
             }.onFailure { e ->
@@ -227,16 +235,27 @@ class DepartmentManagementViewModel(
         }
     }
 
+    /**
+     * Validates deactivation criteria using local data instead of network calls.
+     */
     fun requestToggleStatus(id: Long) {
         val dept = _rawDepartments.value.find { it.id == id } ?: return
         _selectedDept.value = dept
         
         viewModelScope.launch {
             _isProcessing.value = true
-            val users = repository.getUsuariosByDepartamento(dept.id)
-            _linkedUsers.value = users
             
-            if (dept.activo && users.isNotEmpty()) {
+            // USE Specialized endpoint as requested
+            Log.d(TAG, "Consultando usuarios vinculados al depto $id desde el servidor")
+            val allLinked = repository.getUsuariosByDepartamento(id)
+            
+            // FILTER: Only active users prevent deactivation
+            val activeLinked = allLinked.filter { it.activo }
+            _linkedUsers.value = activeLinked
+            
+            Log.d(TAG, "Hito: ${activeLinked.size} usuarios ACTIVOS bloqueando la inactivación")
+
+            if (dept.activo && activeLinked.isNotEmpty()) {
                 _isWarningVisible.value = true
             } else {
                 _isStatusToggleVisible.value = true
@@ -250,10 +269,11 @@ class DepartmentManagementViewModel(
         viewModelScope.launch {
             _isProcessing.value = true
             repository.toggleEstado(dept.id).onSuccess {
+                Log.d(TAG, "Cambio de estado exitoso para depto ${dept.id}")
                 loadDepartments()
                 closeStatusDialogs()
-            }.onFailure {
-                // Handle error
+            }.onFailure { e ->
+                Log.e(TAG, "Error toggleEstado: ${e.message}")
             }
             _isProcessing.value = false
         }

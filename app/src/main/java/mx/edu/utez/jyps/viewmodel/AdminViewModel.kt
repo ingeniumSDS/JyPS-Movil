@@ -34,11 +34,11 @@ class AdminViewModel(
     val selectedUser: StateFlow<Usuario?> = repository.selectedUser
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
+    val selectedUserAccount: StateFlow<CuentaResponse?> = repository.selectedUserAccount
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+
     val loadState: StateFlow<LoadResult<Unit>> = repository.loadState
         .stateIn(viewModelScope, SharingStarted.Lazily, LoadResult.Loading)
-
-    val accountStatuses: StateFlow<Map<Long, CuentaResponse>> = repository.accountStatuses
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
 
     val departamentos: StateFlow<List<DepartamentoResponse>> = deptRepository.allDepartments
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -186,7 +186,6 @@ class AdminViewModel(
         viewModelScope.launch {
             _isLoadingUsers.value = true
             repository.getUsuarios()
-            repository.fetchAllAccountStatuses()
             _isLoadingUsers.value = false
         }
     }
@@ -298,7 +297,6 @@ class AdminViewModel(
             result.onSuccess {
                 setCreateUserVisible(false)
                 showFeedback("Usuario creado exitosamente", true)
-                repository.fetchAllAccountStatuses()
             }.onFailure { e ->
                 _createServerResponseError.value = "Error: ${e.message}"
                 _scrollToTopTrigger.value += 1
@@ -390,7 +388,6 @@ class AdminViewModel(
             result.onSuccess {
                 closeEditUser()
                 showFeedback("Usuario actualizado exitosamente", true)
-                repository.fetchAllAccountStatuses()
             }.onFailure { e ->
                 _editServerResponseError.value = "Error: ${e.message}"
                 _scrollToTopTrigger.value += 1

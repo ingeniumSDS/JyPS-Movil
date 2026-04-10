@@ -18,29 +18,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import mx.edu.utez.jyps.data.model.CuentaResponse
 import mx.edu.utez.jyps.data.model.Usuario
-
 import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * A highly interactive card summarizing a User profile in the admin list.
+ * Now utilizes the integrated 'activo' status directly from the [Usuario] model.
  *
- * @param usuario Current serialized user model from API.
- * @param cuenta Status wrapper associated with the particular user containing blocked statuses.
+ * @param usuario Current serialized user model from API containing profile and status.
  * @param onEditClick Fired to bootstrap edit modifications to this user.
- * @param onToggleStatusClick Fired to ban/unban the user profile access.
+ * @param onToggleStatusClick Fired to change the user's active/inactive state.
  * @param onViewDetail Optional dispatch logic indicating request to open detail overlay.
  */
 @Composable
 fun UserCard(
     usuario: Usuario,
-    cuenta: CuentaResponse?,
     onEditClick: (Usuario) -> Unit,
     onToggleStatusClick: (Usuario) -> Unit,
     onViewDetail: ((Long) -> Unit)? = null
 ) {
-    val isActivo = cuenta?.activa ?: true
+    val isActivo = usuario.activo
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -68,12 +65,12 @@ fun UserCard(
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column {
-                        Text(
-                            text = usuario.nombreCompleto,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (isActivo) Color(0xFF0F2C59) else Color(0xFF6A7282)
-                        )
+                    Text(
+                        text = usuario.nombreCompleto,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isActivo) Color(0xFF0F2C59) else Color(0xFF6A7282)
+                    )
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -145,5 +142,5 @@ fun UserCard(
 @Composable
 fun UserCardPreview() {
     val mockUser = Usuario(id = 1L, nombreCompleto = "Juan Perez Gomez", correo = "juan@utez.edu.mx", telefono = "1234567890", roles = listOf("EMPLEADO"))
-    UserCard(usuario = mockUser, cuenta = null, onEditClick = {}, onToggleStatusClick = {})
+    UserCard(usuario = mockUser, onEditClick = {}, onToggleStatusClick = {})
 }
