@@ -111,8 +111,7 @@ fun EditUserDialog(viewModel: AdminViewModel) {
                             DepartmentDropdown(
                                 departamentos = departamentos,
                                 selectedId = selectedDeptId,
-                                onSelect = viewModel::onEditDepartmentChange,
-                                onExpand = viewModel::loadDepartamentos
+                                onSelect = viewModel::onEditDepartmentChange
                             )
                         }
 

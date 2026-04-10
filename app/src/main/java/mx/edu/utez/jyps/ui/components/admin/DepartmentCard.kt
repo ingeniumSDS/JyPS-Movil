@@ -1,7 +1,6 @@
 package mx.edu.utez.jyps.ui.components.admin
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,7 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import mx.edu.utez.jyps.data.model.Departamento
+import mx.edu.utez.jyps.data.model.DepartamentoResponse
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
 
 /**
@@ -46,12 +45,12 @@ import mx.edu.utez.jyps.ui.theme.JyPSTheme
  */
 @Composable
 fun DepartmentCard(
-    departamento: Departamento,
+    departamento: DepartamentoResponse,
     onEdit: () -> Unit,
     onToggleStatus: () -> Unit
 ) {
-    val statusColor = if (departamento.estaActivo) Color(0xFF0F2C59) else Color(0xFF99A1AF)
-    val statusLabelColor = if (departamento.estaActivo) Color(0xFF0F2C59) else Color(0xFF6A7282)
+    val statusColor = if (departamento.activo) Color(0xFF0F2C59) else Color(0xFF99A1AF)
+    val statusLabelColor = if (departamento.activo) Color(0xFF0F2C59) else Color(0xFF6A7282)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -94,9 +93,19 @@ fun DepartmentCard(
                             overflow = TextOverflow.Ellipsis
                         )
 
-                        if (!departamento.estaActivo) {
+                        if (!departamento.activo) {
                             InactiveBadge()
                         }
+                    }
+
+                    if (departamento.nombreJefe != null) {
+                        Text(
+                            text = "Jefe: ${departamento.nombreJefe}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF0F2C59).copy(alpha = 0.7f)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -133,9 +142,9 @@ fun DepartmentCard(
                     Text("Editar")
                 }
 
-                val actionText = if (departamento.estaActivo) "Desactivar" else "Activar"
-                val actionColor = if (departamento.estaActivo) Color(0xFFDC3545) else Color(0xFF28A745)
-                val actionIcon = if (departamento.estaActivo) Icons.Default.Cancel else Icons.Default.CheckCircle
+                val actionText = if (departamento.activo) "Desactivar" else "Activar"
+                val actionColor = if (departamento.activo) Color(0xFFDC3545) else Color(0xFF28A745)
+                val actionIcon = if (departamento.activo) Icons.Default.Cancel else Icons.Default.CheckCircle
 
                 OutlinedButton(
                     onClick = onToggleStatus,
@@ -187,12 +196,12 @@ fun DepartmentCardPreview() {
     JyPSTheme {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             DepartmentCard(
-                departamento = Departamento(1, "TI", "Infraestructura tecnológica.", 1, true),
+                departamento = DepartamentoResponse(1, "TI", "Infraestructura tecnológica.", 1, "Juan Pérez", true, 10),
                 onEdit = {},
                 onToggleStatus = {}
             )
             DepartmentCard(
-                departamento = Departamento(2, "Biblioteca", "Gestión de acervo.", 1, false),
+                departamento = DepartamentoResponse(2, "Biblioteca", "Gestión de acervo.", null, null, false, 5),
                 onEdit = {},
                 onToggleStatus = {}
             )

@@ -7,9 +7,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.stateIn
-import mx.edu.utez.jyps.data.model.Departamento
-import mx.edu.utez.jyps.data.model.LinkedUser
+import mx.edu.utez.jyps.data.model.CreateDepartmentRequest
+import mx.edu.utez.jyps.data.model.DepartamentoResponse
+import mx.edu.utez.jyps.data.model.UpdateDepartmentRequest
+import mx.edu.utez.jyps.data.model.Usuario
+import mx.edu.utez.jyps.data.network.RetrofitInstance
+import mx.edu.utez.jyps.data.repository.DepartmentRepository
+import kotlinx.coroutines.launch
 
 /**
  * UI State for the Department Management screen.
@@ -22,19 +26,23 @@ import mx.edu.utez.jyps.data.model.LinkedUser
  * @property inactiveCount Number of inactive departments.
  */
 data class DepartmentUiState(
-    val departments: List<Departamento> = emptyList(),
+    val departments: List<DepartamentoResponse> = emptyList(),
     val searchQuery: String = "",
     val selectedFilter: String = "Todos",
     val totalCount: Int = 0,
     val activeCount: Int = 0,
-    val inactiveCount: Int = 0
+    val inactiveCount: Int = 0,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
 )
 
 /**
  * ViewModel managing the state and logic for Department Management.
  * Uses dummy data as requested for initial implementation.
  */
-class DepartmentManagementViewModel : ViewModel() {
+class DepartmentManagementViewModel(
+    private val repository: DepartmentRepository = DepartmentRepository(RetrofitInstance.api)
+) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -42,31 +50,23 @@ class DepartmentManagementViewModel : ViewModel() {
     private val _selectedFilter = MutableStateFlow("Todos")
     val selectedFilter: StateFlow<String> = _selectedFilter
 
-    // Dummy data source
-    private val _rawDepartments = MutableStateFlow(
-        listOf(
-            Departamento(1, "Tecnologías de la Información", "Departamento encargado de la infraestructura tecnológica y sistemas de información.", 101, true),
-            Departamento(2, "Desarrollo de Software", "Área especializada en el desarrollo y mantenimiento de aplicaciones institucionales.", 102, true),
-            Departamento(3, "Recursos Humanos", "Gestión del capital humano, nómina, reclutamiento y desarrollo del personal.", 103, true),
-            Departamento(4, "Administración", "Coordinación de procesos administrativos y operativos de la institución.", 104, true),
-            Departamento(5, "Finanzas", "Control financiero, presupuestos y gestión de recursos económicos.", 105, true),
-            Departamento(6, "Contabilidad", "Registro contable, reportes financieros y cumplimiento fiscal.", 106, true),
-            Departamento(7, "Marketing", "Promoción institucional, comunicación y estrategias de difusión.", 107, true),
-            Departamento(8, "Biblioteca", "Servicios bibliotecarios y gestión de acervo bibliográfico.", 108, false)
-        )
-    )
+    private val _rawDepartments = MutableStateFlow<List<DepartamentoResponse>>(emptyList())
+    private val _isLoading = MutableStateFlow(false)
+    private val _errorMessage = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<DepartmentUiState> = combine(
         _rawDepartments,
         _searchQuery,
-        _selectedFilter
-    ) { departments, query, filter ->
+        _selectedFilter,
+        _isLoading,
+        _errorMessage
+    ) { departments, query, filter, loading, error ->
         val filtered = departments.filter { dept ->
             val matchesQuery = dept.nombre.contains(query, ignoreCase = true) || 
                                dept.descripcion.contains(query, ignoreCase = true)
             val matchesFilter = when (filter) {
-                "Activos" -> dept.estaActivo
-                "Inactivos" -> !dept.estaActivo
+                "Activos" -> dept.activo
+                "Inactivos" -> !dept.activo
                 else -> true
             }
             matchesQuery && matchesFilter
@@ -77,8 +77,10 @@ class DepartmentManagementViewModel : ViewModel() {
             searchQuery = query,
             selectedFilter = filter,
             totalCount = departments.size,
-            activeCount = departments.count { it.estaActivo },
-            inactiveCount = departments.count { !it.estaActivo }
+            activeCount = departments.count { it.activo },
+            inactiveCount = departments.count { !it.activo },
+            isLoading = loading,
+            errorMessage = error
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DepartmentUiState())
 
@@ -95,22 +97,16 @@ class DepartmentManagementViewModel : ViewModel() {
     private val _isWarningVisible = MutableStateFlow(false)
     val isWarningVisible: StateFlow<Boolean> = _isWarningVisible
 
-    private val _selectedDept = MutableStateFlow<Departamento?>(null)
-    val selectedDept: StateFlow<Departamento?> = _selectedDept
+    private val _selectedDept = MutableStateFlow<DepartamentoResponse?>(null)
+    val selectedDept: StateFlow<DepartamentoResponse?> = _selectedDept
 
-    private val _linkedUsers = MutableStateFlow<List<LinkedUser>>(emptyList())
-    val linkedUsers: StateFlow<List<LinkedUser>> = _linkedUsers
+    // Potenciales jefes elegibles
+    private val _availableHeads = MutableStateFlow<List<Usuario>>(emptyList())
+    val availableHeads: StateFlow<List<Usuario>> = _availableHeads
 
-    // Dummy data for linked users per department
-    private val departmentUsersMap = mapOf(
-        1L to listOf(
-            LinkedUser(1, "Juan Pérez García", "Trabajador"),
-            LinkedUser(2, "Roberto Sánchez López", "Jefe De Área")
-        ),
-        3L to listOf(
-            LinkedUser(3, "Maria Elena Soto", "Auxiliar RRHH")
-        )
-    )
+    // Usuarios vinculados actuales (para warning de desactivación)
+    private val _linkedUsers = MutableStateFlow<List<Usuario>>(emptyList())
+    val linkedUsers: StateFlow<List<Usuario>> = _linkedUsers
 
     // ── Form States ──────────────────────────────────
     private val _formName = MutableStateFlow("")
@@ -119,8 +115,44 @@ class DepartmentManagementViewModel : ViewModel() {
     private val _formDescription = MutableStateFlow("")
     val formDescription: StateFlow<String> = _formDescription
 
+    private val _formJefeId = MutableStateFlow<Long?>(null)
+    val formJefeId: StateFlow<Long?> = _formJefeId
+
     private val _formErrors = MutableStateFlow<Map<String, String>>(emptyMap())
     val formErrors: StateFlow<Map<String, String>> = _formErrors
+
+    private val _isProcessing = MutableStateFlow(false)
+    val isProcessing: StateFlow<Boolean> = _isProcessing
+
+    init {
+        loadDepartments()
+        loadPotentialHeads()
+    }
+
+    fun loadDepartments() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            try {
+                _rawDepartments.value = repository.getDepartamentos()
+            } catch (e: Exception) {
+                _errorMessage.value = "Error al conectar con el servidor"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    private fun loadPotentialHeads(currentDeptId: Long? = null) {
+        viewModelScope.launch {
+            val allJefes = repository.getJefesDisponibles()
+            // Filtramos: usuarios que no tienen depto (0L) 
+            // O que pertenecen al departamento que estamos editando actualmente
+            _availableHeads.value = allJefes.filter { user ->
+                user.departamentoId == 0L || (currentDeptId != null && user.departamentoId == currentDeptId)
+            }
+        }
+    }
 
     // ── Handlers ─────────────────────────────────────
     fun onSearchQueryChange(query: String) { _searchQuery.value = query }
@@ -128,9 +160,11 @@ class DepartmentManagementViewModel : ViewModel() {
 
     fun onFormNameChange(v: String) { _formName.value = v }
     fun onFormDescriptionChange(v: String) { _formDescription.value = v }
+    fun onFormJefeSelected(id: Long?) { _formJefeId.value = id }
 
     fun openCreate() {
         resetForm()
+        loadPotentialHeads()
         _isCreateVisible.value = true
     }
 
@@ -141,7 +175,12 @@ class DepartmentManagementViewModel : ViewModel() {
         _selectedDept.value = dept
         _formName.value = dept.nombre
         _formDescription.value = dept.descripcion
+        _formJefeId.value = dept.jefeId
         _formErrors.value = emptyMap()
+        
+        // Recargamos jefes filtrando para este departamento específico
+        loadPotentialHeads(dept.id)
+        
         _isEditVisible.value = true
     }
 
@@ -152,43 +191,72 @@ class DepartmentManagementViewModel : ViewModel() {
 
     fun saveDepartment() {
         if (!validateForm()) return
-        
-        val newList = if (_isCreateVisible.value) {
-            val nextId = (_rawDepartments.value.maxOfOrNull { it.id } ?: 0) + 1
-            _rawDepartments.value + Departamento(nextId, _formName.value, _formDescription.value, 0, true)
-        } else {
-            _rawDepartments.value.map {
-                if (it.id == _selectedDept.value?.id) {
-                    it.copy(nombre = _formName.value, descripcion = _formDescription.value)
-                } else it
+
+        viewModelScope.launch {
+            _isProcessing.value = true
+            
+            val isEdit = _isEditVisible.value
+            val result = if (isEdit) {
+                val request = UpdateDepartmentRequest(
+                    id = _selectedDept.value?.id ?: 0L,
+                    nombre = _formName.value.trim(),
+                    descripcion = _formDescription.value.trim(),
+                    jefeId = _formJefeId.value ?: 0L,
+                    activo = _selectedDept.value?.activo ?: true
+                )
+                repository.actualizarDepartamento(request)
+            } else {
+                val request = CreateDepartmentRequest(
+                    nombre = _formName.value.trim(),
+                    descripcion = _formDescription.value.trim(),
+                    jefeId = _formJefeId.value ?: 0L,
+                    activo = true
+                )
+                repository.crearDepartamento(request)
             }
+
+            result.onSuccess {
+                loadDepartments()
+                loadPotentialHeads() // Refresh generic eligible list after assigning
+                closeCreate()
+                closeEdit()
+            }.onFailure { e ->
+                _formErrors.value = mapOf("api" to (e.localizedMessage ?: "Error al guardar"))
+            }
+            _isProcessing.value = false
         }
-        
-        _rawDepartments.value = newList
-        closeCreate()
-        closeEdit()
     }
 
     fun requestToggleStatus(id: Long) {
         val dept = _rawDepartments.value.find { it.id == id } ?: return
         _selectedDept.value = dept
         
-        val users = departmentUsersMap[id] ?: emptyList()
-        _linkedUsers.value = users
-        
-        if (dept.estaActivo && users.isNotEmpty()) {
-            _isWarningVisible.value = true
-        } else {
-            _isStatusToggleVisible.value = true
+        viewModelScope.launch {
+            _isProcessing.value = true
+            val users = repository.getUsuariosByDepartamento(dept.id)
+            _linkedUsers.value = users
+            
+            if (dept.activo && users.isNotEmpty()) {
+                _isWarningVisible.value = true
+            } else {
+                _isStatusToggleVisible.value = true
+            }
+            _isProcessing.value = false
         }
     }
 
     fun confirmToggleStatus() {
         val dept = _selectedDept.value ?: return
-        _rawDepartments.value = _rawDepartments.value.map {
-            if (it.id == dept.id) it.copy(estaActivo = !it.estaActivo) else it
+        viewModelScope.launch {
+            _isProcessing.value = true
+            repository.toggleEstado(dept.id).onSuccess {
+                loadDepartments()
+                closeStatusDialogs()
+            }.onFailure {
+                // Handle error
+            }
+            _isProcessing.value = false
         }
-        closeStatusDialogs()
     }
 
     fun closeStatusDialogs() {
@@ -208,6 +276,7 @@ class DepartmentManagementViewModel : ViewModel() {
     private fun resetForm() {
         _formName.value = ""
         _formDescription.value = ""
+        _formJefeId.value = null
         _formErrors.value = emptyMap()
         _selectedDept.value = null
     }

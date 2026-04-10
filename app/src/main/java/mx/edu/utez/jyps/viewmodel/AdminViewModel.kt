@@ -8,10 +8,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.data.model.CuentaResponse
-import mx.edu.utez.jyps.data.model.Departamento
+import mx.edu.utez.jyps.data.model.DepartamentoResponse
 import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.data.model.UserRequest
 import mx.edu.utez.jyps.data.network.RetrofitInstance
+import mx.edu.utez.jyps.data.repository.DepartmentRepository
 import mx.edu.utez.jyps.data.repository.LoadResult
 import mx.edu.utez.jyps.data.repository.UsuarioRepository
 
@@ -22,7 +23,8 @@ import mx.edu.utez.jyps.data.repository.UsuarioRepository
  * @property repository Repository providing network abstraction for user management.
  */
 class AdminViewModel(
-    private val repository: UsuarioRepository = UsuarioRepository(RetrofitInstance.api)
+    private val repository: UsuarioRepository = UsuarioRepository(RetrofitInstance.api),
+    private val deptRepository: DepartmentRepository = DepartmentRepository(RetrofitInstance.api)
 ) : ViewModel() {
 
     // ── User list ────────────────────────────────────
@@ -38,7 +40,7 @@ class AdminViewModel(
     val accountStatuses: StateFlow<Map<Long, CuentaResponse>> = repository.accountStatuses
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
 
-    val departamentos: StateFlow<List<Departamento>> = repository.departamentos
+    val departamentos: StateFlow<List<DepartamentoResponse>> = deptRepository.allDepartments
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     // ── Navigation ───────────────────────────────────
@@ -93,8 +95,8 @@ class AdminViewModel(
     private val _newUserRoles = MutableStateFlow<Set<Int>>(emptySet())
     val newUserRoles: StateFlow<Set<Int>> = _newUserRoles
 
-    private val _newUserDepartmentId = MutableStateFlow(1)
-    val newUserDepartmentId: StateFlow<Int> = _newUserDepartmentId
+    private val _newUserDepartmentId = MutableStateFlow(1L)
+    val newUserDepartmentId: StateFlow<Long> = _newUserDepartmentId
 
     private val _newUserStartHour = MutableStateFlow(8)
     val newUserStartHour: StateFlow<Int> = _newUserStartHour
@@ -143,8 +145,8 @@ class AdminViewModel(
     private val _editRoles = MutableStateFlow<Set<Int>>(emptySet())
     val editRoles: StateFlow<Set<Int>> = _editRoles
 
-    private val _editDepartmentId = MutableStateFlow(1)
-    val editDepartmentId: StateFlow<Int> = _editDepartmentId
+    private val _editDepartmentId = MutableStateFlow(1L)
+    val editDepartmentId: StateFlow<Long> = _editDepartmentId
 
     private val _editStartHour = MutableStateFlow(8)
     val editStartHour: StateFlow<Int> = _editStartHour
@@ -190,7 +192,7 @@ class AdminViewModel(
     }
 
     fun loadDepartamentos() {
-        viewModelScope.launch { repository.getDepartamentos() }
+        viewModelScope.launch { deptRepository.getDepartamentos() }
     }
 
     // ── Navigation / Filters ─────────────────────────
@@ -232,7 +234,7 @@ class AdminViewModel(
     fun onMaternoChange(materno: String) { _newUserMaterno.value = materno }
     fun onPhoneChange(phone: String) { _newUserPhone.value = phone }
     fun onEmailChange(email: String) { _newUserEmail.value = email }
-    fun onDepartmentChange(id: Int) { _newUserDepartmentId.value = id }
+    fun onDepartmentChange(id: Long) { _newUserDepartmentId.value = id }
     fun onStartTimeChange(hour: Int, minute: Int) {
         _newUserStartHour.value = hour
         _newUserStartMinute.value = minute
@@ -318,7 +320,7 @@ class AdminViewModel(
         _editPhone.value = usuario.telefono
         _editEmail.value = usuario.correo
         _editRoles.value = usuario.roles.mapNotNull { reverseRoleMapping[it] }.toSet()
-        _editDepartmentId.value = usuario.departamentoId.toInt()
+        _editDepartmentId.value = usuario.departamentoId
         _editStartHour.value = usuario.entradaHour
         _editStartMinute.value = usuario.entradaMinute
         _editEndHour.value = usuario.salidaHour
@@ -340,7 +342,7 @@ class AdminViewModel(
     fun onEditMaternoChange(v: String) { _editMaterno.value = v }
     fun onEditPhoneChange(v: String) { _editPhone.value = v }
     fun onEditEmailChange(v: String) { _editEmail.value = v }
-    fun onEditDepartmentChange(id: Int) { _editDepartmentId.value = id }
+    fun onEditDepartmentChange(id: Long) { _editDepartmentId.value = id }
     fun onEditStartTimeChange(hour: Int, minute: Int) {
         _editStartHour.value = hour
         _editStartMinute.value = minute

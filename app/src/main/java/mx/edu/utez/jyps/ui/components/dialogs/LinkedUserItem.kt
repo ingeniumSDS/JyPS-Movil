@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import mx.edu.utez.jyps.data.model.LinkedUser
+import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
 
 /**
@@ -34,7 +34,7 @@ import mx.edu.utez.jyps.ui.theme.JyPSTheme
  * @param user The linked user data model.
  */
 @Composable
-fun LinkedUserItem(user: LinkedUser) {
+fun LinkedUserItem(user: Usuario) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -54,9 +54,10 @@ fun LinkedUserItem(user: LinkedUser) {
                 Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = user.fullName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF0F2C59))
-                Text(text = user.role, fontSize = 12.sp, color = Color(0xFF6A7282))
+                Text(text = user.nombreCompleto, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF0F2C59))
+                Text(text = user.primaryRoleDisplay, fontSize = 12.sp, color = Color(0xFF6A7282))
             }
+            // If the user shows up here, it's because it's active and blocking deactivation
             Box(
                 modifier = Modifier
                     .background(Color(0xFFDCFCE7), RoundedCornerShape(100.dp))
@@ -75,6 +76,6 @@ fun LinkedUserItem(user: LinkedUser) {
 @Composable
 fun LinkedUserItemPreview() {
     JyPSTheme {
-        LinkedUserItem(user = LinkedUser(1, "Juan Pérez García", "Trabajador"))
+        LinkedUserItem(user = Usuario(1, "Juan Pérez García", roles = listOf("EMPLEADO")))
     }
 }
