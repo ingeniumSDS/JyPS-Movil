@@ -18,9 +18,7 @@ import mx.edu.utez.jyps.data.repository.UsuarioRepository
 
 /**
  * ViewModel orchestrating the administrator dashboard UI state.
- * Manages user CRUD, pagination, filtering, and role modifications.
- *
- * @property repository Repository providing network abstraction for user management.
+ * Manages user CRUD with real-time reactive validation.
  */
 class AdminViewModel(
     private val repository: UsuarioRepository = UsuarioRepository(RetrofitInstance.api),
@@ -110,15 +108,22 @@ class AdminViewModel(
     private val _newUserEndMinute = MutableStateFlow(0)
     val newUserEndMinute: StateFlow<Int> = _newUserEndMinute
 
-    // Create form feedback (shown inside dialog)
+    // Real-time validation states
     private val _createFormErrors = MutableStateFlow<Map<String, String>>(emptyMap())
     val createFormErrors: StateFlow<Map<String, String>> = _createFormErrors
+
+    private val _managedDepartmentId = MutableStateFlow<Long?>(null)
+    val managedDepartmentId: StateFlow<Long?> = _managedDepartmentId
 
     private val _createServerResponseError = MutableStateFlow<String?>(null)
     val createServerResponseError: StateFlow<String?> = _createServerResponseError
 
     private val _scrollToTopTrigger = MutableStateFlow(0)
     val scrollToTopTrigger: StateFlow<Int> = _scrollToTopTrigger
+
+    // Validation flags to prevent showing "required" errors too early
+    private var createSubmitAttempted = false
+    private var editSubmitAttempted = false
 
     // ── EDIT USER FORM ───────────────────────────────
     private val _isEditUserVisible = MutableStateFlow(false)
@@ -165,6 +170,9 @@ class AdminViewModel(
 
     private val _editServerResponseError = MutableStateFlow<String?>(null)
     val editServerResponseError: StateFlow<String?> = _editServerResponseError
+
+    private val _editManagedDepartmentId = MutableStateFlow<Long?>(null)
+    val editManagedDepartmentId: StateFlow<Long?> = _editManagedDepartmentId
 
     // ── Role Mapping ─────────────────────────────────
     private val roleMapping = mapOf(
@@ -222,34 +230,49 @@ class AdminViewModel(
         _showToast.value = true
     }
 
-    // ── CREATE USER ──────────────────────────────────
+    // ── CREATE USER HANDLERS ──────────────────────────
     fun setCreateUserVisible(visible: Boolean) {
         if (!visible) resetCreateForm()
         _isCreateUserVisible.value = visible
     }
 
-    fun onNameChange(name: String) { _newUserName.value = name }
-    fun onPaternoChange(paterno: String) { _newUserPaterno.value = paterno }
-    fun onMaternoChange(materno: String) { _newUserMaterno.value = materno }
-    fun onPhoneChange(phone: String) { _newUserPhone.value = phone }
-    fun onEmailChange(email: String) { _newUserEmail.value = email }
-    fun onDepartmentChange(id: Long) { _newUserDepartmentId.value = id }
-    fun onStartTimeChange(hour: Int, minute: Int) {
-        _newUserStartHour.value = hour
-        _newUserStartMinute.value = minute
-    }
-    fun onEndTimeChange(hour: Int, minute: Int) {
-        _newUserEndHour.value = hour
-        _newUserEndMinute.value = minute
-    }
+    fun onNameChange(v: String) { _newUserName.value = v; runCreateValidation() }
+    fun onPaternoChange(v: String) { _newUserPaterno.value = v; runCreateValidation() }
+    fun onMaternoChange(v: String) { _newUserMaterno.value = v; runCreateValidation() }
+    fun onPhoneChange(v: String) { _newUserPhone.value = v; runCreateValidation() }
+    fun onEmailChange(v: String) { _newUserEmail.value = v; runCreateValidation() }
+    fun onDepartmentChange(v: Long) { _newUserDepartmentId.value = v; runCreateValidation() }
+    fun onManagedDepartmentChange(v: Long?) { _managedDepartmentId.value = v; runCreateValidation() }
+
+    fun onStartTimeChange(h: Int, m: Int) { _newUserStartHour.value = h; _newUserStartMinute.value = m }
+    fun onEndTimeChange(h: Int, m: Int) { _newUserEndHour.value = h; _newUserEndMinute.value = m }
 
     fun toggleRole(roleId: Int) {
         val current = _newUserRoles.value.toMutableSet()
-        if (current.contains(roleId)) current.remove(roleId) else current.add(roleId)
+        if (roleId == 2) {
+            current.clear(); current.add(2)
+        } else {
+            current.remove(2)
+            if (current.contains(roleId)) {
+                current.remove(roleId); if (roleId == 3) _managedDepartmentId.value = null
+            } else {
+                current.add(roleId); if (roleId == 3 || roleId == 4 || roleId == 5) current.add(1)
+            }
+        }
         _newUserRoles.value = current
+        runCreateValidation()
+    }
+
+    private fun runCreateValidation() {
+        _createFormErrors.value = validateForm(
+            _newUserName.value, _newUserPaterno.value, _newUserMaterno.value,
+            _newUserPhone.value, _newUserEmail.value, _newUserRoles.value,
+            _managedDepartmentId.value, createSubmitAttempted
+        )
     }
 
     private fun resetCreateForm() {
+        createSubmitAttempted = false
         _newUserName.value = ""
         _newUserPaterno.value = ""
         _newUserMaterno.value = ""
@@ -257,28 +280,21 @@ class AdminViewModel(
         _newUserEmail.value = ""
         _newUserRoles.value = emptySet()
         _newUserDepartmentId.value = 1
-        _newUserStartHour.value = 8
-        _newUserStartMinute.value = 0
-        _newUserEndHour.value = 16
-        _newUserEndMinute.value = 0
+        _newUserStartHour.value = 8; _newUserStartMinute.value = 0
+        _newUserEndHour.value = 16; _newUserEndMinute.value = 0
         _createFormErrors.value = emptyMap()
+        _managedDepartmentId.value = null
         _createServerResponseError.value = null
     }
 
     fun saveNewUser() {
-        val validationErrors = validateForm(
-            _newUserName.value, _newUserPaterno.value, _newUserMaterno.value,
-            _newUserPhone.value, _newUserEmail.value, _newUserRoles.value
-        )
-        _createFormErrors.value = validationErrors
-        _createServerResponseError.value = null
-
-        if (validationErrors.isNotEmpty()) {
+        createSubmitAttempted = true
+        runCreateValidation()
+        if (_createFormErrors.value.isNotEmpty()) {
             _scrollToTopTrigger.value += 1
             return
         }
 
-        val selectedRoleNames = _newUserRoles.value.mapNotNull { roleMapping[it] }
         val request = UserRequest(
             nombre = _newUserName.value.trim(),
             apellidoPaterno = _newUserPaterno.value.trim(),
@@ -287,14 +303,16 @@ class AdminViewModel(
             telefono = _newUserPhone.value.trim(),
             horaEntrada = "%02d:%02d:00".format(_newUserStartHour.value, _newUserStartMinute.value),
             horaSalida = "%02d:%02d:00".format(_newUserEndHour.value, _newUserEndMinute.value),
-            roles = selectedRoleNames,
-            departamentoId = _newUserDepartmentId.value.toLong()
+            roles = _newUserRoles.value.mapNotNull { roleMapping[it] },
+            departamentoId = _newUserDepartmentId.value
         )
 
         viewModelScope.launch {
             _isProcessing.value = true
-            val result = repository.registrarUsuario(request)
-            result.onSuccess {
+            repository.registrarUsuario(request).onSuccess { newUser ->
+                if (_newUserRoles.value.contains(3) && _managedDepartmentId.value != null) {
+                    deptRepository.asignarJefe(_managedDepartmentId.value!!, newUser.id)
+                }
                 setCreateUserVisible(false)
                 showFeedback("Usuario creado exitosamente", true)
             }.onFailure { e ->
@@ -305,20 +323,21 @@ class AdminViewModel(
         }
     }
 
-    // ── EDIT USER ────────────────────────────────────
+    // ── EDIT USER HANDLERS ───────────────────────────
     fun openEditUser(usuario: Usuario) {
+        editSubmitAttempted = false
         _editingUser.value = usuario
-
-        // Split nombreCompleto into parts
         val parts = usuario.nombreCompleto.split(" ")
         _editName.value = parts.getOrElse(0) { "" }
         _editPaterno.value = parts.getOrElse(1) { "" }
         _editMaterno.value = parts.drop(2).joinToString(" ")
-
         _editPhone.value = usuario.telefono
         _editEmail.value = usuario.correo
         _editRoles.value = usuario.roles.mapNotNull { reverseRoleMapping[it] }.toSet()
         _editDepartmentId.value = usuario.departamentoId
+        
+        _editManagedDepartmentId.value = departamentos.value.find { it.jefeId == usuario.id }?.id
+        
         _editStartHour.value = usuario.entradaHour
         _editStartMinute.value = usuario.entradaMinute
         _editEndHour.value = usuario.salidaHour
@@ -329,47 +348,53 @@ class AdminViewModel(
     }
 
     fun closeEditUser() {
-        _isEditUserVisible.value = false
-        _editingUser.value = null
-        _editFormErrors.value = emptyMap()
-        _editServerResponseError.value = null
+        _isEditUserVisible.value = false; _editingUser.value = null
+        _editFormErrors.value = emptyMap(); _editServerResponseError.value = null
     }
 
-    fun onEditNameChange(v: String) { _editName.value = v }
-    fun onEditPaternoChange(v: String) { _editPaterno.value = v }
-    fun onEditMaternoChange(v: String) { _editMaterno.value = v }
-    fun onEditPhoneChange(v: String) { _editPhone.value = v }
-    fun onEditEmailChange(v: String) { _editEmail.value = v }
-    fun onEditDepartmentChange(id: Long) { _editDepartmentId.value = id }
-    fun onEditStartTimeChange(hour: Int, minute: Int) {
-        _editStartHour.value = hour
-        _editStartMinute.value = minute
-    }
-    fun onEditEndTimeChange(hour: Int, minute: Int) {
-        _editEndHour.value = hour
-        _editEndMinute.value = minute
-    }
+    fun onEditNameChange(v: String) { _editName.value = v; runEditValidation() }
+    fun onEditPaternoChange(v: String) { _editPaterno.value = v; runEditValidation() }
+    fun onEditMaternoChange(v: String) { _editMaterno.value = v; runEditValidation() }
+    fun onEditPhoneChange(v: String) { _editPhone.value = v; runEditValidation() }
+    fun onEditEmailChange(v: String) { _editEmail.value = v; runEditValidation() }
+    fun onEditDepartmentChange(id: Long) { _editDepartmentId.value = id; runEditValidation() }
+    fun onEditManagedDepartmentChange(id: Long?) { _editManagedDepartmentId.value = id; runEditValidation() }
+
+    fun onEditStartTimeChange(h: Int, m: Int) { _editStartHour.value = h; _editStartMinute.value = m }
+    fun onEditEndTimeChange(h: Int, m: Int) { _editEndHour.value = h; _editEndMinute.value = m }
+
     fun toggleEditRole(roleId: Int) {
         val current = _editRoles.value.toMutableSet()
-        if (current.contains(roleId)) current.remove(roleId) else current.add(roleId)
+        if (roleId == 2) {
+            current.clear(); current.add(2)
+        } else {
+            current.remove(2)
+            if (current.contains(roleId)) {
+                current.remove(roleId); if (roleId == 3) _editManagedDepartmentId.value = null
+            } else {
+                current.add(roleId); if (roleId == 3 || roleId == 4 || roleId == 5) current.add(1)
+            }
+        }
         _editRoles.value = current
+        runEditValidation()
+    }
+
+    private fun runEditValidation() {
+        _editFormErrors.value = validateForm(
+            _editName.value, _editPaterno.value, _editMaterno.value,
+            _editPhone.value, _editEmail.value, _editRoles.value,
+            _editManagedDepartmentId.value, editSubmitAttempted
+        )
     }
 
     fun saveEditUser() {
         val userId = _editingUser.value?.id ?: return
-        val validationErrors = validateForm(
-            _editName.value, _editPaterno.value, _editMaterno.value,
-            _editPhone.value, _editEmail.value, _editRoles.value
-        )
-        _editFormErrors.value = validationErrors
-        _editServerResponseError.value = null
-
-        if (validationErrors.isNotEmpty()) {
-            _scrollToTopTrigger.value += 1
-            return
+        editSubmitAttempted = true
+        runEditValidation()
+        if (_editFormErrors.value.isNotEmpty()) {
+            _scrollToTopTrigger.value += 1; return
         }
 
-        val selectedRoleNames = _editRoles.value.mapNotNull { roleMapping[it] }
         val request = UserRequest(
             nombre = _editName.value.trim(),
             apellidoPaterno = _editPaterno.value.trim(),
@@ -378,14 +403,16 @@ class AdminViewModel(
             telefono = _editPhone.value.trim(),
             horaEntrada = "%02d:%02d:00".format(_editStartHour.value, _editStartMinute.value),
             horaSalida = "%02d:%02d:00".format(_editEndHour.value, _editEndMinute.value),
-            roles = selectedRoleNames,
-            departamentoId = _editDepartmentId.value.toLong()
+            roles = _editRoles.value.mapNotNull { roleMapping[it] },
+            departamentoId = _editDepartmentId.value
         )
 
         viewModelScope.launch {
             _isProcessing.value = true
-            val result = repository.actualizarUsuario(userId, request)
-            result.onSuccess {
+            repository.actualizarUsuario(userId, request).onSuccess { updatedUser ->
+                if (_editRoles.value.contains(3) && _editManagedDepartmentId.value != null) {
+                    deptRepository.asignarJefe(_editManagedDepartmentId.value!!, updatedUser.id)
+                }
                 closeEditUser()
                 showFeedback("Usuario actualizado exitosamente", true)
             }.onFailure { e ->
@@ -394,6 +421,41 @@ class AdminViewModel(
             }
             _isProcessing.value = false
         }
+    }
+
+    // ── Validation ───────────────────────────────────
+    private fun validateForm(
+        name: String, paterno: String, materno: String,
+        phone: String, email: String, roles: Set<Int>,
+        managedDeptId: Long?, showRequired: Boolean
+    ): Map<String, String> {
+        val errors = mutableMapOf<String, String>()
+        
+        // Helper to check if we should show "Required" error
+        fun checkRequired(v: String, key: String, msg: String) {
+            if (v.isBlank() && showRequired) errors[key] = msg
+        }
+
+        checkRequired(name, "nombre", "El nombre es obligatorio")
+        checkRequired(paterno, "paterno", "El apellido paterno es obligatorio")
+        checkRequired(materno, "materno", "El apellido materno es obligatorio")
+        
+        if (phone.isNotBlank()) {
+            if (!phone.replace(" ", "").matches(Regex("^\\d{10}$"))) errors["telefono"] = "El teléfono debe tener 10 dígitos"
+        } else if (showRequired) {
+            errors["telefono"] = "El teléfono es obligatorio"
+        }
+        
+        if (email.isNotBlank()) {
+            if (!email.matches(Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$"))) errors["email"] = "Formato de correo inválido"
+        } else if (showRequired) {
+            errors["email"] = "El correo es obligatorio"
+        }
+        
+        if (showRequired && roles.isEmpty()) errors["roles"] = "Debe seleccionar al menos un rol"
+        if (roles.contains(3) && managedDeptId == null && showRequired) errors["managedDepto"] = "Asignación obligatoria"
+        
+        return errors
     }
 
     // ── TOGGLE STATUS ────────────────────────────────
@@ -411,33 +473,5 @@ class AdminViewModel(
         }
     }
 
-    // ── Validation ───────────────────────────────────
-    private fun validateForm(
-        name: String, paterno: String, materno: String,
-        phone: String, email: String, roles: Set<Int>
-    ): Map<String, String> {
-        val errors = mutableMapOf<String, String>()
-        if (name.isBlank()) errors["nombre"] = "El nombre es obligatorio"
-        if (paterno.isBlank()) errors["paterno"] = "El apellido paterno es obligatorio"
-        if (materno.isBlank()) errors["materno"] = "El apellido materno es obligatorio"
-        if (phone.isBlank()) {
-            errors["telefono"] = "El teléfono es obligatorio"
-        } else if (!phone.replace(" ", "").matches(Regex("^\\d{10}$"))) {
-            errors["telefono"] = "El teléfono debe tener 10 dígitos"
-        }
-        if (email.isBlank()) {
-            errors["email"] = "El correo es obligatorio"
-        } else if (!email.matches(Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$"))) {
-            errors["email"] = "Formato de correo inválido"
-        }
-        if (roles.isEmpty()) errors["roles"] = "Debe seleccionar al menos un rol"
-        return errors
-    }
-
-    fun onLogout() { 
-        // Simply clear local cached data so another user doesn't see it
-        viewModelScope.launch {
-            repository.clearSelectedUser()
-        }
-    }
+    fun onLogout() { viewModelScope.launch { repository.clearSelectedUser() } }
 }

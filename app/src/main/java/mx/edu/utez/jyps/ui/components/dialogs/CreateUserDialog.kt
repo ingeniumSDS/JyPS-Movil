@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -28,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.tooling.preview.Preview
 import mx.edu.utez.jyps.ui.components.admin.DialogHeader
 import mx.edu.utez.jyps.ui.components.admin.ErrorBanner
 import mx.edu.utez.jyps.ui.components.admin.FormField
@@ -94,7 +94,7 @@ fun CreateUserDialog(viewModel: AdminViewModel) {
                         // Error banner
                         serverError?.let { ErrorBanner(it) }
 
-                        // Name fields — stacked vertically for mobile
+                        // Form Fields
                         FormField(label = "Nombre *", value = name, onValueChange = viewModel::onNameChange, errorMessage = formErrors["nombre"])
                         FormField(label = "Apellido Paterno *", value = paterno, onValueChange = viewModel::onPaternoChange, errorMessage = formErrors["paterno"])
                         FormField(label = "Apellido Materno *", value = materno, onValueChange = viewModel::onMaternoChange, errorMessage = formErrors["materno"])
@@ -105,19 +105,37 @@ fun CreateUserDialog(viewModel: AdminViewModel) {
                         val selectedRoles by viewModel.newUserRoles.collectAsStateWithLifecycle()
                         RolesSelector(selectedRoles = selectedRoles, onToggleRole = viewModel::toggleRole, errorMessage = formErrors["roles"])
 
-                        // Conditional: Department dropdown
+                        // Departments
                         val showDepartment = selectedRoles.contains(1) || selectedRoles.contains(3)
-                        if (showDepartment) {
+                        val isJefe = selectedRoles.contains(3)
+                        
+                        if (showDepartment || isJefe) {
                             val departamentos by viewModel.departamentos.collectAsStateWithLifecycle()
-                            val selectedDeptId by viewModel.newUserDepartmentId.collectAsStateWithLifecycle()
-                            DepartmentDropdown(
-                                departamentos = departamentos,
-                                selectedId = selectedDeptId,
-                                onSelect = viewModel::onDepartmentChange
-                            )
+                            
+                            if (showDepartment) {
+                                val selectedDeptId by viewModel.newUserDepartmentId.collectAsStateWithLifecycle()
+                                DepartmentDropdown(
+                                    label = "Departamento de adscripción *",
+                                    departamentos = departamentos,
+                                    selectedId = selectedDeptId,
+                                    onSelect = viewModel::onDepartmentChange
+                                )
+                            }
+                            
+                            if (isJefe) {
+                                val managedDeptId by viewModel.managedDepartmentId.collectAsStateWithLifecycle()
+                                Spacer(modifier = Modifier.padding(top = 8.dp))
+                                DepartmentDropdown(
+                                    label = "Departamento a cargo *",
+                                    departamentos = departamentos,
+                                    selectedId = managedDeptId ?: 0L,
+                                    onSelect = { viewModel.onManagedDepartmentChange(if (it == 0L) null else it) },
+                                    errorMessage = formErrors["managedDepto"]
+                                )
+                            }
                         }
 
-                        // Conditional: Schedule — stacked vertically
+                        // Schedule
                         val showSchedule = selectedRoles.contains(1)
                         if (showSchedule) {
                             val startH by viewModel.newUserStartHour.collectAsStateWithLifecycle()
@@ -131,7 +149,7 @@ fun CreateUserDialog(viewModel: AdminViewModel) {
 
                         PasswordInfoBox()
 
-                        // Actions: Stacked buttons for consistency
+                        // Actions
                         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             OutlinedButton(
                                 onClick = { viewModel.setCreateUserVisible(false) },
@@ -156,10 +174,4 @@ fun CreateUserDialog(viewModel: AdminViewModel) {
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CreateUserDialogPreview() {
-    // Requires mocked AdminViewModel
 }

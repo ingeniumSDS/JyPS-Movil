@@ -5,11 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.tooling.preview.Preview
 import mx.edu.utez.jyps.ui.components.admin.DialogHeader
 import mx.edu.utez.jyps.ui.components.admin.ErrorBanner
 import mx.edu.utez.jyps.ui.components.admin.FormField
@@ -92,7 +91,7 @@ fun EditUserDialog(viewModel: AdminViewModel) {
                         // Error banner
                         serverError?.let { ErrorBanner(it) }
 
-                        // Name fields — stacked vertically for mobile
+                        // Name fields
                         FormField(label = "Nombre *", value = name, onValueChange = viewModel::onEditNameChange, errorMessage = formErrors["nombre"])
                         FormField(label = "Apellido Paterno *", value = paterno, onValueChange = viewModel::onEditPaternoChange, errorMessage = formErrors["paterno"])
                         FormField(label = "Apellido Materno *", value = materno, onValueChange = viewModel::onEditMaternoChange, errorMessage = formErrors["materno"])
@@ -103,19 +102,37 @@ fun EditUserDialog(viewModel: AdminViewModel) {
                         val selectedRoles by viewModel.editRoles.collectAsStateWithLifecycle()
                         RolesSelector(selectedRoles = selectedRoles, onToggleRole = viewModel::toggleEditRole, errorMessage = formErrors["roles"])
 
-                        // Conditional: Department dropdown
+                        // Departments
                         val showDepartment = selectedRoles.contains(1) || selectedRoles.contains(3)
-                        if (showDepartment) {
+                        val isJefe = selectedRoles.contains(3)
+                        
+                        if (showDepartment || isJefe) {
                             val departamentos by viewModel.departamentos.collectAsStateWithLifecycle()
-                            val selectedDeptId by viewModel.editDepartmentId.collectAsStateWithLifecycle()
-                            DepartmentDropdown(
-                                departamentos = departamentos,
-                                selectedId = selectedDeptId,
-                                onSelect = viewModel::onEditDepartmentChange
-                            )
+                            
+                            if (showDepartment) {
+                                val selectedDeptId by viewModel.editDepartmentId.collectAsStateWithLifecycle()
+                                DepartmentDropdown(
+                                    label = "Departamento de adscripción *",
+                                    departamentos = departamentos,
+                                    selectedId = selectedDeptId,
+                                    onSelect = viewModel::onEditDepartmentChange
+                                )
+                            }
+                            
+                            if (isJefe) {
+                                val managedDeptId by viewModel.editManagedDepartmentId.collectAsStateWithLifecycle()
+                                Spacer(modifier = Modifier.padding(top = 8.dp))
+                                DepartmentDropdown(
+                                    label = "Departamento a cargo *",
+                                    departamentos = departamentos,
+                                    selectedId = managedDeptId ?: 0L,
+                                    onSelect = { viewModel.onEditManagedDepartmentChange(if (it == 0L) null else it) },
+                                    errorMessage = formErrors["managedDepto"]
+                                )
+                            }
                         }
 
-                        // Conditional: Schedule — stacked vertically
+                        // Schedule
                         val showSchedule = selectedRoles.contains(1)
                         if (showSchedule) {
                             val startH by viewModel.editStartHour.collectAsStateWithLifecycle()
@@ -127,7 +144,7 @@ fun EditUserDialog(viewModel: AdminViewModel) {
                             TimeFieldWithPicker(label = "Hora Fin Jornada *", hour = endH, minute = endM, onTimeSelected = viewModel::onEditEndTimeChange)
                         }
 
-                        // Actions: Stacked buttons for consistency
+                        // Actions
                         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             OutlinedButton(
                                 onClick = { viewModel.closeEditUser() },
@@ -152,10 +169,4 @@ fun EditUserDialog(viewModel: AdminViewModel) {
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun EditUserDialogPreview() {
-    // Preview requires mocked AdminViewModel
 }

@@ -22,12 +22,15 @@ import androidx.compose.foundation.layout.width
 
 /**
  * AppDropdown is a custom Material 3 selection component following Figma style.
+ * Supports leading icons, custom labels, and validation error messages.
  * 
  * @param label The text label displayed above the field.
  * @param options List of possible string choices.
  * @param selectedOption The currently active choice.
  * @param onOptionSelected Callback for user selection.
  * @param modifier Custom styling modifier.
+ * @param leadingIcon Optional icon to display next to the label.
+ * @param error Optional validation error message to display below the field.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,7 +40,8 @@ fun AppDropdown(
     selectedOption: String,
     onOptionSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
-    leadingIcon: ImageVector? = null
+    leadingIcon: ImageVector? = null,
+    error: String? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -78,16 +82,17 @@ fun AppDropdown(
                 value = selectedOption,
                 onValueChange = {},
                 readOnly = true,
+                isError = error != null,
                 modifier = Modifier
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                     .fillMaxWidth(),
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 },
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedBorderColor = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White
                 )
@@ -110,16 +115,15 @@ fun AppDropdown(
                 }
             }
         }
+        
+        // Validation Error Message
+        if (error != null) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+            )
+        }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun AppDropdownPreview() {
-    AppDropdown(
-        label = "Departamento",
-        options = listOf("DACEA", "DATEFI", "DATID"),
-        selectedOption = "DACEA",
-        onOptionSelected = {}
-    )
 }
