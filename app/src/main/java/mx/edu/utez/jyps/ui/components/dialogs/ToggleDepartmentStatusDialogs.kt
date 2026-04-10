@@ -24,7 +24,7 @@ fun ToggleDepartmentStatusDialogs(
 
     if (isToggleVisible && department != null) {
         ConfirmToggleDialog(
-            isActivating = !department!!.estaActivo,
+            isActivating = !department!!.activo,
             onClose = viewModel::closeStatusDialogs,
             onConfirm = { viewModel.confirmToggleStatus() }
         )

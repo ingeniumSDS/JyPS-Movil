@@ -1,10 +1,13 @@
 package mx.edu.utez.jyps.data.network
 
 import mx.edu.utez.jyps.data.model.CuentaResponse
-import mx.edu.utez.jyps.data.model.Departamento
+import mx.edu.utez.jyps.data.model.DepartamentoResponse
+import mx.edu.utez.jyps.data.model.CreateDepartmentRequest
+import mx.edu.utez.jyps.data.model.ToggleStatusRequest
 import mx.edu.utez.jyps.data.model.EstadoCuentaResponse
 import mx.edu.utez.jyps.data.model.LoginRequest
 import mx.edu.utez.jyps.data.model.LoginResponse
+import mx.edu.utez.jyps.data.model.UpdateDepartmentRequest
 import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.data.model.UserRequest
 import retrofit2.Response
@@ -14,6 +17,7 @@ import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 /**
  * Central interface defining all Retrofit HTTP operations.
@@ -28,6 +32,12 @@ interface ApiService {
     // ── Usuarios ────────────────────────────────────
     @GET("api/v1/usuarios")
     suspend fun getUsuarios(): List<Usuario>
+
+    @GET("api/v1/{id}/usuarios")
+    suspend fun getUsuariosByDepartamento(@Path("id") departamentoId: Long): List<Usuario>
+
+    @GET("api/v1/usuarios/jefes")
+    suspend fun getJefesDisponibles(): List<Usuario>
 
     @GET("api/v1/usuarios/{id}")
     suspend fun getUsuarioPorId(@Path("id") id: Long): Usuario
@@ -46,5 +56,20 @@ interface ApiService {
 
     // ── Departamentos ──────────────────────────────
     @GET("api/v1/departamentos")
-    suspend fun getDepartamentos(): List<Departamento>
+    suspend fun getDepartamentos(): List<DepartamentoResponse>
+
+    @PATCH("api/v1/departamentos/{id}/asignar-jefe")
+    suspend fun asignarJefe(
+        @Path("id") id: Long, 
+        @Query("jefeId") jefeId: Long
+    ): Response<DepartamentoResponse>
+
+    @PATCH("api/v1/departamentos/estado")
+    suspend fun toggleEstado(@Body request: ToggleStatusRequest): Response<DepartamentoResponse>
+
+    @POST("api/v1/departamentos")
+    suspend fun crearDepartamento(@Body request: CreateDepartmentRequest): Response<DepartamentoResponse>
+
+    @PUT("api/v1/departamentos")
+    suspend fun actualizarDepartamento(@Body request: UpdateDepartmentRequest): Response<DepartamentoResponse>
 }

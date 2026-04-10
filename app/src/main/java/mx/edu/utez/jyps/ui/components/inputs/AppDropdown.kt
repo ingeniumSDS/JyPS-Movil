@@ -13,15 +13,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 
 /**
  * AppDropdown is a custom Material 3 selection component following Figma style.
+ * Supports leading icons, custom labels, and validation error messages.
  * 
  * @param label The text label displayed above the field.
  * @param options List of possible string choices.
  * @param selectedOption The currently active choice.
  * @param onOptionSelected Callback for user selection.
  * @param modifier Custom styling modifier.
+ * @param leadingIcon Optional icon to display next to the label.
+ * @param error Optional validation error message to display below the field.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,18 +39,39 @@ fun AppDropdown(
     options: List<String>,
     selectedOption: String,
     onOptionSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    leadingIcon: ImageVector? = null,
+    error: String? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
-        Text(
-            text = label,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Normal,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        if (leadingIcon != null) {
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = Color(0xFF364153),
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = label,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF364153)
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+        } else {
+            Text(
+                text = label,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
 
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -52,16 +82,17 @@ fun AppDropdown(
                 value = selectedOption,
                 onValueChange = {},
                 readOnly = true,
+                isError = error != null,
                 modifier = Modifier
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                     .fillMaxWidth(),
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 },
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedBorderColor = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White
                 )
@@ -84,16 +115,15 @@ fun AppDropdown(
                 }
             }
         }
+        
+        // Validation Error Message
+        if (error != null) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+            )
+        }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun AppDropdownPreview() {
-    AppDropdown(
-        label = "Departamento",
-        options = listOf("DACEA", "DATEFI", "DATID"),
-        selectedOption = "DACEA",
-        onOptionSelected = {}
-    )
 }

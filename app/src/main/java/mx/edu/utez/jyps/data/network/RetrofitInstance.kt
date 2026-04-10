@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 object RetrofitInstance {
 
     // Actualiza esta IP según tu configuración de red
-    private const val BASE_URL = "https://yolonda-otocystic-personably.ngrok-free.dev/"
+    private const val BASE_URL = "https://ced-service.porgy-diatonic.ts.net:10000/"
 
     private var preferencesManager: PreferencesManager? = null
 

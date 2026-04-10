@@ -26,12 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import mx.edu.utez.jyps.data.model.LinkedUser
+import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.ui.components.admin.DialogHeader
 import mx.edu.utez.jyps.ui.components.buttons.PrimaryButton
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
@@ -47,7 +46,7 @@ import mx.edu.utez.jyps.ui.theme.JyPSTheme
 @Composable
 fun DeactivateWarningDialog(
     departmentName: String,
-    linkedUsers: List<LinkedUser>,
+    linkedUsers: List<Usuario>,
     onClose: () -> Unit,
     onManageEmployees: () -> Unit
 ) {
@@ -91,10 +90,17 @@ fun DeactivateWarningDialog(
                         }
                     }
 
-                    Text("Usuarios vinculados:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color(0xFF0F2C59))
+                    if (linkedUsers.isNotEmpty()) {
+                        Text(
+                            text = "Usuarios vinculados:", 
+                            fontWeight = FontWeight.SemiBold, 
+                            fontSize = 14.sp, 
+                            color = Color(0xFF0F2C59)
+                        )
 
-                    linkedUsers.forEach { user ->
-                        LinkedUserItem(user)
+                        linkedUsers.forEach { user ->
+                            LinkedUserItem(user)
+                        }
                     }
 
                     Box(
@@ -141,7 +147,7 @@ fun DeactivateWarningDialogPreview() {
     JyPSTheme {
         DeactivateWarningDialog(
             departmentName = "Tecnologías de la Información",
-            linkedUsers = listOf(LinkedUser(1, "Juan Pérez García", "Trabajador")),
+            linkedUsers = listOf(Usuario(1, "Juan Pérez García", "juan@perez.com", "7771234567")),
             onClose = {},
             onManageEmployees = {}
         )

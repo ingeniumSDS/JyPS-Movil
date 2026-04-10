@@ -48,6 +48,7 @@ import mx.edu.utez.jyps.ui.theme.JyPSTheme
 /**
  * Renders the primary user management dashboard for administrators.
  * Displays user metrics, filtering controls, and the list of user cards.
+ * Now relies strictly on the integrated status field within the User model.
  *
  * @param viewModel Administrator ViewModel holding the users and metrics state.
  */
@@ -58,24 +59,21 @@ fun UserManagementContent(viewModel: AdminViewModel) {
     val selectedFilter by viewModel.selectedFilter.collectAsStateWithLifecycle()
     val loadState by viewModel.loadState.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoadingUsers.collectAsStateWithLifecycle()
-    val accountStatuses by viewModel.accountStatuses.collectAsStateWithLifecycle()
 
-    // Calculate metrics using account statuses
+    // Simplified metrics calculation using integrated status
     val totalUsers = users.size
-    val activeUsers = users.count { accountStatuses[it.id]?.activa ?: true }
-    val inactiveUsers = users.count { !(accountStatuses[it.id]?.activa ?: true) }
+    val activeUsers = users.count { it.activo }
+    val inactiveUsers = users.count { !it.activo }
 
-    // Filter logic
+    // Optimized Filter logic
     val filteredUsers = users.filter { user ->
-        val isActivo = accountStatuses[user.id]?.activa ?: true
-
         val matchesSearch = user.nombreCompleto.contains(searchQuery, ignoreCase = true) ||
                             user.correo.contains(searchQuery, ignoreCase = true) ||
                             user.primaryRoleDisplay.contains(searchQuery, ignoreCase = true)
 
         val matchesFilter = when (selectedFilter) {
-            "Activos" -> isActivo
-            "Inactivos" -> !isActivo
+            "Activos" -> user.activo
+            "Inactivos" -> !user.activo
             else -> true
         }
 
@@ -104,7 +102,7 @@ fun UserManagementContent(viewModel: AdminViewModel) {
             }
         }
 
-        // Metrics
+        // Metrics display using pre-calculated values
         item {
             Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 MetricCard(
@@ -131,7 +129,7 @@ fun UserManagementContent(viewModel: AdminViewModel) {
             }
         }
 
-        // Filters
+        // Filters section
         item {
             Spacer(modifier = Modifier.height(8.dp))
             UserFilterRow(
@@ -143,16 +141,14 @@ fun UserManagementContent(viewModel: AdminViewModel) {
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // Loading state
+        // Loading and error states
         if (isLoading) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color(0xFF0F2C59))
                 }
             }
-        }
-        // Error state
-        else if (loadState is LoadResult.Error) {
+        } else if (loadState is LoadResult.Error) {
             item {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
@@ -161,18 +157,13 @@ fun UserManagementContent(viewModel: AdminViewModel) {
                 ) {
                     Icon(Icons.Default.CloudOff, contentDescription = null, tint = Color(0xFFDC3545), modifier = Modifier.size(48.dp))
                     Text("Error de conexión", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF0F2C59))
-                    Text(
-                        (loadState as LoadResult.Error).message,
-                        fontSize = 14.sp, color = Color(0xFF6A7282), textAlign = TextAlign.Center
-                    )
+                    Text((loadState as LoadResult.Error).message, fontSize = 14.sp, textAlign = TextAlign.Center)
                     TextButton(onClick = { viewModel.loadUsuarios() }) {
-                        Text("Reintentar", color = Color(0xFF0F2C59), fontWeight = FontWeight.Medium)
+                        Text("Reintentar", color = Color(0xFF0F2C59))
                     }
                 }
             }
-        }
-        // Empty state
-        else if (users.isEmpty() && loadState is LoadResult.Success) {
+        } else if (users.isEmpty() && loadState is LoadResult.Success) {
             item {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
@@ -181,29 +172,19 @@ fun UserManagementContent(viewModel: AdminViewModel) {
                 ) {
                     Icon(Icons.Default.SearchOff, contentDescription = null, tint = Color(0xFF99A1AF), modifier = Modifier.size(48.dp))
                     Text("No hay usuarios registrados", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF0F2C59))
-                    Text("Crea un nuevo usuario para comenzar.", fontSize = 14.sp, color = Color(0xFF6A7282))
                 }
             }
-        }
-        // User List
-        else {
+        } else {
             if (filteredUsers.isEmpty()) {
                 item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(48.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(Icons.Default.SearchOff, contentDescription = null, tint = Color(0xFF99A1AF), modifier = Modifier.size(48.dp))
-                        Text("Sin resultados", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF0F2C59))
-                        Text("No se encontraron usuarios que coincidan con tu búsqueda.", fontSize = 14.sp, color = Color(0xFF6A7282), textAlign = TextAlign.Center)
+                    Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
+                        Text("Sin resultados para la búsqueda", color = Color(0xFF6A7282))
                     }
                 }
             } else {
                 items(filteredUsers) { usuario ->
                     UserCard(
                         usuario = usuario,
-                        cuenta = accountStatuses[usuario.id],
                         onEditClick = { viewModel.openEditUser(it) },
                         onToggleStatusClick = { viewModel.toggleUserStatus(it) },
                         onViewDetail = { userId -> viewModel.viewUserDetail(userId) }
@@ -214,13 +195,10 @@ fun UserManagementContent(viewModel: AdminViewModel) {
     }
 }
 
-/**
- * Preview for the User Management screen content.
- */
 @Preview(showBackground = true)
 @Composable
 fun UserManagementContentPreview() {
     JyPSTheme {
-        Text("Vista previa (Preview) no disponible nativamente porque la función requiere instanciar AdminViewModel, el cual tiene dependencias de red de Retrofit y contexto de aplicación.")
+        Text("Vista previa no disponible por dependencias de ViewModel.")
     }
 }
