@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import mx.edu.utez.jyps.data.model.CreateDepartmentRequest
 import mx.edu.utez.jyps.data.model.DepartamentoResponse
@@ -19,7 +18,16 @@ import mx.edu.utez.jyps.data.repository.UsuarioRepository
 import kotlinx.coroutines.launch
 
 /**
- * UI State for the Department Management screen.
+ * UI State for the Department Management module.
+ *
+ * @param departments The filtered sequence of institutional departments.
+ * @param searchQuery Current predicate for department attribute filtering.
+ * @param selectedFilter Active operational status filter (Active/Inactive).
+ * @param totalCount Cumulative number of registered departments.
+ * @param activeCount Tally of departments in functional status.
+ * @param inactiveCount Tally of departments in restricted status.
+ * @param isLoading Operational indicator for asynchronous network requests.
+ * @param errorMessage Descriptive error text for diagnostic feedback.
  */
 data class DepartmentUiState(
     val departments: List<DepartamentoResponse> = emptyList(),
@@ -33,11 +41,14 @@ data class DepartmentUiState(
 )
 
 /**
- * ViewModel managing the state and logic for Department Management.
- * Follows strict efficiency guidelines by avoiding redundant network calls.
+ * ViewModel orchestrating the lifecycle and structural integrity of institutional departments.
  *
- * @param repository Repository for department operations.
- * @param userRepository Shared user repository to access global user lists.
+ * Manages the transition between operational states, enforcing security policies that
+ * prevent the deactivation of departments containing active personnel. Optimizes data
+ * flow by combining multiple reactive streams into a unified UI state.
+ *
+ * @property repository Data source for Department-specific CRUD operations.
+ * @property userRepository Shared authority for user identity reconciliation.
  */
 class DepartmentManagementViewModel(
     private val repository: DepartmentRepository = DepartmentRepository(RetrofitInstance.api),

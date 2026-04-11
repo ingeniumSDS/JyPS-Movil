@@ -35,15 +35,21 @@ import mx.edu.utez.jyps.ui.components.common.EmployeeModeBanner
 import mx.edu.utez.jyps.viewmodel.ProfileViewModel
 
 /**
- * Screen displaying the employee's personal profile information and settings.
+ * Screen displaying the employee's personal profile identity and settings.
  * 
- * @param viewModel ViewModel with profile state logic.
- * @param onLogoutClick Callback to handle session termination.
- * @param onHomeClick Navigation to home dashboard.
- * @param onHistoryClick Navigation to history screen.
- * @param showEmployeeModeBanner Flag to display the contextual mode banner.
- * @param onReturnToRoleDashboard Callback to close the employee context.
- * @param userName Current session user's full name.
+ * Orchestrates the visualization of institutional contact information and provides 
+ * restricted access to credential management (Password update).
+ * 
+ * @param viewModel ViewModel tracking the reactive profile state and credential operations.
+ * @param onLogoutClick Callback to terminate the current session and purge identity tokens.
+ * @param onHomeClick Navigation callback to return to the primary role dashboard.
+ * @param onHistoryClick Navigation callback to the user's request log.
+ * @param showEmployeeModeBanner Flag to toggle the administrative context banner for non-native employees.
+ * @param onReturnToRoleDashboard Action to exit the impersonation context and return to the primary role view.
+ * @param userName The full display name of the authenticated employee.
+ * @param userEmail The institutional email associated with the active session.
+ * @param userPhone The contact telephone number retrieved from the identity provider.
+ * @param roleTitle The primary role designation assigned to the session identity.
  */
 @Composable
 fun ProfileScreen(

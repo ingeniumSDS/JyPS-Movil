@@ -16,7 +16,16 @@ import mx.edu.utez.jyps.data.repository.AuthRepository
 import mx.edu.utez.jyps.data.repository.PreferencesManager
 
 /**
- * UI State for the Login screen.
+ * UI State for the Authentication Entry Point.
+ * 
+ * @param email Curated identity predicate for login.
+ * @param password Secure credential input for authentication.
+ * @param isLoading Transactional state for network handshakes.
+ * @param errorMessage Diagnostic text for credential or security rejections.
+ * @param isLoginSuccessful Success flag for session propagation.
+ * @param isAccountBlocked Specific state for server-side restricted identities.
+ * @param loginAttempts Incremental counter for local anti-bruteforce measures.
+ * @param isLockedOut Transient state for local-side security timeouts.
  */
 data class LoginUiState(
     val email: String = "",
@@ -24,19 +33,19 @@ data class LoginUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isLoginSuccessful: Boolean = false,
-    val isAccountBlocked: Boolean = false, // Specific for 'Temporarily Blocked' screen
+    val isAccountBlocked: Boolean = false,
     val loginAttempts: Int = 3,
     val isLockedOut: Boolean = false
 )
 
 /**
- * LoginViewModel manages the state and business logic for the Login screen.
+ * High-level orchestrator for the Authentication lifecycle.
  * 
- * Orchestrates authentication flows, security lockdowns, and session lifecycle
- * by strictly delegating to the secure [AuthRepository]. Enforces reactive 
- * state boundaries via [LoginUiState].
+ * Manages the security handshake between the identity provider and the local session. 
+ * Enforces resilient security layers, including server-side block detection and 
+ * local anti-bruteforce logic, ensuring atomic state transitions via [LoginUiState].
  *
- * @property application Android application context provided by the framework.
+ * @param application Global application context for secure preference management.
  */
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
