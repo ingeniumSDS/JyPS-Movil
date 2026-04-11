@@ -27,7 +27,12 @@ import mx.edu.utez.jyps.viewmodel.ForgotPasswordUiState
 
 /**
  * Stage 3: UI for setting the new password after token validation.
- * Matches the provided screen design with complexity requirements.
+ * Enforces complexity rules including length, casing, numbers, and special characters.
+ * 
+ * @param uiState Current view state holding the double-password input fields and error states.
+ * @param onPasswordChange Callback for the initial new password field.
+ * @param onConfirmPasswordChange Callback for the secondary confirmation field.
+ * @param onSubmit Action to trigger the final credential reconciliation with the backend.
  */
 @Composable
 fun PasswordSetupStep(

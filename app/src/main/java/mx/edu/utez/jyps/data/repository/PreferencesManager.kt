@@ -161,10 +161,10 @@ class PreferencesManager(private val context: Context) {
         }
 
     /**
-     * Synchronously resolves the current DataStore state.
+     * Synchronously resolves the current DataStore state for auth headers.
      * Required exclusively for OkHttp Interceptors which operate on blocking background threads.
      * 
-     * @return The decrypted token or null if unresolvable.
+     * @return The decrypted token or null if unresolvable or missing.
      */
     fun getTokenSync(): String? {
         val encryptedToken = runBlocking { context.dataStore.data.first()[TOKEN_KEY] } ?: return null
@@ -179,8 +179,13 @@ class PreferencesManager(private val context: Context) {
 
     /**
      * Atomically persists the complete session data (token, roles, and profile).
-     * This ensures that downstream flows receive a single consistent update, avoiding
-     * UI flickering caused by partial state changes.
+     * Utilizes Google Tink AEAD to ensure data is encrypted at rest within the DataStore.
+     * 
+     * @param token The identity JWT to be encrypted.
+     * @param roles List of authorized scopes.
+     * @param name User's display name.
+     * @param email User's identity email.
+     * @param phone Registered contact phone.
      */
     suspend fun saveSession(
         token: String,
@@ -206,6 +211,7 @@ class PreferencesManager(private val context: Context) {
 
     /**
      * Purges the authentication token, roles, and profile data atomically.
+     * Destroys all sensitive cryptographic materials stored in preferences.
      */
     suspend fun clearSession() {
         context.dataStore.edit { preferences ->

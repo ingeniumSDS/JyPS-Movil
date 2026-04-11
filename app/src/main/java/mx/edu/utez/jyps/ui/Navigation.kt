@@ -39,7 +39,8 @@ import mx.edu.utez.jyps.ui.components.common.AppToast
 import mx.edu.utez.jyps.ui.components.common.ToastType
 
 /**
- * AppRoutes defines the navigation destinations for the application.
+ * AppRoutes defines the immutable navigation destinations for the application.
+ * Centralizes route string constants to prevent hardcoded navigation errors.
  */
 sealed class AppRoutes(val route: String) {
     object Login : AppRoutes("login")
@@ -68,13 +69,15 @@ sealed class AppRoutes(val route: String) {
 }
 
 /**
- * Connects the UI layers to the navigation graph.
+ * Orchestrates the global navigation graph and security-driven routing.
  * 
- * Subscribes to the global `sessionToken` flow emitted by the auth repository. This ensures
- * robust state-driven routing with dynamic role-based entry point mapping.
+ * Subscribes to identity and authorization flows emitted by the authentication layer. 
+ * Implements a secure grace period while roles are synchronized from local storage 
+ * to prevent unauthorized access or flickering during session initialization.
  * 
  * @param navController Controller managing internal stack and transitions.
  * @param loginViewModel Exposes the reactive authentication state.
+ * @param authViewModel Main controller for shared identity state (Token, Roles, Profile).
  */
 @Composable
 fun NavigationHost(

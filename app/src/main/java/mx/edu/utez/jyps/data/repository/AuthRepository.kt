@@ -10,7 +10,6 @@ import mx.edu.utez.jyps.data.model.PasswordTokenRequest
 import mx.edu.utez.jyps.data.network.ApiService
 import org.json.JSONObject
 import android.util.Base64
-import org.json.JSONArray
 import java.nio.charset.Charset
 
 /**
@@ -32,12 +31,12 @@ class AuthRepository(
     /**
      * Attempts a credential exchange against the backend service.
      * 
-     * @param correo Institutional email.
-     * @param pass Plaintext password.
-     * @return Result containing [LoginResponse] or a detailed error message.
+     * @param correo The institutional email address used as the unique identifier.
+     * @param pass The plaintext password to be validated against the security provider.
+     * @return [Result] containing the [LoginResponse] on success or an [Exception] on failure.
      */
     suspend fun login(correo: String, pass: String): Result<LoginResponse> {
-        Log.d("AuthRepo", "POST /api/v1/usuarios/login - Attempting auth for: $correo")
+        Log.d("AuthRepo", "POST /api/v1/usuarios/login")
 
         // FALLBACK MOCKS: Maintained for development continuity as requested
         if (correo == "maria.gonzalez@utez.edu.mx") {
@@ -61,10 +60,10 @@ class AuthRepository(
             if (response.isSuccessful && response.body() != null) {
                 var data = response.body()!!
                 
-                // ESTRATEGIA RESILIENTE (Estilo Web): Extraer base del JWT primero
+                Log.d("AuthRepo", "Decoding cryptographic session token")
                 val decoded = decodeJwtPayload(data.tokenJwt)
                 
-                // Mapeo inteligente con fallbacks
+                Log.d("AuthRepo", "Resolving profile attributes from identity provider")
                 val finalName = data.nombreCompleto ?: decoded.optString("nombre", decoded.optString("name", "Usuario"))
                 val finalEmail = data.correo ?: decoded.optString("sub", correo)
                 val finalPhone = data.telefono?.takeIf { it.isNotBlank() } ?: decoded.optString("telefono", decoded.optString("phone", "No disponible"))
@@ -74,9 +73,8 @@ class AuthRepository(
                     List(arr.length()) { i -> arr.getString(i) }
                 } ?: listOf("USUARIO")
 
-                Log.d("AuthRepo", "SUCCESS /login - Syncing resilient profile: $finalName")
+                Log.d("AuthRepo", "Synchronizing resilient profile for '$finalName'")
                 
-                // Persistencia atómica
                 preferencesManager.saveSession(
                     token = data.tokenJwt,
                     roles = finalRoles,
@@ -88,18 +86,20 @@ class AuthRepository(
                 Result.success(data)
             } else {
                 val errorMsg = parseError(response.errorBody()?.string(), response.code())
-                Log.d("AuthRepo", "FAILURE /login - Code: ${response.code()} Body: $errorMsg")
+                Log.e("AuthRepo", "Auth REJECTED at /api/v1/usuarios/login - Status: ${response.code()}")
                 Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
-            Log.d("AuthRepo", "ERROR /login - Connection failed: ${e.message}")
+            Log.e("AuthRepo", "Resource UNREACHABLE at /api/v1/usuarios/login: ${e.message}")
             Result.failure(Exception("Error de conexión: Verifica tu internet"))
         }
     }
 
     /**
-     * Extrae de forma segura el payload informativo de un JWT sin verificar la firma.
-     * Utilizado exclusivamente para sincronización de UI (Nombre, Roles).
+     * Extracts safely the informational payload from a JWT without signature verification.
+     * 
+     * @param token The raw JWT string to decode.
+     * @return [JSONObject] containing the decrypted claims.
      */
     private fun decodeJwtPayload(token: String): JSONObject {
         return try {
@@ -111,60 +111,78 @@ class AuthRepository(
             val decodedString = String(decodedBytes, Charset.forName("UTF-8"))
             JSONObject(decodedString)
         } catch (e: Exception) {
-            Log.e("AuthRepo", "Security Exception during JWT decoding: ${e.message}")
+            Log.e("AuthRepo", "Security Violation: JWT payload is malformed")
             JSONObject()
         }
     }
 
     /**
      * Requests a one-time password recovery token via email.
+     * 
+     * @param correo Target institutional email for recovery instructions.
+     * @return [Result] wrapping the [GenericMessageResponse] from the provider.
      */
     suspend fun requestPasswordToken(correo: String): Result<GenericMessageResponse> {
-        Log.d("AuthRepo", "POST /api/v1/usuarios/token - Requesting token for: $correo")
         return try {
+            Log.d("AuthRepo", "POST /api/v1/usuarios/token")
             val response = api.generarRecuperacionToken(PasswordTokenRequest(correo))
             if (response.isSuccessful && response.body() != null) {
+                Log.d("AuthRepo", "Token generation triggered successfully")
                 Result.success(response.body()!!)
             } else {
                 val error = parseError(response.errorBody()?.string(), response.code())
+                Log.e("AuthRepo", "Token generation FAILED at /api/v1/usuarios/token")
                 Result.failure(Exception(error))
             }
         } catch (e: Exception) {
+            Log.e("AuthRepo", "Resource UNREACHABLE at /api/v1/usuarios/token: ${e.message}")
             Result.failure(Exception("Error al solicitar token: ${e.message}"))
         }
     }
 
     /**
      * Validates if a provided setup/recovery token is still active and valid.
+     * 
+     * @param token String containing the UUID-based security token.
+     * @return [Result] wrapping the validation message or an exception.
      */
     suspend fun verifySetupToken(token: String): Result<String> {
-        Log.d("AuthRepo", "GET /api/v1/usuarios/setup/validar - Validating token: $token")
         return try {
+            Log.d("AuthRepo", "GET /api/v1/usuarios/setup/validar")
             val response = api.validarSetupToken(token)
             if (response.isSuccessful && response.body() != null) {
+                Log.d("AuthRepo", "Token confirmed valid by identity provider")
                 Result.success(response.body()!!.string())
             } else {
+                Log.e("AuthRepo", "Token verification REJECTED at /api/v1/usuarios/setup/validar")
                 Result.failure(Exception("Token inválido o expirado"))
             }
         } catch (e: Exception) {
+            Log.e("AuthRepo", "Resource UNREACHABLE at /api/v1/usuarios/setup/validar: ${e.message}")
             Result.failure(Exception("Error de red al validar token"))
         }
     }
 
     /**
      * Finalizes the password setup or reset flow.
+     * 
+     * @param request [PasswordSetupRequest] containing new credential and token.
+     * @return [Result] wrapping [CuentaResponse] detailing final account state.
      */
     suspend fun setupPassword(request: PasswordSetupRequest): Result<CuentaResponse> {
-        Log.d("AuthRepo", "POST /api/v1/usuarios/setup - Completing password setup")
         return try {
+            Log.d("AuthRepo", "POST /api/v1/usuarios/setup")
             val response = api.establecerPassword(request)
             if (response.isSuccessful && response.body() != null) {
+                Log.d("AuthRepo", "Credential reconciliation completed successfully")
                 Result.success(response.body()!!)
             } else {
                 val error = parseError(response.errorBody()?.string(), response.code())
+                Log.e("AuthRepo", "Credential setup REJECTED at /api/v1/usuarios/setup")
                 Result.failure(Exception(error))
             }
         } catch (e: Exception) {
+            Log.e("AuthRepo", "Resource UNREACHABLE at /api/v1/usuarios/setup: ${e.message}")
             Result.failure(Exception("Error al establecer contraseña: ${e.message}"))
         }
     }
@@ -173,7 +191,7 @@ class AuthRepository(
      * Executes an explicit revocation of the local cryptographic session.
      */
     suspend fun logout() {
-        Log.d("AuthRepo", "LOGOUT - Purging DataStore session")
+        Log.d("AuthRepo", "Revoking active session and clearing DataStore")
         preferencesManager.clearSession()
     }
 
