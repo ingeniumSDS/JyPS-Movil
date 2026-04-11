@@ -43,10 +43,15 @@ import mx.edu.utez.jyps.ui.components.dialogs.EditDepartmentDialog
 import mx.edu.utez.jyps.ui.components.dialogs.ToggleDepartmentStatusDialogs
 
 /**
- * Main wrapper screen for the Administrator dashboard.
- *
- * @param viewModel ViewModel tracking view state for the Admin role.
- * @param onLogoutSuccess Callback executed upon successful session logout.
+ * Main root container for the Administrator experience.
+ * Orchestrates the navigation drawer, top bar, and dynamic content injection based on the selected route.
+ * 
+ * @param viewModel Primary ViewModel for administrative state and logout operations.
+ * @param deptViewModel Scoped ViewModel for department-specific CRUD operations.
+ * @param onLogoutSuccess Callback executed after purging local session data.
+ * @param onNavigateToEmployeeFunction Callback to bridge the admin context with employee-specific features.
+ * @param userName Full display name of the authenticated administrator.
+ * @param userEmail Institutional contact email of the administrator.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

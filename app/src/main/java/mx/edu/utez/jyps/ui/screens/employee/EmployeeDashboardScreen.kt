@@ -19,18 +19,21 @@ import mx.edu.utez.jyps.ui.components.header.EmployeeHeader
 import mx.edu.utez.jyps.ui.components.common.EmployeeModeBanner
 
 /**
- * Primary dashboard view for Employees.
- * Offers quick actions to request exit passes and justifications, displaying user context.
+ * Core dashboard interface for Employee personas.
+ * 
+ * Provides centralized access to the primary operational workflows: requesting exit passes 
+ * and submitting justifications. Includes role-redirection logic for cross-role 
+ * functional testing ("Employee Mode").
  *
- * @param onLogoutClick Callback to end the user session.
- * @param onHistoryClick Callback to navigate to the request history screen.
- * @param onProfileClick Callback to navigate to the user's profile view.
- * @param onRequestPassClick Callback to navigate to the exit pass creation screen.
- * @param onRequestJustificationClick Callback to navigate to the justification creation screen.
- * @param userName Full name of the currently authenticated employee.
- * @param userEmail Institutional email of the currently authenticated employee.
- * @param showEmployeeModeBanner Whether to show the "Employee Mode" banner for non-employee roles.
- * @param onReturnToRoleDashboard Callback to exit employee mode and return to role-specific dashboard.
+ * @param onLogoutClick Callback to terminate the current session.
+ * @param onHistoryClick Navigation callback for the request status log.
+ * @param onProfileClick Navigation callback for the account settings and profile view.
+ * @param onRequestPassClick Action to initiate a new exit pass credential request.
+ * @param onRequestJustificationClick Action to initiate a new absence justification request.
+ * @param userName The full display name of the authenticated employee.
+ * @param userEmail Institutional contact email associated with the session.
+ * @param showEmployeeModeBanner Toggle to display the administrative role-impersonation banner.
+ * @param onReturnToRoleDashboard Action to exit the impersonation mode and return to the primary role dashboard.
  */
 @Composable
 fun EmployeeDashboardScreen(
