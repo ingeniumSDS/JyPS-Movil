@@ -1,5 +1,6 @@
 package mx.edu.utez.jyps.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -186,21 +187,38 @@ class AdminViewModel(
 
     // ── Init ─────────────────────────────────────────
     init {
-        loadUsuarios()
-        loadDepartamentos()
-    }
-
-    fun loadUsuarios() {
         viewModelScope.launch {
-            _isLoadingUsers.value = true
-            repository.getUsuarios()
-            _isLoadingUsers.value = false
+            // Minimal buffer for UI stability, nearly instant
+            kotlinx.coroutines.delay(100)
+            loadAllData()
         }
     }
 
-    fun loadDepartamentos() {
-        viewModelScope.launch { deptRepository.getDepartamentos() }
+    private var isCurrentlyLoading = false
+
+    /**
+     * Proactively loads both users and departments to ensure all dropdowns
+     * and lists are ready for the administrator.
+     */
+    fun loadAllData() {
+        if (isCurrentlyLoading) return
+        viewModelScope.launch {
+            isCurrentlyLoading = true
+            _isLoadingUsers.value = true
+            
+            // Run both requests in parallel for maximum speed
+            val usersDeferred = launch { repository.getUsuarios() }
+            val deptsDeferred = launch { deptRepository.getDepartamentos() }
+            
+            usersDeferred.join()
+            deptsDeferred.join()
+            
+            _isLoadingUsers.value = false
+            isCurrentlyLoading = false
+        }
     }
+
+    fun loadUsuarios() = loadAllData()
 
     // ── Navigation / Filters ─────────────────────────
     fun selectDrawerItem(item: String) { _selectedDrawerItem.value = item }
@@ -310,13 +328,27 @@ class AdminViewModel(
         viewModelScope.launch {
             _isProcessing.value = true
             repository.registrarUsuario(request).onSuccess { newUser ->
+                var assignmentError: String? = null
+                
                 if (_newUserRoles.value.contains(3) && _managedDepartmentId.value != null) {
-                    deptRepository.asignarJefe(_managedDepartmentId.value!!, newUser.id)
+                    val assignResult = deptRepository.asignarJefe(_managedDepartmentId.value!!, newUser.id)
+                    if (!assignResult.isSuccess) {
+                        val msg = assignResult.exceptionOrNull()?.message ?: ""
+                        assignmentError = "Usuario creado, pero falló asignación de jefe: " + 
+                            (if (msg.contains("403")) "Este usuario ya es jefe de otro departamento." else "Error de servidor.")
+                    }
                 }
-                setCreateUserVisible(false)
-                showFeedback("Usuario creado exitosamente", true)
+
+                if (assignmentError == null) {
+                    loadAllData() // Refrescamos todos los datos
+                    setCreateUserVisible(false)
+                    showFeedback("Usuario creado exitosamente", true)
+                } else {
+                    _createServerResponseError.value = assignmentError
+                    _scrollToTopTrigger.value += 1
+                }
             }.onFailure { e ->
-                _createServerResponseError.value = "Error: ${e.message}"
+                _createServerResponseError.value = "Error al crear usuario: ${e.message}"
                 _scrollToTopTrigger.value += 1
             }
             _isProcessing.value = false
@@ -336,7 +368,16 @@ class AdminViewModel(
         _editRoles.value = usuario.roles.mapNotNull { reverseRoleMapping[it] }.toSet()
         _editDepartmentId.value = usuario.departamentoId
         
-        _editManagedDepartmentId.value = departamentos.value.find { it.jefeId == usuario.id }?.id
+        // Búsqueda ultra-resiliente (forzando conversión de tipos para evitar Int vs Long mismatch)
+        val targetId = usuario.id.toLong()
+        val managedDept = departamentos.value.find { dept ->
+            val jId = dept.jefeId?.toLong()
+            jId != null && jId == targetId
+        }
+        
+        _editManagedDepartmentId.value = managedDept?.id
+        
+        Log.d("AdminVM", "Lookup Jefe - UsuarioID: $targetId | Encontrado Depto: ${managedDept?.nombre ?: "NINGUNO"} (ID: ${managedDept?.id ?: "N/A"})")
         
         _editStartHour.value = usuario.entradaHour
         _editStartMinute.value = usuario.entradaMinute
@@ -395,30 +436,63 @@ class AdminViewModel(
             _scrollToTopTrigger.value += 1; return
         }
 
+        val startStr = "%02d:%02d:00".format(_editStartHour.value, _editStartMinute.value)
+        val endStr = "%02d:%02d:00".format(_editEndHour.value, _editEndMinute.value)
+        val selectedRoles = _editRoles.value.mapNotNull { roleMapping[it] }
+
         val request = UserRequest(
             nombre = _editName.value.trim(),
             apellidoPaterno = _editPaterno.value.trim(),
             apellidoMaterno = _editMaterno.value.trim(),
             correo = _editEmail.value.trim(),
             telefono = _editPhone.value.trim(),
-            horaEntrada = "%02d:%02d:00".format(_editStartHour.value, _editStartMinute.value),
-            horaSalida = "%02d:%02d:00".format(_editEndHour.value, _editEndMinute.value),
-            roles = _editRoles.value.mapNotNull { roleMapping[it] },
+            horaEntrada = startStr,
+            horaSalida = endStr,
+            roles = selectedRoles,
             departamentoId = _editDepartmentId.value
         )
 
+        Log.d("AdminVM", "Intentando actualizar usuario $userId con roles: $selectedRoles")
+
         viewModelScope.launch {
             _isProcessing.value = true
+            
+            // Paso 1: Actualizar datos básicos y roles del usuario
             repository.actualizarUsuario(userId, request).onSuccess { updatedUser ->
+                Log.d("AdminVM", "Paso 1 exitoso: Usuario actualizado")
+                
+                var assignmentError: String? = null
+                
+                // Paso 2: Si es jefe, intentar la asignación de departamento
                 if (_editRoles.value.contains(3) && _editManagedDepartmentId.value != null) {
-                    deptRepository.asignarJefe(_editManagedDepartmentId.value!!, updatedUser.id)
+                    Log.d("AdminVM", "Paso 2: Asignando cargo de jefe en depto: ${_editManagedDepartmentId.value}")
+                    val assignResult = deptRepository.asignarJefe(_editManagedDepartmentId.value!!, updatedUser.id)
+                    
+                    if (!assignResult.isSuccess) {
+                        val msg = assignResult.exceptionOrNull()?.message ?: ""
+                        assignmentError = "Usuario actualizado, pero falló asignación de jefe: " + 
+                            (if (msg.contains("403")) "Este usuario ya es jefe de otro departamento." else "Error de servidor.")
+                        Log.e("AdminVM", "Error en Paso 2: $assignmentError")
+                    }
                 }
-                closeEditUser()
-                showFeedback("Usuario actualizado exitosamente", true)
+
+                if (assignmentError == null) {
+                    Log.d("AdminVM", "Flujo completo de guardado exitoso")
+                    loadAllData() // Refrescamos todos los datos (Usuarios y Deptos)
+                    closeEditUser()
+                    showFeedback("Usuario actualizado exitosamente", true)
+                } else {
+                    // FALLÓ LA SEGUNDA PARTE
+                    _editServerResponseError.value = assignmentError
+                    _scrollToTopTrigger.value += 1
+                }
             }.onFailure { e ->
-                _editServerResponseError.value = "Error: ${e.message}"
+                // FALLÓ LA PRIMERA PARTE
+                Log.e("AdminVM", "Fallo en Paso 1: ${e.message}")
+                _editServerResponseError.value = "Error al actualizar perfil: ${e.message}"
                 _scrollToTopTrigger.value += 1
             }
+            
             _isProcessing.value = false
         }
     }

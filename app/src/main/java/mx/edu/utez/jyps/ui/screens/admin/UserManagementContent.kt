@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,24 +61,25 @@ fun UserManagementContent(viewModel: AdminViewModel) {
     val loadState by viewModel.loadState.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoadingUsers.collectAsStateWithLifecycle()
 
-    // Simplified metrics calculation using integrated status
-    val totalUsers = users.size
-    val activeUsers = users.count { it.activo }
-    val inactiveUsers = users.count { !it.activo }
+    // Memoized metrics calculation to avoid recalculating on every recomposition
+    val totalUsers = remember(users) { users.size }
+    val activeUsers = remember(users) { users.count { it.activo } }
+    val inactiveUsers = remember(users) { users.count { !it.activo } }
 
-    // Optimized Filter logic
-    val filteredUsers = users.filter { user ->
-        val matchesSearch = user.nombreCompleto.contains(searchQuery, ignoreCase = true) ||
-                            user.correo.contains(searchQuery, ignoreCase = true) ||
-                            user.primaryRoleDisplay.contains(searchQuery, ignoreCase = true)
+    // Optimized Filter logic using remember 
+    val filteredUsers = remember(users, searchQuery, selectedFilter) {
+        users.filter { user ->
+            val matchesSearch = user.nombreCompleto.contains(searchQuery, ignoreCase = true) ||
+                                user.correo.contains(searchQuery, ignoreCase = true) ||
+                                user.primaryRoleDisplay.contains(searchQuery, ignoreCase = true)
 
-        val matchesFilter = when (selectedFilter) {
-            "Activos" -> user.activo
-            "Inactivos" -> !user.activo
-            else -> true
+            val matchesFilter = when (selectedFilter) {
+                "Activos" -> user.activo
+                "Inactivos" -> !user.activo
+                else -> true
+            }
+            matchesSearch && matchesFilter
         }
-
-        matchesSearch && matchesFilter
     }
 
     LazyColumn(
@@ -182,11 +184,11 @@ fun UserManagementContent(viewModel: AdminViewModel) {
                     }
                 }
             } else {
-                items(filteredUsers) { usuario ->
+                items(filteredUsers, key = { it.id }) { usuario ->
                     UserCard(
                         usuario = usuario,
-                        onEditClick = { viewModel.openEditUser(it) },
-                        onToggleStatusClick = { viewModel.toggleUserStatus(it) },
+                        onEditClick = { viewModel.openEditUser(usuario) },
+                        onToggleStatusClick = { viewModel.toggleUserStatus(usuario) },
                         onViewDetail = { userId -> viewModel.viewUserDetail(userId) }
                     )
                 }

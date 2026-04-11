@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.edu.utez.jyps.ui.components.buttons.PrimaryButton
+import mx.edu.utez.jyps.ui.components.inputs.AppTextField
 import mx.edu.utez.jyps.ui.components.inputs.VerificationCodeInput
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordUiState
 
@@ -46,21 +47,22 @@ fun CodeVerificationStep(
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "Código de Verificación",
+            text = "Token de Acceso",
             fontWeight = FontWeight.Medium,
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Start
         )
         
         Spacer(modifier = Modifier.height(8.dp))
 
-        VerificationCodeInput(
+        AppTextField(
             value = uiState.verificationCode,
             onValueChange = onCodeChange,
-            isError = uiState.codeErrorMessage != null,
-            modifier = Modifier.widthIn(max = 400.dp)
+            label = "",
+            placeholder = "5ca0722a-3d0c-4845-be30-fa8d91807f54",
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -73,18 +75,6 @@ fun CodeVerificationStep(
         )
     }
 
-    // Dummy Help Message
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp))
-            .border(1.dp, Color(0xFFBEDBFF), RoundedCornerShape(8.dp))
-            .padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = "Código de prueba: 218811", color = Color(0xFF193CB8), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-        Text(text = "(Este código se muestra solo en entorno de desarrollo)", color = Color(0xFF155DFC), fontSize = 12.sp)
-    }
 
     if (uiState.codeErrorMessage != null) {
         Row(

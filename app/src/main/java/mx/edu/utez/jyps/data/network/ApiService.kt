@@ -10,6 +10,11 @@ import mx.edu.utez.jyps.data.model.LoginResponse
 import mx.edu.utez.jyps.data.model.UpdateDepartmentRequest
 import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.data.model.UserRequest
+import mx.edu.utez.jyps.data.model.PasswordTokenRequest
+import mx.edu.utez.jyps.data.model.PasswordSetupRequest
+import mx.edu.utez.jyps.data.model.GenericMessageResponse
+import mx.edu.utez.jyps.data.model.TokenValidationResponse
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -28,6 +33,15 @@ interface ApiService {
     // ── Autenticación ───────────────────────────────
     @POST("api/v1/usuarios/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+
+    @GET("api/v1/usuarios/setup/validar")
+    suspend fun validarSetupToken(@Query("token") token: String): Response<ResponseBody>
+
+    @POST("api/v1/usuarios/token")
+    suspend fun generarRecuperacionToken(@Body request: PasswordTokenRequest): Response<GenericMessageResponse>
+
+    @POST("api/v1/usuarios/setup")
+    suspend fun establecerPassword(@Body request: PasswordSetupRequest): Response<CuentaResponse>
 
     // ── Usuarios ────────────────────────────────────
     @GET("api/v1/usuarios")

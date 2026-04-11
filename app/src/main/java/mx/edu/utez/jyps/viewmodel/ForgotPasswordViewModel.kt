@@ -1,72 +1,79 @@
 package mx.edu.utez.jyps.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mx.edu.utez.jyps.data.model.PasswordSetupRequest
+import mx.edu.utez.jyps.data.network.RetrofitInstance
+import mx.edu.utez.jyps.data.repository.AuthRepository
+import mx.edu.utez.jyps.data.repository.PreferencesManager
 
 /**
  * Represents the different states of the Forgot Password flow.
+ * Sincronizado con el flujo del backend real.
  */
 enum class ForgotPasswordStep {
     EMAIL_INPUT,
     CODE_VERIFICATION,
+    PASSWORD_SETUP,
     SUCCESS
 }
 
 /**
  * UI State for the Forgot Password screen.
- *
- * @property email The email address inputted by the user.
- * @property verificationCode The 6-digit confirmation code.
- * @property currentStep The current phase of the recovery phase.
- * @property isLoading Indicates if a network request is executing.
- * @property emailErrorMessage Validation error message for the email field.
- * @property codeErrorMessage Validation error message for the code field.
  */
 data class ForgotPasswordUiState(
     val email: String = "",
     val verificationCode: String = "",
+    val newPassword: String = "",
+    val confirmPassword: String = "",
     val currentStep: ForgotPasswordStep = ForgotPasswordStep.EMAIL_INPUT,
     val isLoading: Boolean = false,
     val emailErrorMessage: String? = null,
-    val codeErrorMessage: String? = null
+    val codeErrorMessage: String? = null,
+    val passwordErrorMessage: String? = null
 )
 
 /**
  * ForgotPasswordViewModel manages the state and business logic for password recovery.
+ * 
+ * @property application Android application context.
  */
-class ForgotPasswordViewModel : ViewModel() {
+class ForgotPasswordViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val repository = AuthRepository(
+        RetrofitInstance.api, 
+        PreferencesManager(application)
+    )
 
     private val _uiState = MutableStateFlow(ForgotPasswordUiState())
     val uiState: StateFlow<ForgotPasswordUiState> = _uiState.asStateFlow()
 
-    /**
-     * Updates the user's email input and clears any previous error.
-     *
-     * @param newEmail The new text in the email field.
-     */
     fun onEmailChange(newEmail: String) {
         _uiState.update { it.copy(email = newEmail, emailErrorMessage = null) }
     }
 
-    /**
-     * Updates the verification code up to 6 numerical digits.
-     *
-     * @param newCode The new text in the code field.
-     */
     fun onCodeChange(newCode: String) {
-        // Ensure only numbers and max 6 digits
-        val filteredCode = newCode.filter { it.isDigit() }.take(6)
+        // Soporta tokens UUID (guiones permitidos)
+        val filteredCode = newCode.filter { it.isLetterOrDigit() || it == '-' }.take(255)
         _uiState.update { it.copy(verificationCode = filteredCode, codeErrorMessage = null) }
     }
 
+    fun onPasswordChange(pass: String) {
+        _uiState.update { it.copy(newPassword = pass, passwordErrorMessage = null) }
+    }
+
+    fun onConfirmPasswordChange(pass: String) {
+        _uiState.update { it.copy(confirmPassword = pass, passwordErrorMessage = null) }
+    }
+
     /**
-     * Validates the email and moves to code verification step if valid.
+     * Executes the token request to the real backend service.
      */
     fun submitEmail() {
         val email = _uiState.value.email
@@ -76,48 +83,85 @@ class ForgotPasswordViewModel : ViewModel() {
             return
         }
 
-        if (!email.endsWith("@utez.edu.mx")) {
-            _uiState.update { it.copy(emailErrorMessage = "El correo debe pertenecer al dominio @utez.edu.mx") }
-            return
-        }
-
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            // Simulating API call to send code
-            delay(1500)
-            _uiState.update { it.copy(isLoading = false, currentStep = ForgotPasswordStep.CODE_VERIFICATION) }
-        }
-    }
-
-    /**
-     * Validates the entered verification code.
-     */
-    fun verifyCode() {
-        val code = _uiState.value.verificationCode
-
-        if (code.length < 6) {
-            _uiState.update { it.copy(codeErrorMessage = "Código no válido. Debe ingresar los 6 dígitos") }
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, emailErrorMessage = null) }
             
-            // Simulating verification API call
-            delay(1500)
-
-            // Dummy validation based on Figma mockups
-            if (code == "218811" || code == "242637") {
-                _uiState.update { it.copy(isLoading = false, currentStep = ForgotPasswordStep.SUCCESS) }
-            } else {
-                _uiState.update { it.copy(isLoading = false, codeErrorMessage = "Código no válido. Verifique el código enviado a su correo") }
+            val result = repository.requestPasswordToken(email)
+            
+            result.onSuccess {
+                _uiState.update { it.copy(isLoading = false, currentStep = ForgotPasswordStep.CODE_VERIFICATION) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false, emailErrorMessage = error.message) }
             }
         }
     }
 
     /**
-     * Resets the flow to the beginning.
+     * Validates the security token using the backend service.
+     * Transitions to password entry step upon success.
      */
+    fun verifyCode() {
+        val token = _uiState.value.verificationCode
+
+        if (token.isBlank()) {
+            _uiState.update { it.copy(codeErrorMessage = "Debe ingresar el token enviado a su correo") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, codeErrorMessage = null) }
+            
+            val result = repository.verifySetupToken(token)
+            
+            result.onSuccess {
+                _uiState.update { it.copy(isLoading = false, currentStep = ForgotPasswordStep.PASSWORD_SETUP) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false, codeErrorMessage = error.message) }
+            }
+        }
+    }
+
+    /**
+     * Finalizes the recovery flow by establishing the new password after token validation.
+     */
+    fun confirmPasswordReset() {
+        val state = _uiState.value
+        
+        if (state.newPassword.length < 8) {
+            _uiState.update { it.copy(passwordErrorMessage = "La contraseña debe tener al menos 8 caracteres") }
+            return
+        }
+        
+        if (state.newPassword != state.confirmPassword) {
+            _uiState.update { it.copy(passwordErrorMessage = "Las contraseñas no coinciden") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.updateLoading(true) }
+            
+            val result = repository.setupPassword(
+                PasswordSetupRequest(
+                    token = state.verificationCode,
+                    password = state.newPassword
+                )
+            )
+            
+            result.onSuccess {
+                _uiState.update { it.copy(isLoading = false, currentStep = ForgotPasswordStep.SUCCESS) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false, passwordErrorMessage = error.message) }
+            }
+        }
+    }
+
+    private fun ForgotPasswordUiState.updateLoading(loading: Boolean) = copy(
+        isLoading = loading,
+        passwordErrorMessage = null,
+        codeErrorMessage = null,
+        emailErrorMessage = null
+    )
+
     fun resetState() {
         _uiState.value = ForgotPasswordUiState()
     }

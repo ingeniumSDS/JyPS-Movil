@@ -70,10 +70,11 @@ class ProfileViewModel : ViewModel() {
      * 
      * @param name Full name to display.
      * @param email Institutional email address.
+     * @param phone Contact phone number.
      * @param role User's occupation/role description.
      */
-    fun setUserInfo(name: String, email: String, role: String) {
-        _uiState.value = _uiState.value.copy(name = name, email = email, role = role)
+    fun setUserInfo(name: String, email: String, phone: String, role: String) {
+        _uiState.value = _uiState.value.copy(name = name, email = email, phone = phone, role = role)
     }
 
     /** Clears any active notification overlay. */

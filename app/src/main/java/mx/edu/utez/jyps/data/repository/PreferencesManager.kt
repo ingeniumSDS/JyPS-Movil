@@ -73,6 +73,14 @@ class PreferencesManager(private val context: Context) {
     companion object {
         /** Key alias mapping to the encrypted JWT token payload */
         val TOKEN_KEY = stringPreferencesKey("jwt_token")
+        /** Key alias mapping to the encrypted user roles (comma-separated or JSON) */
+        val ROLES_KEY = stringPreferencesKey("user_roles")
+        /** Key alias mapping to the encrypted user's full name */
+        val NAME_KEY = stringPreferencesKey("user_name")
+        /** Key alias mapping to the encrypted user's email address */
+        val EMAIL_KEY = stringPreferencesKey("user_email")
+        /** Key alias mapping to the encrypted user's phone number */
+        val PHONE_KEY = stringPreferencesKey("user_phone")
     }
 
     /**
@@ -97,6 +105,62 @@ class PreferencesManager(private val context: Context) {
         }
 
     /**
+     * Exposes a reactive Flow of the decrypted roles string.
+     */
+    val rolesFlow: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            val encryptedRoles = preferences[ROLES_KEY]
+            if (encryptedRoles != null) {
+                try {
+                    val decoded = Base64.decode(encryptedRoles, Base64.DEFAULT)
+                    val decrypted = aead.decrypt(decoded, null)
+                    String(decrypted, Charsets.UTF_8)
+                } catch (e: Exception) {
+                    null
+                }
+            } else {
+                null
+            }
+        }
+
+    /**
+     * Exposes a reactive Flow of the user's basic profile details.
+     * Combines name, email and phone into a Triple for easy consumption.
+     */
+    val userProfileFlow: Flow<Triple<String, String, String>> = context.dataStore.data
+        .map { preferences ->
+            val encryptedName = preferences[NAME_KEY]
+            val encryptedEmail = preferences[EMAIL_KEY]
+            val encryptedPhone = preferences[PHONE_KEY]
+
+            val name = encryptedName?.let {
+                try {
+                    val decoded = Base64.decode(it, Base64.DEFAULT)
+                    val decrypted = aead.decrypt(decoded, null)
+                    String(decrypted, Charsets.UTF_8)
+                } catch (e: Exception) { "Usuario" }
+            } ?: "Usuario"
+
+            val email = encryptedEmail?.let {
+                try {
+                    val decoded = Base64.decode(it, Base64.DEFAULT)
+                    val decrypted = aead.decrypt(decoded, null)
+                    String(decrypted, Charsets.UTF_8)
+                } catch (e: Exception) { "" }
+            } ?: ""
+
+            val phone = encryptedPhone?.let {
+                try {
+                    val decoded = Base64.decode(it, Base64.DEFAULT)
+                    val decrypted = aead.decrypt(decoded, null)
+                    String(decrypted, Charsets.UTF_8)
+                } catch (e: Exception) { "No disponible" }
+            } ?: "No disponible"
+
+            Triple(name, email, phone)
+        }
+
+    /**
      * Synchronously resolves the current DataStore state.
      * Required exclusively for OkHttp Interceptors which operate on blocking background threads.
      * 
@@ -114,23 +178,42 @@ class PreferencesManager(private val context: Context) {
     }
 
     /**
-     * Encrypts and persists the token into the DataStore preferences.
-     * Converts to Base64 post-encryption to adhere to schema primitive constraints.
+     * Atomically persists the complete session data (token, roles, and profile).
+     * This ensures that downstream flows receive a single consistent update, avoiding
+     * UI flickering caused by partial state changes.
      */
-    suspend fun saveToken(token: String) {
+    suspend fun saveSession(
+        token: String,
+        roles: List<String>,
+        name: String,
+        email: String,
+        phone: String
+    ) {
         val encryptedToken = aead.encrypt(token.toByteArray(Charsets.UTF_8), null)
-        val encodedToken = Base64.encodeToString(encryptedToken, Base64.DEFAULT)
+        val encryptedRoles = aead.encrypt(roles.joinToString(",").toByteArray(Charsets.UTF_8), null)
+        val encryptedName = aead.encrypt(name.toByteArray(Charsets.UTF_8), null)
+        val encryptedEmail = aead.encrypt(email.toByteArray(Charsets.UTF_8), null)
+        val encryptedPhone = aead.encrypt(phone.toByteArray(Charsets.UTF_8), null)
+
         context.dataStore.edit { preferences ->
-            preferences[TOKEN_KEY] = encodedToken
+            preferences[TOKEN_KEY] = Base64.encodeToString(encryptedToken, Base64.DEFAULT)
+            preferences[ROLES_KEY] = Base64.encodeToString(encryptedRoles, Base64.DEFAULT)
+            preferences[NAME_KEY] = Base64.encodeToString(encryptedName, Base64.DEFAULT)
+            preferences[EMAIL_KEY] = Base64.encodeToString(encryptedEmail, Base64.DEFAULT)
+            preferences[PHONE_KEY] = Base64.encodeToString(encryptedPhone, Base64.DEFAULT)
         }
     }
 
     /**
-     * Purges the authentication token. Used during explicit logouts or unauthorized interceptions.
+     * Purges the authentication token, roles, and profile data atomically.
      */
     suspend fun clearSession() {
         context.dataStore.edit { preferences ->
             preferences.remove(TOKEN_KEY)
+            preferences.remove(ROLES_KEY)
+            preferences.remove(NAME_KEY)
+            preferences.remove(EMAIL_KEY)
+            preferences.remove(PHONE_KEY)
         }
     }
 }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.data.network.RetrofitInstance
@@ -14,24 +15,59 @@ import mx.edu.utez.jyps.data.repository.AuthRepository
 import mx.edu.utez.jyps.data.repository.PreferencesManager
 
 /**
- * ViewModel responsible for handling user authentication flows.
- * Manages the reactive state of the login form and orchestrates authentication requests
- * through the [AuthRepository] to issue and persist the JWT session token.
- *
- * @property application Android application context provided by the framework.
+ * Represents the unified state of an active user session.
  */
+data class SessionState(
+    val isLoggedIn: Boolean = false,
+    val roles: List<String> = emptyList(),
+    val userName: String = "Usuario",
+    val userEmail: String = "",
+    val userPhone: String = "No disponible"
+)
+
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private val preferencesManager = PreferencesManager(application)
     private val repository = AuthRepository(RetrofitInstance.api, preferencesManager)
 
     /**
-     * Reactive flow indicating whether an active authenticated session exists.
-     * Evaluates to true when a non-empty JWT token is present in local storage.
+     * Unified reactive flow for the entire session state.
+     * Consuming this ensures atomic updates and prevents UI flickering.
      */
-    val isLoggedIn: StateFlow<Boolean> = repository.tokenFlow
-        .map { !it.isNullOrEmpty() }
+    val sessionState: StateFlow<SessionState> = kotlinx.coroutines.flow.combine(
+        repository.tokenFlow,
+        repository.rolesFlow,
+        preferencesManager.userProfileFlow
+    ) { token, roles, profile ->
+        SessionState(
+            isLoggedIn = !token.isNullOrEmpty(),
+            roles = roles?.split(",")?.filter { it.isNotEmpty() } ?: emptyList(),
+            userName = profile.first,
+            userEmail = profile.second,
+            userPhone = profile.third
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SessionState())
+
+    // Convenience properties for backwards compatibility or granular observation
+    val isLoggedIn: StateFlow<Boolean> = sessionState.map { it.isLoggedIn }
+        .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val currentRoles: StateFlow<List<String>> = sessionState.map { it.roles }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val userName: StateFlow<String> = sessionState.map { it.userName }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Usuario")
+
+    val userEmail: StateFlow<String> = sessionState.map { it.userEmail }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    val userPhone: StateFlow<String> = sessionState.map { it.userPhone }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "No disponible")
 
     private val _correo = MutableStateFlow("")
     val correo: StateFlow<String> = _correo
@@ -53,7 +89,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         val pwd = _password.value.trim()
 
         if (email.isBlank() || pwd.isBlank()) {
-            _errorMessage.value = "Por favor ingresa correo y contraseña" // Sent to UI directly
+            _errorMessage.value = "Por favor ingresa correo y contraseña" 
             return
         }
 
@@ -69,6 +105,9 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Purges all session data and tokens, triggering a global navigation reset to the Login screen.
+     */
     fun logout() {
         viewModelScope.launch {
             repository.logout()

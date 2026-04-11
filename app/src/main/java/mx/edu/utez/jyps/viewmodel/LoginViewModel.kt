@@ -1,6 +1,7 @@
 package mx.edu.utez.jyps.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,12 +24,17 @@ data class LoginUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isLoginSuccessful: Boolean = false,
+    val isAccountBlocked: Boolean = false, // Specific for 'Temporarily Blocked' screen
     val loginAttempts: Int = 3,
     val isLockedOut: Boolean = false
 )
 
 /**
  * LoginViewModel manages the state and business logic for the Login screen.
+ * 
+ * Orchestrates authentication flows, security lockdowns, and session lifecycle
+ * by strictly delegating to the secure [AuthRepository]. Enforces reactive 
+ * state boundaries via [LoginUiState].
  *
  * @property application Android application context provided by the framework.
  */
@@ -39,7 +45,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Provides an uncoupled authentication state boundary for the Navigation Host.
-     * Downstream UI consumers extract the token to decide the initial route (e.g. Scanner vs Dashboard)
      */
     val sessionToken: StateFlow<String?> = repository.tokenFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -51,7 +56,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
      * Updates the email in the UI state.
      */
     fun onEmailChange(newEmail: String) {
-        _uiState.update { it.copy(email = newEmail, errorMessage = null) }
+        _uiState.update { it.copy(email = newEmail, errorMessage = null, isAccountBlocked = false) }
     }
 
     /**
@@ -62,13 +67,13 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Executes the main authentication flow.
-     * Delegates exclusively to [AuthRepository] to ensure the cryptographic material
-     * is resolved entirely out-of-bounds from the UI Thread, preventing memory leaks 
-     * of sensitive data. Handles internal anti-bruteforce locking directly.
+     * Executes the main authentication flow against the real backend service.
+     * 
+     * Handles specific security exceptions like account lockouts (IllegalStateException)
+     * and invalid credentials. Upon success, the session state is persisted out-of-bounds.
      */
     fun login() {
-        if (_uiState.value.isLockedOut) return
+        if (_uiState.value.isLockedOut || _uiState.value.isAccountBlocked) return
 
         val email = _uiState.value.email
         val password = _uiState.value.password
@@ -84,32 +89,42 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             val result = repository.login(email, password)
             
             result.onSuccess {
+                Log.d("LoginVM", "Auth success for $email. Resetting state.")
                 _uiState.update { 
                     it.copy(
                         isLoading = false, 
                         isLoginSuccessful = true,
-                        loginAttempts = 3, // Reset on success
-                        errorMessage = null
+                        loginAttempts = 3,
+                        errorMessage = null,
+                        isAccountBlocked = false
                     ) 
                 }
             }.onFailure { error ->
-                val remainingAttempts = _uiState.value.loginAttempts - 1
-                if (remainingAttempts <= 0) {
+                val message = error.message ?: "Error desconocido"
+                Log.d("LoginVM", "Auth failure for $email: $message")
+
+                // Handle server-side account blocking
+                if (message.contains("bloqueada", ignoreCase = true)) {
                     _uiState.update { 
                         it.copy(
-                            isLoading = false, 
-                            isLockedOut = true, 
-                            errorMessage = null 
+                            isLoading = false,
+                            isAccountBlocked = true,
+                            errorMessage = null
                         ) 
                     }
-                    startLockoutTimer()
                 } else {
-                    _uiState.update { 
-                        it.copy(
-                            isLoading = false, 
-                            loginAttempts = remainingAttempts,
-                            errorMessage = "${error.message} ($remainingAttempts intento${if (remainingAttempts == 1) "" else "s"} restante${if (remainingAttempts == 1) "" else "s"})"
-                        ) 
+                    val remainingAttempts = _uiState.value.loginAttempts - 1
+                    if (remainingAttempts <= 0) {
+                        _uiState.update { it.copy(isLoading = false, isLockedOut = true, errorMessage = null) }
+                        startAntiBruteforceTimer()
+                    } else {
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false, 
+                                loginAttempts = remainingAttempts,
+                                errorMessage = "$message ($remainingAttempts intento${if (remainingAttempts == 1) "" else "s"} restante${if (remainingAttempts == 1) "" else "s"})"
+                            ) 
+                        }
                     }
                 }
             }
@@ -117,36 +132,33 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Handles the lockout duration timer.
+     * Resets the blocked state to allow the user to try a different account.
      */
-    private fun startLockoutTimer() {
+    fun resetBlockedState() {
+        _uiState.update { 
+            it.copy(
+                isAccountBlocked = false, 
+                isLockedOut = false,
+                loginAttempts = 3,
+                email = "", 
+                password = "", 
+                errorMessage = null
+            ) 
+        }
+    }
+
+    /**
+     * Handles the anti-bruteforce lockout duration (Local-side).
+     */
+    private fun startAntiBruteforceTimer() {
         viewModelScope.launch {
-            // Lockout duration 1 minute (simulated by wait)
-            kotlinx.coroutines.delay(60000)
+            kotlinx.coroutines.delay(60000) // 1 minute local lock
             _uiState.update { 
-                it.copy(
-                    isLockedOut = false,
-                    loginAttempts = 3,
-                    errorMessage = null
-                )
+                it.copy(isLockedOut = false, loginAttempts = 3, errorMessage = null) 
             }
         }
     }
 
-
-    /**
-     * Handles the forgot password action.
-     * Uses dummy logic for now.
-     */
-    fun onForgotPassword() {
-        val email = _uiState.value.email
-
-        if (email.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Por favor, ingresa tu correo electrónico.") }
-            return
-        }
-    }
-    
     /**
      * Resets the error message.
      */
@@ -155,14 +167,12 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Orchestrates a safe session termination by dispatching to the secure repository.
-     * This action immediately mutates [isLoggedIn] back to false, propagating the 
-     * effect straight to the app's root navigation component.
+     * Orchestrates a safe session termination.
      */
     fun logout() {
         viewModelScope.launch {
             repository.logout()
-            _uiState.update { LoginUiState() } // Reset form
+            _uiState.update { LoginUiState() } // Hard reset
         }
     }
 }

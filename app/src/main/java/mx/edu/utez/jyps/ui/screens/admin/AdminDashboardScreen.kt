@@ -54,7 +54,9 @@ fun AdminDashboardScreen(
     viewModel: AdminViewModel,
     deptViewModel: DepartmentManagementViewModel = viewModel(),
     onLogoutSuccess: () -> Unit,
-    onNavigateToEmployeeFunction: (String) -> Unit
+    onNavigateToEmployeeFunction: (String) -> Unit,
+    userName: String = "Usuario",
+    userEmail: String = ""
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
@@ -79,8 +81,8 @@ fun AdminDashboardScreen(
         drawerState = drawerState,
         menuItems = adminMenuOptions,
         currentRoute = selectedRoute,
-        userFullName = "Carlos Rodríguez Torres",
-        userEmail = "carlos.rodriguez@utez.edu.mx",
+        userFullName = userName,
+        userEmail = userEmail,
         roleTitle = "Administrador",
         onNavigateTo = { route ->
             if (route.startsWith("admin_pass") || route.startsWith("admin_excuse") || 

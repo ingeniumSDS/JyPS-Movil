@@ -37,9 +37,9 @@ class AuthInterceptor(private val prefsProvider: () -> PreferencesManager?) : In
         val response = chain.proceed(request)
 
         // Intercepts unauthorized state (e.g., expired token, revoked session).
-        // By clearing the DataStore here, the reactive 'isLoggedIn' Flow instantly emits false,
-        // triggering a global logout UI navigation independently of where the API call originated.
-        if (response.code == 401 || response.code == 403) {
+        // A 401 indicates authentication failure (invalid token), so we log out.
+        // A 403 indicates authorization failure (lack of permission) and SHOULD NOT force a logout.
+        if (response.code == 401) {
             runBlocking {
                 prefs?.clearSession()
             }

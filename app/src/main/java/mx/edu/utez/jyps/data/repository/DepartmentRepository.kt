@@ -3,6 +3,7 @@ package mx.edu.utez.jyps.data.repository
 import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import mx.edu.utez.jyps.data.model.CreateDepartmentRequest
 import mx.edu.utez.jyps.data.model.DepartamentoResponse
@@ -23,7 +24,9 @@ class DepartmentRepository(private val apiService: ApiService) {
 
     /** Observable flow containing the list of all institutions departments. */
     private val _allDepartments = MutableStateFlow<List<DepartamentoResponse>>(emptyList())
-    val allDepartments: Flow<List<DepartamentoResponse>> = _allDepartments.asStateFlow()
+    val allDepartments: StateFlow<List<DepartamentoResponse>> = _allDepartments.asStateFlow()
+
+    private var isFetchingDepts = false
 
     /**
      * Fetches all registered departments from the backend repository.
@@ -32,7 +35,9 @@ class DepartmentRepository(private val apiService: ApiService) {
      * @return List of retrieved [DepartamentoResponse] objects.
      */
     suspend fun getDepartamentos(): List<DepartamentoResponse> {
+        if (isFetchingDepts) return _allDepartments.value
         return try {
+            isFetchingDepts = true
             Log.d(TAG, "GET /api/v1/departamentos")
             val response = apiService.getDepartamentos()
             Log.d(TAG, "${response.size} departamentos recibidos")
@@ -41,8 +46,10 @@ class DepartmentRepository(private val apiService: ApiService) {
             Log.d(TAG, "Actualizada lista global en StateFlow")
             response
         } catch (e: Exception) {
-            Log.e(TAG, "Error getDepartamentos: ${e.message}", e)
-            emptyList()
+            Log.e(TAG, "Error getDepartamentos (Resilient): ${e.message}")
+            _allDepartments.value
+        } finally {
+            isFetchingDepts = false
         }
     }
 
@@ -57,8 +64,15 @@ class DepartmentRepository(private val apiService: ApiService) {
             val response = apiService.getJefesDisponibles()
             Log.d(TAG, "${response.size} jefes potenciales encontrados")
             response
+        } catch (e: retrofit2.HttpException) {
+            if (e.code() == 403) {
+                Log.w(TAG, "Endpoint /jefes inaccesible (403 Forbidden). Ignorando silenciosamente.")
+            } else {
+                Log.e(TAG, "Error HTTP en getJefesDisponibles: ${e.code()}")
+            }
+            emptyList()
         } catch (e: Exception) {
-            Log.e(TAG, "Error getJefesDisponibles: ${e.message}", e)
+            Log.e(TAG, "Error getJefesDisponibles: ${e.message}")
             emptyList()
         }
     }

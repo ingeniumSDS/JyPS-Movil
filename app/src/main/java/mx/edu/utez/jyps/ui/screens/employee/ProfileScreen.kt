@@ -54,13 +54,14 @@ fun ProfileScreen(
     showEmployeeModeBanner: Boolean = false,
     onReturnToRoleDashboard: () -> Unit = {},
     userName: String = "Empleado",
-    userEmail: String = "empleado@utez.edu.mx",
+    userEmail: String = "",
+    userPhone: String = "",
     roleTitle: String = "Empleado"
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    androidx.compose.runtime.LaunchedEffect(userName, userEmail, roleTitle) {
-        viewModel.setUserInfo(userName, userEmail, roleTitle)
+    androidx.compose.runtime.LaunchedEffect(userName, userEmail, userPhone, roleTitle) {
+        viewModel.setUserInfo(userName, userEmail, userPhone, roleTitle)
     }
 
     if (uiState.showChangePasswordDialog) {

@@ -52,12 +52,11 @@ class DepartmentManagementViewModel(
     private val _selectedFilter = MutableStateFlow("Todos")
     val selectedFilter: StateFlow<String> = _selectedFilter
 
-    private val _rawDepartments = MutableStateFlow<List<DepartamentoResponse>>(emptyList())
     private val _isLoading = MutableStateFlow(false)
     private val _errorMessage = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<DepartmentUiState> = combine(
-        _rawDepartments,
+        repository.allDepartments,
         _searchQuery,
         _selectedFilter,
         _isLoading,
@@ -127,20 +126,25 @@ class DepartmentManagementViewModel(
     val isProcessing: StateFlow<Boolean> = _isProcessing
 
     init {
-        loadDepartments()
-        loadPotentialHeads()
+        viewModelScope.launch {
+            // Staggered slightly after users for overall smoothness
+            kotlinx.coroutines.delay(200)
+            loadDepartments()
+            loadPotentialHeads()
+        }
     }
 
     /**
      * Loads the master list of departments.
      */
     fun loadDepartments() {
+        if (_isLoading.value) return
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
             try {
-                Log.d(TAG, "Cargando lista global de departamentos")
-                _rawDepartments.value = repository.getDepartamentos()
+                Log.d(TAG, "Cargando lista global de departamentos (Secuencial)")
+                repository.getDepartamentos()
             } catch (e: Exception) {
                 Log.e(TAG, "Error loadDepartments: ${e.message}")
                 _errorMessage.value = "Error al conectar con el servidor"
@@ -155,10 +159,16 @@ class DepartmentManagementViewModel(
      */
     private fun loadPotentialHeads(currentDeptId: Long? = null) {
         viewModelScope.launch {
-            Log.d(TAG, "Consultando jefes disponibles")
-            val allJefes = repository.getJefesDisponibles()
-            _availableHeads.value = allJefes.filter { user ->
-                user.departamentoId == 0L || (currentDeptId != null && user.departamentoId == currentDeptId)
+            try {
+                Log.d(TAG, "Consultando jefes disponibles")
+                val allJefes = repository.getJefesDisponibles()
+                _availableHeads.value = allJefes.filter { user ->
+                    user.departamentoId == 0L || (currentDeptId != null && user.departamentoId == currentDeptId)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loadPotentialHeads (Expected if 403): ${e.message}")
+                // Fallback: Continue without available heads instead of breaking the VM
+                _availableHeads.value = emptyList()
             }
         }
     }
@@ -180,7 +190,7 @@ class DepartmentManagementViewModel(
     fun closeCreate() { _isCreateVisible.value = false }
 
     fun openEdit(id: Long) {
-        val dept = _rawDepartments.value.find { it.id == id } ?: return
+        val dept = repository.allDepartments.value.find { it.id == id } ?: return
         _selectedDept.value = dept
         _formName.value = dept.nombre
         _formDescription.value = dept.descripcion
@@ -239,7 +249,7 @@ class DepartmentManagementViewModel(
      * Validates deactivation criteria using local data instead of network calls.
      */
     fun requestToggleStatus(id: Long) {
-        val dept = _rawDepartments.value.find { it.id == id } ?: return
+        val dept = repository.allDepartments.value.find { it.id == id } ?: return
         _selectedDept.value = dept
         
         viewModelScope.launch {

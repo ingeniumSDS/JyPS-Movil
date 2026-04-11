@@ -2,26 +2,15 @@ package mx.edu.utez.jyps.ui.components.login
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,23 +22,30 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
 import mx.edu.utez.jyps.ui.components.common.BulletText
+import mx.edu.utez.jyps.ui.components.buttons.PrimaryButton
 
 /**
- * View displayed when a user exceeds their login attempts.
- * Shows a red warning and a countdown timer.
+ * Unified View displayed when a user is prohibited from logging in.
+ * Supports both local anti-bruteforce lockouts (with timer) and server-side account blocking.
  *
  * @param modifier Standard layout modifier.
- * @param lockoutDurationSeconds Time penalty forced on the user out of actions.
+ * @param isServerSide If true, the lockout is fixed by the backend and a timer is not shown.
+ * @param serverMessage Optional message from the backend explaining the block.
+ * @param lockoutDurationSeconds Time penalty for local lockouts.
+ * @param onReturnToLogin Action to clear the state and allow account switching.
  */
 @Composable
 fun LockedOutView(
     modifier: Modifier = Modifier,
-    lockoutDurationSeconds: Int = 60
+    isServerSide: Boolean = false,
+    serverMessage: String? = null,
+    lockoutDurationSeconds: Int = 60,
+    onReturnToLogin: () -> Unit = {}
 ) {
     var timer by remember { mutableIntStateOf(lockoutDurationSeconds) }
 
     LaunchedEffect(key1 = timer) {
-        if (timer > 0) {
+        if (!isServerSide && timer > 0) {
             delay(1000L)
             timer--
         }
@@ -68,7 +64,7 @@ fun LockedOutView(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Filled.Warning,
+                imageVector = if (isServerSide) Icons.Filled.Block else Icons.Filled.Warning,
                 contentDescription = "Bloqueado",
                 tint = Color(0xFFDC3545),
                 modifier = Modifier.size(32.dp)
@@ -80,7 +76,7 @@ fun LockedOutView(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Cuenta Bloqueada Temporalmente",
+                text = if (isServerSide) "Cuenta Bloqueada" else "Acceso Restringido",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFDC3545),
@@ -88,7 +84,9 @@ fun LockedOutView(
             )
 
             Text(
-                text = "Ha alcanzado el límite de 3 intentos fallidos de inicio de sesión.",
+                text = if (isServerSide) 
+                    "La cuenta está bloqueada temporalmente por seguridad." 
+                    else "Ha alcanzado el límite de 3 intentos fallidos.",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -96,12 +94,12 @@ fun LockedOutView(
             )
         }
 
-        // Timer Box
+        // Timer or Message Box
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color(0xFFFEF2F2), RoundedCornerShape(8.dp))
-                .border(1.7f.dp, Color(0xFFFFC9C9), RoundedCornerShape(8.dp))
+                .border(1.dp, Color(0xFFFFC9C9), RoundedCornerShape(8.dp))
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -111,45 +109,58 @@ fun LockedOutView(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Warning, // Can map to Shield/Stop icon later
+                    imageVector = Icons.Filled.Info,
                     contentDescription = null,
                     tint = Color(0xFFE7000B),
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = "Tu cuenta estará bloqueada por:",
+                    text = if (isServerSide) "Información del servidor:" else "Tiempo de espera:",
                     fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
-            Text(
-                text = "1 minuto", // Hardcoded per user request, wait 1 minute
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFDC3545)
-            )
-
-            Text(
-                text = "Podrás volver a intentar iniciar sesión después de este tiempo.",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
+            if (isServerSide) {
+                Text(
+                    text = serverMessage ?: "Acceso denegado debido a múltiples intentos fallidos. Inténtelo más adelante.",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 18.sp
+                )
+            } else {
+                Text(
+                    text = "1 minuto",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFDC3545)
+                )
+                Text(
+                    text = "Podrás volver a intentar iniciar sesión después de este tiempo.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
 
-        // Help Box
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp))
-                .border(1.dp, Color(0xFFBEDBFF), RoundedCornerShape(8.dp))
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        PrimaryButton(
+            text = "Regresar al Inicio de Sesión",
+            onClick = onReturnToLogin,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (!isServerSide) {
+            // Help Box for Local Lockout
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp))
+                    .border(1.dp, Color(0xFFBEDBFF), RoundedCornerShape(8.dp))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = "ℹ️ ¿Qué puedo hacer?",
@@ -157,13 +168,11 @@ fun LockedOutView(
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.primary
                 )
-            }
-            
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                BulletText("Espere a que el contador llegue a cero")
-                BulletText("Verifique que está usando las credenciales correctas")
-                BulletText("Si olvidó su contraseña, use la opción de recuperación")
-                BulletText("Contacte al administrador si necesita ayuda")
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    BulletText("Espere a que el contador llegue a cero")
+                    BulletText("Verifique sus credenciales")
+                    BulletText("Use la opción de recuperación de contraseña")
+                }
             }
         }
     }
@@ -174,7 +183,7 @@ fun LockedOutView(
 fun LockedOutViewPreview() {
     JyPSTheme {
         Box(modifier = Modifier.padding(24.dp)) {
-            LockedOutView()
+            LockedOutView(isServerSide = true, serverMessage = "Ejemplo de bloqueo de servidor")
         }
     }
 }
