@@ -25,14 +25,17 @@ import mx.edu.utez.jyps.ui.components.common.BulletText
 import mx.edu.utez.jyps.ui.components.buttons.PrimaryButton
 
 /**
- * Unified View displayed when a user is prohibited from logging in.
- * Supports both local anti-bruteforce lockouts (with timer) and server-side account blocking.
+ * Resilient view displayed when access is prohibited to enforce security policies.
+ * 
+ * Supports two distinct security modes:
+ * 1. Local Lockout: Triggered after consecutive failed attempts, features a client-side countdown.
+ * 2. Server Block: Determined by the backend (identity provider), presents a static error message.
  *
- * @param modifier Standard layout modifier.
- * @param isServerSide If true, the lockout is fixed by the backend and a timer is not shown.
- * @param serverMessage Optional message from the backend explaining the block.
- * @param lockoutDurationSeconds Time penalty for local lockouts.
- * @param onReturnToLogin Action to clear the state and allow account switching.
+ * @param modifier Applied to the root container for layout customization.
+ * @param isServerSide Flag to toggle between local countdown and static server-side rejection UI.
+ * @param serverMessage Descriptive error provided by the security service for blocked accounts.
+ * @param lockoutDurationSeconds The time penalty in seconds for local anti-bruteforce measures.
+ * @param onReturnToLogin Action to reset the UI state and allow the user to retry or switch accounts.
  */
 @Composable
 fun LockedOutView(
