@@ -16,6 +16,13 @@ import okhttp3.Response
  * Prevents cyclic dependencies during the initialization of the OkHttpClient singleton.
  */
 class AuthInterceptor(private val prefsProvider: () -> PreferencesManager?) : Interceptor {
+    /**
+     * Intercepts and modifies outgoing HTTP requests to include the active JWT.
+     * Implements global security policies including automatic session clearing on 401 Unauthorized.
+     * 
+     * @param chain The [Interceptor.Chain] providing access to the current request.
+     * @return [Response] resulting from the modified request chain.
+     */
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
 

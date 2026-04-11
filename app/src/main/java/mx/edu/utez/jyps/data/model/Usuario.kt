@@ -25,7 +25,11 @@ data class Usuario(
     val nombreDepartamento: String? = null,
     val activo: Boolean = true
 ) {
-    /** Helper to extract time string regardless of format (String or Object from backend). */
+    /**
+     * Helper to extract time string regardless of format (String or Object from backend).
+     * 
+     * @return String formatted as "HH:mm:ss" if successful, null otherwise.
+     */
     private fun Any?.normalizeTime(): String? {
         return when (this) {
             is String -> this
@@ -38,11 +42,11 @@ data class Usuario(
         }
     }
 
-    /** First primary role assigned to the user. */
+    /** First primary role assigned to the user. Unique identifier for logic branching. */
     val primaryRole: String
         get() = roles.firstOrNull() ?: ""
 
-    /** Human-readable display string for the primary role. */
+    /** Human-readable display string for the primary role, localized for UI presentation. */
     val primaryRoleDisplay: String
         get() = when (primaryRole) {
             "EMPLEADO" -> "Empleado"
@@ -53,23 +57,29 @@ data class Usuario(
             else -> primaryRole
         }
 
-    /** First letter of the user's name for avatar visualization. */
+    /** First letter of the user's name used for UI avatar placeholders. */
     val initial: String
         get() = nombreCompleto.firstOrNull()?.uppercase() ?: "?"
 
-    /** Converts "HH:mm:ss" to human-readable "H:mm AM/PM". */
+    /** 
+     * Converts "HH:mm:ss" entry time to human-readable "H:mm AM/PM" format. 
+     * Defaults to "--:--" if parsing fails.
+     */
     val horaEntradaDisplay: String
         get() = horaEntrada.normalizeTime()?.toAmPm() ?: "--:--"
 
-    /** Converts "HH:mm:ss" to human-readable "H:mm AM/PM". */
+    /** 
+     * Converts "HH:mm:ss" exit time to human-readable "H:mm AM/PM" format. 
+     * Defaults to "--:--" if parsing fails.
+     */
     val horaSalidaDisplay: String
         get() = horaSalida.normalizeTime()?.toAmPm() ?: "--:--"
 
-    /** Returns the department name or a placeholder if missing. */
+    /** Returns the department name or a professional placeholder based on ID. */
     val departamentoDisplay: String
         get() = nombreDepartamento ?: if (departamentoId > 0) "Depto. $departamentoId" else "Sin departamento"
 
-    /** Extracted hours for form editing logic. */
+    /** Extracted hours/minutes used for secondary form logic and time picker initialization. */
     val entradaHour: Int get() = horaEntrada.normalizeTime()?.split(":")?.getOrNull(0)?.toIntOrNull() ?: 8
     val entradaMinute: Int get() = horaEntrada.normalizeTime()?.split(":")?.getOrNull(1)?.toIntOrNull() ?: 0
     val salidaHour: Int get() = horaSalida.normalizeTime()?.split(":")?.getOrNull(0)?.toIntOrNull() ?: 16
@@ -78,6 +88,9 @@ data class Usuario(
 
 /**
  * Extension to convert 24h string to 12h formatting.
+ * 
+ * @param String Time String in "HH:mm:ss" or compatible format.
+ * @return Human readable string like "1:30 PM".
  */
 private fun String.toAmPm(): String {
     val parts = split(":")
@@ -90,7 +103,7 @@ private fun String.toAmPm(): String {
 
 /**
  * Encapsulates security account details from /api/v1/usuarios/{id}/cuenta.
- * Used for pre-login security checks and account status monitoring.
+ * Follows ISO/IEC 25010 maintainability standards by grouping account logic.
  *
  * @property nombreCompleto Real name of the user from the identity record.
  * @property activa Defines if the account credential logic is enabled.
@@ -106,6 +119,10 @@ data class CuentaResponse(
 
 /**
  * Encapsulates the response from account status toggle operations.
+ * 
+ * @property nombreCompleto Real name of the affected user.
+ * @property activa New updated state of the account.
+ * @property message System message detailing the operation result.
  */
 data class EstadoCuentaResponse(
     val nombreCompleto: String = "",
