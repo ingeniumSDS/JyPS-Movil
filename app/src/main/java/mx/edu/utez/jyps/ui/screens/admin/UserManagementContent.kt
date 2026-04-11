@@ -48,10 +48,12 @@ import mx.edu.utez.jyps.ui.theme.JyPSTheme
 
 /**
  * Renders the primary user management dashboard for administrators.
- * Displays user metrics, filtering controls, and the list of user cards.
- * Now relies strictly on the integrated status field within the User model.
+ * 
+ * Provides an orchestrated view of user metrics, granular search-by-attribute controls,
+ * and a performant list of user identities. This component serves as the central
+ * authority for user lifecycle management within the administrative domain.
  *
- * @param viewModel Administrator ViewModel holding the users and metrics state.
+ * @param viewModel Central administrative controller containing the reactive streams and state.
  */
 @Composable
 fun UserManagementContent(viewModel: AdminViewModel) {

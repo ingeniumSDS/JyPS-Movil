@@ -42,19 +42,23 @@ class UsuarioRepository(
 
     /**
      * Fetches all registered users from the backend endpoint.
+     * 
+     * @return [List] of [Usuario] objects retrieved from the server.
      */
     suspend fun getUsuarios(): List<Usuario> {
         _loadState.value = LoadResult.Loading
         return try {
             Log.d(TAG, "GET /api/v1/usuarios")
             val response = apiService.getUsuarios()
-            Log.d(TAG, "${response.size} usuarios recibidos del servidor")
             
+            Log.d(TAG, "Mapping ${response.size} users from remote response")
             _allUsers.value = response
+            
+            Log.d(TAG, "Local cache synchronized successfully")
             _loadState.value = LoadResult.Success(Unit)
             response
         } catch (e: Exception) {
-            Log.e(TAG, "Error al obtener usuarios: ${e.message}", e)
+            Log.e(TAG, "Fetch failure at /api/v1/usuarios: ${e.message}", e)
             _loadState.value = LoadResult.Error(e.localizedMessage ?: "Error desconocido")
             emptyList()
         }
@@ -62,20 +66,23 @@ class UsuarioRepository(
 
     /**
      * Fetches a specific user by their unique database identifier.
+     * 
+     * @param id The primary key of the user to fetch.
+     * @return [Usuario] object if found, null otherwise.
      */
     suspend fun getUsuarioPorId(id: Long): Usuario? {
         return try {
             Log.d(TAG, "GET /api/v1/usuarios/$id")
             val response = apiService.getUsuarioPorId(id)
-            Log.d(TAG, "Usuario '${response.nombreCompleto}' encontrado")
             
+            Log.d(TAG, "Retrieved profile for '${response.nombreCompleto}'")
             _selectedUser.value = response
             response
         } catch (e: Exception) {
-            Log.e(TAG, "Error getUsuarioPorId($id)", e)
+            Log.e(TAG, "Lookup failure at /api/v1/usuarios/$id", e)
             val cached = _allUsers.value.find { it.id == id }
             if (cached != null) {
-                Log.d(TAG, "Usuario recuperado de caché local")
+                Log.d(TAG, "Falling back to local cache for user ID $id")
                 _selectedUser.value = cached
             }
             cached
@@ -93,86 +100,100 @@ class UsuarioRepository(
         return try {
             Log.d(TAG, "GET /api/v1/usuarios/$id/cuenta")
             val cuenta = apiService.getCuentaUsuario(id)
-            Log.d(TAG, "Cuenta recuperada exitosamente")
+            
+            Log.d(TAG, "Account security metrics retrieved for UID $id")
             _selectedUserAccount.value = cuenta
             cuenta
         } catch (e: Exception) {
-            Log.e(TAG, "Error getCuenta($id): ${e.message}", e)
+            Log.e(TAG, "Security lookup failure at /api/v1/usuarios/$id/cuenta: ${e.message}", e)
             null
         }
     }
 
     /**
      * Registers a new user within the system.
+     * 
+     * @param request [UserRequest] with the new user's metadata.
+     * @return [Result] wrapping the created [Usuario] or an exception.
      */
     suspend fun registrarUsuario(request: UserRequest): Result<Usuario> {
         return try {
             Log.d(TAG, "POST /api/v1/usuarios")
             val response = apiService.registrarUsuario(request)
+            
             if (response.isSuccessful && response.body() != null) {
-                Log.d(TAG, "Registro exitoso")
+                Log.d(TAG, "Identity record created successfully")
                 getUsuarios()
                 Result.success(response.body()!!)
             } else {
-                val err = "Error de servidor (${response.code()})"
+                val err = "Server rejected registration (HTTP ${response.code()})"
                 Log.e(TAG, err)
                 Result.failure(Exception(err))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Excepción al registrar: ${e.message}", e)
+            Log.e(TAG, "Resource creation failure at /api/v1/usuarios: ${e.message}", e)
             Result.failure(e)
         }
     }
 
     /**
      * Updates an existing user record.
+     * 
+     * @param id The primary key of the user to update.
+     * @param request [UserRequest] containing the updated payload.
+     * @return [Result] wrapping the updated [Usuario] or an exception.
      */
     suspend fun actualizarUsuario(id: Long, request: UserRequest): Result<Usuario> {
         return try {
             Log.d(TAG, "PUT /api/v1/usuarios/$id")
             val response = apiService.actualizarUsuario(id, request)
+            
             if (response.isSuccessful && response.body() != null) {
-                Log.d(TAG, "Actualización exitosa")
+                Log.d(TAG, "Profile update applied successfully")
                 getUsuarios()
                 Result.success(response.body()!!)
             } else {
-                val err = "Error de servidor (${response.code()})"
+                val err = "Server rejected update (HTTP ${response.code()})"
                 Log.e(TAG, err)
                 Result.failure(Exception(err))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Excepción al actualizar: ${e.message}", e)
+            Log.e(TAG, "Update failure at /api/v1/usuarios/$id: ${e.message}", e)
             Result.failure(e)
         }
     }
 
     /**
      * Toggles the active status of a user account.
+     * 
+     * @param id The primary key of the target account.
+     * @return [Result] wrapping the new [EstadoCuentaResponse].
      */
     suspend fun toggleEstadoUsuario(id: Long): Result<EstadoCuentaResponse> {
         return try {
             Log.d(TAG, "PATCH /api/v1/usuarios/$id/estado")
             val response = apiService.toggleEstadoUsuario(id)
+            
             if (response.isSuccessful && response.body() != null) {
-                Log.d(TAG, "Cambio de estado exitoso")
+                Log.d(TAG, "Account status toggled successfully")
                 getUsuarios()
                 Result.success(response.body()!!)
             } else {
-                val err = "Error de servidor (${response.code()})"
+                val err = "Status transition rejected (HTTP ${response.code()})"
                 Log.e(TAG, err)
                 Result.failure(Exception(err))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Excepción al toggle estado: ${e.message}", e)
+            Log.e(TAG, "Status transition failure at /api/v1/usuarios/$id/estado: ${e.message}", e)
             Result.failure(e)
         }
     }
 
     /**
-     * Resets the selected user flows.
+     * Resets the selected user and account security flows to clear the UI state.
      */
     fun clearSelectedUser() {
-        Log.d(TAG, "Limpiando estados del usuario seleccionado")
+        Log.d(TAG, "Clearing transient UI states for selected user")
         _selectedUser.value = null
         _selectedUserAccount.value = null
     }

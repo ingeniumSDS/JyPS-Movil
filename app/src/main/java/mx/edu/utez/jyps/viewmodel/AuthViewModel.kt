@@ -15,7 +15,13 @@ import mx.edu.utez.jyps.data.repository.AuthRepository
 import mx.edu.utez.jyps.data.repository.PreferencesManager
 
 /**
- * Represents the unified state of an active user session.
+ * Represents the unified, immutable state of an active user session.
+ * 
+ * @param isLoggedIn Atomic indicator of authentication validity.
+ * @param roles Sequence of authorized operational scopes for the identity.
+ * @param userName The full display name of the authenticated identity.
+ * @param userEmail Institutional contact email associated with the person.
+ * @param userPhone Verified contact phone for security notifications.
  */
 data class SessionState(
     val isLoggedIn: Boolean = false,
@@ -25,6 +31,14 @@ data class SessionState(
     val userPhone: String = "No disponible"
 )
 
+/**
+ * High-level coordinator for session lifecycle and identity propagation.
+ * 
+ * Acts as the centralized authority for session status, facilitating reactive 
+ * observation across all UI modules to ensure atomic navigation and security transitions.
+ *
+ * @param application The global application context for secure preference management.
+ */
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private val preferencesManager = PreferencesManager(application)

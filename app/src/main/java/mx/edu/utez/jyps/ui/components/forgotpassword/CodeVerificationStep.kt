@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
@@ -29,21 +28,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.edu.utez.jyps.ui.components.buttons.PrimaryButton
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
-import mx.edu.utez.jyps.ui.components.inputs.VerificationCodeInput
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordUiState
 
 /**
- * Stage 2 mapped sequence contexts boundaries map explicitly boundaries properties explicitly property targets sequences bindings constraints bounds constraint boolean boundaries bounds.
+ * Stage 2: UI for verifying the security token sent to the user's email.
+ * This component allows the user to input the UUID-based token and proceed to password setup.
  *
- * @param uiState Limit strings mapping values string mappings explicitly explicit mappings context logic expressions limit logic targets boolean variables contextual boundaries bounds expressions variables mapped variables definitions explicitly bound context explicitly expressions boundary mapping limits contextual parameters text validation mapping strings parameters boundary mapping context targets constraint explicit.
- * @param onCodeChange Mapped variables arrays explicitly bounding parameter variables values bounds strings boolean parameters mappings limits explicit limit array string boundaries explicitly mappings property contexts map target bounding strings mapping mappings boundary arrays array parameter boolean mappings mapping natively.
- * @param onVerifyCode Variable parameter binding constraint.
+ * @param uiState Current view state containing the verification code, countdown, and error messages.
+ * @param onCodeChange Callback triggered when the user updates the token text field.
+ * @param onVerifyCode Action triggered when the primary button is clicked to submit the code.
+ * @param onResendCode Action to request a new token if the previous one was lost or delayed.
  */
 @Composable
 fun CodeVerificationStep(
     uiState: ForgotPasswordUiState,
     onCodeChange: (String) -> Unit,
-    onVerifyCode: () -> Unit
+    onVerifyCode: () -> Unit,
+    onResendCode: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
@@ -106,8 +107,19 @@ fun CodeVerificationStep(
         enabled = !uiState.isLoading
     )
 
-    TextButton(onClick = { /* TODO Reenviar */ }) {
-        Text("Reenviar código", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+    TextButton(
+        onClick = onResendCode,
+        enabled = uiState.resendCountdown == 0 && !uiState.isLoading
+    ) {
+        Text(
+            text = if (uiState.resendCountdown > 0) {
+                "Reenviar en ${uiState.resendCountdown}s"
+            } else {
+                "Reenviar código"
+            },
+            color = if (uiState.resendCountdown > 0) Color.Gray else MaterialTheme.colorScheme.primary,
+            fontSize = 14.sp
+        )
     }
 }
 
@@ -117,6 +129,7 @@ fun CodeVerificationStepPreview() {
     CodeVerificationStep(
         uiState = ForgotPasswordUiState(verificationCode = "123456"),
         onCodeChange = {},
-        onVerifyCode = {}
+        onVerifyCode = {},
+        onResendCode = {}
     )
 }

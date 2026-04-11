@@ -52,12 +52,16 @@ import mx.edu.utez.jyps.viewmodel.RequestFilter
 
 /**
  * Main dashboard screen for the Department Head role.
- * Displays statistics cards, a pending-alert banner, filterable request list,
- * and opens detail/reject dialogs on card tap.
+ * 
+ * Orchestrates the approval/rejection lifecycle for employee requests. 
+ * Presents a high-level summary of department metrics (Pending, Approved, Rejected) 
+ * and provides filterable access to individual request details.
  *
- * @param viewModel ViewModel managing the dashboard state.
- * @param onLogoutClick Callback for session termination.
- * @param onNavigate Callback handling drawer menu navigation with the route string.
+ * @param viewModel Controller managing the reactive request streams and stats calculation.
+ * @param onLogoutClick Callback to revoke the local session and clear the identity cache.
+ * @param onNavigate Navigation callback to handle routing via the global navigation graph.
+ * @param userName The full display name of the authenticated department head.
+ * @param userEmail Institutional contact email associated with the session.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

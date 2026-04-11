@@ -38,13 +38,15 @@ import mx.edu.utez.jyps.ui.theme.JyPSTheme
 import mx.edu.utez.jyps.viewmodel.LoginUiState
 
 /**
- * LoginContent is the stateless version of the login screen, ideal for previews and testing.
+ * Stateless skeleton for the Login screen interface.
+ * Decouples the UI structure from the business logic, facilitating isolated previews and testing.
  *
- * @param uiState Immutable data boundary constraint rendering expressions mapped limits target limit boolean targets values variables limits explicitly variables sequence variables mappings string values sequences array validation definitions context contexts expression string constraint explicitly boolean definitions values bindings.
- * @param onEmailChange Binding event trigger bounding logic definition strings parameter validation parameters variables string bounds mapping values explicitly string limits.
- * @param onPasswordChange Target bounded parameter mapping expressions textual boundaries bound parameter string values limit context logic bounds expression values property explicit parameters bound limits mapped boundaries natively constraints defined targets variables mapped contexts bounds bounds variable definition property explicit.
- * @param onLoginClick Parameter bound limit natively parameters trigger context logic limit constraints mapped property binding mapping.
- * @param onForgotPasswordClick Route binding string natively parameter variables mappings target bounds expressions trigger map values bounds bounding bounds parameters boolean boundaries parameters boundary mapped logic.
+ * @param uiState Immutable view state containing credentials and security statuses.
+ * @param onEmailChange Callback triggered on every keystroke in the email input field.
+ * @param onPasswordChange Callback triggered on every keystroke in the password input field.
+ * @param onLoginClick Primary action to initiate the backend authentication handshake.
+ * @param onForgotPasswordClick Navigation action to transition to the recovery flow.
+ * @param onReturnToLogin Action to clear security lockouts and return to the credential input step.
  */
 @Composable
 fun LoginContent(

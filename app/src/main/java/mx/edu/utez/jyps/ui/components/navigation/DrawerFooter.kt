@@ -27,11 +27,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Bottom component in the navigation drawer presenting session profile identity and Sign-out action.
+ * Identity Footer for the navigation drawer.
+ * Displays the current session profile (name, email, and avatar initial) and provides
+ * a centralized sign-out action to revoke the local session.
  *
- * @param userFullName Formatted name to display.
- * @param userEmail Subtext email to display beneath name.
- * @param onLogoutClick Fires logout pipeline callback.
+ * @param userFullName The full display name retrieved from the identity provider.
+ * @param userEmail The institutional email associated with the active session.
+ * @param onLogoutClick Callback to trigger the session revocation and data purge flow.
  */
 @Composable
 fun DrawerFooter(

@@ -18,8 +18,14 @@ import mx.edu.utez.jyps.data.repository.LoadResult
 import mx.edu.utez.jyps.data.repository.UsuarioRepository
 
 /**
- * ViewModel orchestrating the administrator dashboard UI state.
- * Manages user CRUD with real-time reactive validation.
+ * ViewModel orchestrating the comprehensive Administrator dashboard UI state.
+ * 
+ * Manages the complex lifecycle of User Management, including reactive form validation,
+ * multi-role assignment logic, and department reconciliation. It optimizes perceived
+ * performance by proactively pre-fetching essential catalogs (Users/Departments) in parallel.
+ *
+ * @property repository Data source for User-related network and persistence operations.
+ * @property deptRepository Data source for Department-related structural management.
  */
 class AdminViewModel(
     private val repository: UsuarioRepository = UsuarioRepository(RetrofitInstance.api),

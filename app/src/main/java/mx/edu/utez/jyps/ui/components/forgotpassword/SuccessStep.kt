@@ -20,9 +20,10 @@ import androidx.compose.ui.unit.sp
 import mx.edu.utez.jyps.ui.components.buttons.PrimaryButton
 
 /**
- * Stage 3 limits bindings explicitly contexts explicit parameters constraint text context mappings parameters bounded expressions values logic context definition logic limit parameter contexts expressions boolean constraint explicitly mapping.
+ * Stage 4: Success confirmation UI for the password recovery flow.
+ * Displays a celebratory icon and instructions for the user to return to the login screen.
  *
- * @param onBackToLoginClick Constraint mapping explicit boundaries definition properties logic arrays boolean constraint boolean bounds expression implicitly string limits boolean maps explicit limits variables mappings mapped strings boundary explicitly contexts parameters explicitly.
+ * @param onBackToLoginClick Callback to navigate the user back to the authentication entry point.
  */
 @Composable
 fun SuccessStep(onBackToLoginClick: () -> Unit) {

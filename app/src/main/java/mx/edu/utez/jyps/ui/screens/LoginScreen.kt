@@ -11,11 +11,12 @@ import mx.edu.utez.jyps.viewmodel.LoginUiState
 import mx.edu.utez.jyps.viewmodel.LoginViewModel
 
 /**
- * LoginScreen is the entry point that connects the UI with the ViewModel.
+ * LoginScreen is the high-level entry point that connects the authentication UI with the business logic.
+ * Orchestrates the transition to success flows upon successful credential validation.
  *
- * @param viewModel The ViewModel handling the authentication logic and state.
- * @param onLoginSuccess Callback fired when authentication succeeds.
- * @param onForgotPasswordClick Callback to navigate the user to the password recovery screen.
+ * @param viewModel The ViewModel handling the authentication state and network handshakes.
+ * @param onLoginSuccess Callback fired when the identity provider confirms a valid session.
+ * @param onForgotPasswordClick Navigation callback to transition the user to the recovery flow.
  */
 @Composable
 fun LoginScreen(
