@@ -16,6 +16,7 @@ import mx.edu.utez.jyps.ui.components.cards.InfoCard
 import mx.edu.utez.jyps.ui.components.cards.WelcomeHeroCard
 import mx.edu.utez.jyps.ui.components.navigation.AppBottomNavigationBar
 import mx.edu.utez.jyps.ui.components.header.EmployeeHeader
+import mx.edu.utez.jyps.ui.components.common.EmployeeModeBanner
 
 /**
  * Primary dashboard view for Employees.
@@ -28,6 +29,8 @@ import mx.edu.utez.jyps.ui.components.header.EmployeeHeader
  * @param onRequestJustificationClick Callback to navigate to the justification creation screen.
  * @param userName Full name of the currently authenticated employee.
  * @param userEmail Institutional email of the currently authenticated employee.
+ * @param showEmployeeModeBanner Whether to show the "Employee Mode" banner for non-employee roles.
+ * @param onReturnToRoleDashboard Callback to exit employee mode and return to role-specific dashboard.
  */
 @Composable
 fun EmployeeDashboardScreen(
@@ -36,8 +39,10 @@ fun EmployeeDashboardScreen(
     onProfileClick: () -> Unit = {},
     onRequestPassClick: () -> Unit = {},
     onRequestJustificationClick: () -> Unit = {},
-    userName: String = "Juan",
-    userEmail: String = "juan.perez@utez.edu.mx"
+    userName: String = "Usuario",
+    userEmail: String = "",
+    showEmployeeModeBanner: Boolean = false,
+    onReturnToRoleDashboard: () -> Unit = {}
 ) {
     Scaffold(
         topBar = { EmployeeHeader(userName = userName.split(" ").firstOrNull() ?: "User", onLogoutClick = onLogoutClick) },
@@ -58,6 +63,10 @@ fun EmployeeDashboardScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (showEmployeeModeBanner) {
+                EmployeeModeBanner(onBackClick = onReturnToRoleDashboard)
+            }
+            
             WelcomeHeroCard(name = userName, email = userEmail)
             
             DashboardActionCard(

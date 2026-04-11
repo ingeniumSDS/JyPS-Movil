@@ -18,13 +18,26 @@ data class Usuario(
     val nombreCompleto: String = "",
     val correo: String = "",
     val telefono: String = "",
-    val horaEntrada: String? = null,
-    val horaSalida: String? = null,
+    val horaEntrada: Any? = null,
+    val horaSalida: Any? = null,
     val roles: List<String> = emptyList(),
     val departamentoId: Long = 0,
     val nombreDepartamento: String? = null,
     val activo: Boolean = true
 ) {
+    /** Helper to extract time string regardless of format (String or Object from backend). */
+    private fun Any?.normalizeTime(): String? {
+        return when (this) {
+            is String -> this
+            is Map<*, *> -> {
+                val h = (this["hour"] as? Number)?.toInt() ?: 0
+                val m = (this["minute"] as? Number)?.toInt() ?: 0
+                "%02d:%02d:00".format(h, m)
+            }
+            else -> null
+        }
+    }
+
     /** First primary role assigned to the user. */
     val primaryRole: String
         get() = roles.firstOrNull() ?: ""
@@ -46,21 +59,21 @@ data class Usuario(
 
     /** Converts "HH:mm:ss" to human-readable "H:mm AM/PM". */
     val horaEntradaDisplay: String
-        get() = horaEntrada?.toAmPm() ?: "--:--"
+        get() = horaEntrada.normalizeTime()?.toAmPm() ?: "--:--"
 
     /** Converts "HH:mm:ss" to human-readable "H:mm AM/PM". */
     val horaSalidaDisplay: String
-        get() = horaSalida?.toAmPm() ?: "--:--"
+        get() = horaSalida.normalizeTime()?.toAmPm() ?: "--:--"
 
     /** Returns the department name or a placeholder if missing. */
     val departamentoDisplay: String
         get() = nombreDepartamento ?: if (departamentoId > 0) "Depto. $departamentoId" else "Sin departamento"
 
     /** Extracted hours for form editing logic. */
-    val entradaHour: Int get() = horaEntrada?.split(":")?.getOrNull(0)?.toIntOrNull() ?: 8
-    val entradaMinute: Int get() = horaEntrada?.split(":")?.getOrNull(1)?.toIntOrNull() ?: 0
-    val salidaHour: Int get() = horaSalida?.split(":")?.getOrNull(0)?.toIntOrNull() ?: 16
-    val salidaMinute: Int get() = horaSalida?.split(":")?.getOrNull(1)?.toIntOrNull() ?: 0
+    val entradaHour: Int get() = horaEntrada.normalizeTime()?.split(":")?.getOrNull(0)?.toIntOrNull() ?: 8
+    val entradaMinute: Int get() = horaEntrada.normalizeTime()?.split(":")?.getOrNull(1)?.toIntOrNull() ?: 0
+    val salidaHour: Int get() = horaSalida.normalizeTime()?.split(":")?.getOrNull(0)?.toIntOrNull() ?: 16
+    val salidaMinute: Int get() = horaSalida.normalizeTime()?.split(":")?.getOrNull(1)?.toIntOrNull() ?: 0
 }
 
 /**
@@ -76,12 +89,13 @@ private fun String.toAmPm(): String {
 }
 
 /**
- * Encapsulates security account details from /usuarios/{id}/cuenta.
+ * Encapsulates security account details from /api/v1/usuarios/{id}/cuenta.
+ * Used for pre-login security checks and account status monitoring.
  *
- * @property nombreCompleto Real name from the identity.
- * @property activa Defines if the account credential logic is allowed.
- * @property intentosFallidos Current sequential failed login attempt count.
- * @property bloqueada Marks if the account is blocked due to excessive failures.
+ * @property nombreCompleto Real name of the user from the identity record.
+ * @property activa Defines if the account credential logic is enabled.
+ * @property intentosFallidos Current count of sequential failed login attempts.
+ * @property bloqueada Flag indicating if the account is currently prohibited from logging in.
  */
 data class CuentaResponse(
     val nombreCompleto: String = "",

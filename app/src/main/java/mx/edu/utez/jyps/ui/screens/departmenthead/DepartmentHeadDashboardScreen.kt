@@ -64,7 +64,9 @@ import mx.edu.utez.jyps.viewmodel.RequestFilter
 fun DepartmentHeadDashboardScreen(
     viewModel: DepartmentHeadViewModel = viewModel(),
     onLogoutClick: () -> Unit = {},
-    onNavigate: (route: String) -> Unit = {}
+    onNavigate: (route: String) -> Unit = {},
+    userName: String = "Usuario",
+    userEmail: String = ""
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -102,8 +104,8 @@ fun DepartmentHeadDashboardScreen(
         drawerState = drawerState,
         menuItems = deptHeadMenuOptions,
         currentRoute = "department_head_dashboard",
-        userFullName = "Roberto Sánchez López",
-        userEmail = "roberto.sanchez@utez.edu.mx",
+        userFullName = userName,
+        userEmail = userEmail,
         roleTitle = "Jefe de Departamento",
         onNavigateTo = { route ->
             scope.launch { drawerState.close() }

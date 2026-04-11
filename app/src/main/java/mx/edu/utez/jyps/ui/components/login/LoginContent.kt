@@ -52,7 +52,8 @@ fun LoginContent(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onLoginClick: () -> Unit,
-    onForgotPasswordClick: () -> Unit
+    onForgotPasswordClick: () -> Unit,
+    onReturnToLogin: () -> Unit = {}
 ) {
     var showSecurityModal by remember { mutableStateOf(false) }
     var showPrivacyModal by remember { mutableStateOf(false) }
@@ -92,39 +93,45 @@ fun LoginContent(
                     .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                if (uiState.isLockedOut) {
-                    LockedOutView()
+                if (uiState.isLockedOut || uiState.isAccountBlocked) {
+                    LockedOutView(
+                        isServerSide = uiState.isAccountBlocked,
+                        serverMessage = if (uiState.isAccountBlocked) uiState.errorMessage else null,
+                        onReturnToLogin = onReturnToLogin
+                    )
                     
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
+                    if (!uiState.isAccountBlocked) {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(1.7.dp, Color(0xFF0F2C59), RoundedCornerShape(8.dp))
-                                .padding(vertical = 12.dp)
-                                .clickable { onForgotPasswordClick() },
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(1.7.dp, Color(0xFF0F2C59), RoundedCornerShape(8.dp))
+                                    .padding(vertical = 12.dp)
+                                    .clickable { onForgotPasswordClick() },
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "¿Olvidaste tu contraseña?",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF0F2C59)
+                                )
+                            }
+    
                             Text(
-                                text = "¿Olvidaste tu contraseña?",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF0F2C59)
+                                text = "El acceso se restablecerá automáticamente cuando el contador llegue a cero.",
+                                fontSize = 12.sp,
+                                color = Color(0xFF6A7282),
+                                textAlign = TextAlign.Center,
+                                lineHeight = 16.sp
                             )
+    
+                            LoginFooterLinks()
                         }
-
-                        Text(
-                            text = "El acceso se restablecerá automáticamente cuando el contador llegue a cero.",
-                            fontSize = 12.sp,
-                            color = Color(0xFF6A7282),
-                            textAlign = TextAlign.Center,
-                            lineHeight = 16.sp
-                        )
-
-                        LoginFooterLinks()
                     }
                 } else {
                     AppTextField(

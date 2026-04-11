@@ -35,7 +35,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.edu.utez.jyps.ui.components.forgotpassword.CodeVerificationStep
 import mx.edu.utez.jyps.ui.components.forgotpassword.EmailInputStep
+import mx.edu.utez.jyps.ui.components.forgotpassword.PasswordSetupStep
 import mx.edu.utez.jyps.ui.components.forgotpassword.SuccessStep
+import androidx.compose.material.icons.filled.Lock
 import mx.edu.utez.jyps.ui.theme.JyPSTheme
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordStep
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordUiState
@@ -61,6 +63,9 @@ fun ForgotPasswordScreen(
         onCodeChange = viewModel::onCodeChange,
         onSubmitEmail = viewModel::submitEmail,
         onVerifyCode = viewModel::verifyCode,
+        onPasswordChange = viewModel::onPasswordChange,
+        onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
+        onConfirmPasswordReset = viewModel::confirmPasswordReset,
         onBackToLoginClick = {
             viewModel.resetState()
             onBackToLoginClick()
@@ -85,6 +90,9 @@ fun ForgotPasswordContent(
     onCodeChange: (String) -> Unit,
     onSubmitEmail: () -> Unit,
     onVerifyCode: () -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
+    onConfirmPasswordReset: () -> Unit,
     onBackToLoginClick: () -> Unit
 ) {
     Column(
@@ -99,12 +107,15 @@ fun ForgotPasswordContent(
         Box(
             modifier = Modifier
                 .size(64.dp)
-                .background(color = MaterialTheme.colorScheme.primary, shape = CircleShape),
+                .background(color = Color(0xFF0F2C59), shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Filled.Check, // Placeholder for GraduationCap
-                contentDescription = "Recuperar Contraseña Icono",
+                imageVector = when(uiState.currentStep) {
+                    ForgotPasswordStep.SUCCESS -> Icons.Filled.Check
+                    else -> Icons.Filled.Lock
+                },
+                contentDescription = null,
                 modifier = Modifier.size(32.dp),
                 tint = Color.White
             )
@@ -114,13 +125,16 @@ fun ForgotPasswordContent(
 
         // Dynamic Title & Subtitle based on step
         val title = when (uiState.currentStep) {
-            ForgotPasswordStep.EMAIL_INPUT, ForgotPasswordStep.CODE_VERIFICATION -> "Recuperar Contraseña"
+            ForgotPasswordStep.EMAIL_INPUT, 
+            ForgotPasswordStep.CODE_VERIFICATION -> "Recuperar Contraseña"
+            ForgotPasswordStep.PASSWORD_SETUP -> "Nueva Contraseña"
             ForgotPasswordStep.SUCCESS -> "¡Listo!"
         }
         val subtitle = when (uiState.currentStep) {
             ForgotPasswordStep.EMAIL_INPUT -> "Ingresa tu correo electrónico"
-            ForgotPasswordStep.CODE_VERIFICATION -> "Ingresa el código enviado a tu correo"
-            ForgotPasswordStep.SUCCESS -> "Contraseña restablecida exitosamente"
+            ForgotPasswordStep.CODE_VERIFICATION -> "Ingresa el token enviado a tu correo"
+            ForgotPasswordStep.PASSWORD_SETUP -> "Crea una nueva contraseña segura y fácil de recordar"
+            ForgotPasswordStep.SUCCESS -> "¡Actualización completada!"
         }
 
         Text(
@@ -163,6 +177,14 @@ fun ForgotPasswordContent(
                     ForgotPasswordStep.CODE_VERIFICATION -> {
                         CodeVerificationStep(uiState, onCodeChange, onVerifyCode)
                     }
+                    ForgotPasswordStep.PASSWORD_SETUP -> {
+                        PasswordSetupStep(
+                            uiState = uiState,
+                            onPasswordChange = onPasswordChange,
+                            onConfirmPasswordChange = onConfirmPasswordChange,
+                            onSubmit = onConfirmPasswordReset
+                        )
+                    }
                     ForgotPasswordStep.SUCCESS -> {
                         SuccessStep(onBackToLoginClick)
                     }
@@ -203,7 +225,9 @@ fun ForgotPasswordEmailStepPreview() {
     JyPSTheme {
         ForgotPasswordContent(
             uiState = ForgotPasswordUiState(currentStep = ForgotPasswordStep.EMAIL_INPUT),
-            onEmailChange = {}, onCodeChange = {}, onSubmitEmail = {}, onVerifyCode = {}, onBackToLoginClick = {}
+            onEmailChange = {}, onCodeChange = {}, onSubmitEmail = {}, onVerifyCode = {}, 
+            onPasswordChange = {}, onConfirmPasswordChange = {}, onConfirmPasswordReset = {},
+            onBackToLoginClick = {}
         )
     }
 }
@@ -214,7 +238,9 @@ fun ForgotPasswordCodeStepPreview() {
     JyPSTheme {
         ForgotPasswordContent(
             uiState = ForgotPasswordUiState(currentStep = ForgotPasswordStep.CODE_VERIFICATION, email = "test@utez.edu.mx"),
-            onEmailChange = {}, onCodeChange = {}, onSubmitEmail = {}, onVerifyCode = {}, onBackToLoginClick = {}
+            onEmailChange = {}, onCodeChange = {}, onSubmitEmail = {}, onVerifyCode = {}, 
+            onPasswordChange = {}, onConfirmPasswordChange = {}, onConfirmPasswordReset = {},
+            onBackToLoginClick = {}
         )
     }
 }
@@ -225,7 +251,9 @@ fun ForgotPasswordSuccessStepPreview() {
     JyPSTheme {
         ForgotPasswordContent(
             uiState = ForgotPasswordUiState(currentStep = ForgotPasswordStep.SUCCESS),
-            onEmailChange = {}, onCodeChange = {}, onSubmitEmail = {}, onVerifyCode = {}, onBackToLoginClick = {}
+            onEmailChange = {}, onCodeChange = {}, onSubmitEmail = {}, onVerifyCode = {}, 
+            onPasswordChange = {}, onConfirmPasswordChange = {}, onConfirmPasswordReset = {},
+            onBackToLoginClick = {}
         )
     }
 }

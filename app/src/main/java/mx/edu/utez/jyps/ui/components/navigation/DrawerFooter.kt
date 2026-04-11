@@ -51,15 +51,15 @@ fun DrawerFooter(
         ) {
             Box(
                 modifier = Modifier
-                    .size(32.dp)
-                    .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
+                    .size(40.dp)
+                    .background(Color(0xFF1E3A5F), RoundedCornerShape(20.dp)), // Secondary Darker Blue
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = userInitial,
+                    text = userInitial.uppercase(),
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
+                    fontSize = 16.sp
                 )
             }
 

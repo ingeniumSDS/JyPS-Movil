@@ -1,7 +1,10 @@
 package mx.edu.utez.jyps.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +33,7 @@ import mx.edu.utez.jyps.viewmodel.DepartmentHeadViewModel
 import mx.edu.utez.jyps.viewmodel.EmployeeHistoryViewModel
 import mx.edu.utez.jyps.viewmodel.EmployeeManagementViewModel
 import mx.edu.utez.jyps.viewmodel.ForgotPasswordViewModel
+import mx.edu.utez.jyps.viewmodel.AuthViewModel
 import mx.edu.utez.jyps.viewmodel.LoginViewModel
 import mx.edu.utez.jyps.ui.components.common.AppToast
 import mx.edu.utez.jyps.ui.components.common.ToastType
@@ -59,6 +63,8 @@ sealed class AppRoutes(val route: String) {
     object AdminJustificationRequest : AppRoutes("admin_excuse")
     object AdminHistory : AppRoutes("admin_history")
     object AdminProfile : AppRoutes("admin_profile")
+    object AdminEmployeeHome : AppRoutes("admin_employee_home")
+    object DeptHeadEmployeeHome : AppRoutes("dept_head_employee_home")
 }
 
 /**
@@ -73,352 +79,451 @@ sealed class AppRoutes(val route: String) {
 @Composable
 fun NavigationHost(
     navController: NavHostController = rememberNavController(),
-    loginViewModel: LoginViewModel = viewModel()
+    loginViewModel: LoginViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel()
 ) {
-    val sessionToken by loginViewModel.sessionToken.collectAsStateWithLifecycle()
-    
-    val (targetRoute, currentUser, currentUserEmail, currentRole) = remember(sessionToken) {
-        when (sessionToken) {
-            "MOCK_SECURITY_TOKEN" -> listOf(AppRoutes.SecurityScanner.route, "María González Hernández", "m.gonzalez@utez.edu.mx", "Guardia de Seguridad")
-            "MOCK_EMPLOYEE_TOKEN" -> listOf(AppRoutes.EmployeeHome.route, "Juan Pérez García", "juan.perez@utez.edu.mx", "Empleado")
-            "MOCK_DEPT_HEAD_TOKEN" -> listOf(AppRoutes.DeptHeadDashboard.route, "Roberto Sánchez López", "roberto.sanchez@utez.edu.mx", "Jefe de Departamento")
-            null, "" -> listOf(AppRoutes.Login.route, "", "", "")
-            else -> listOf(AppRoutes.Home.route, "Carlos Rodríguez Torres", "carlos.rodriguez@utez.edu.mx", "Administrador")
+    val sessionToken by authViewModel.isLoggedIn.collectAsStateWithLifecycle()
+    val roles by authViewModel.currentRoles.collectAsStateWithLifecycle()
+    val currentUser by authViewModel.userName.collectAsStateWithLifecycle()
+    val currentUserEmail by authViewModel.userEmail.collectAsStateWithLifecycle()
+    val currentUserPhone by authViewModel.userPhone.collectAsStateWithLifecycle()
+
+    // SECURE NAVIGATION LOGIC: Derived from unified session state
+    val targetRoute = remember(sessionToken, roles) {
+        when {
+            // Case 1: No session at all -> Always Login
+            !sessionToken -> AppRoutes.Login.route
+
+            // Case 2: Session exists but roles are still loading from disk -> WAIT
+            // We return an empty string to signify "Indeterminate State"
+            roles.isEmpty() -> ""
+
+            // Case 3: Full session resolved -> Navigate based on role
+            else -> when {
+                roles.contains("ADMINISTRADOR") -> AppRoutes.Home.route
+                roles.contains("JEFE_DE_DEPARTAMENTO") -> AppRoutes.DeptHeadDashboard.route
+                roles.contains("GUARDIA") -> AppRoutes.SecurityScanner.route
+                roles.contains("EMPLEADO") -> AppRoutes.EmployeeHome.route
+                else -> AppRoutes.Login.route
+            }
         }
     }
 
-    LaunchedEffect(targetRoute) {
-        if (targetRoute == AppRoutes.Login.route) {
-            if (navController.currentDestination?.route != AppRoutes.Login.route &&
-                navController.currentDestination?.route != AppRoutes.ForgotPassword.route) {
-                    
-                navController.navigate(AppRoutes.Login.route) {
-                    popUpTo(navController.graph.id) { inclusive = true }
-                }
+    // Current Role display name
+    val currentRole = roles.firstOrNull() ?: ""
+
+    // Initial redirection and session maintenance
+    LaunchedEffect(sessionToken, targetRoute, roles) {
+        // IMPORTANT: If we have a token but roles aren't ready, DO NOT navigate yet.
+        // If targetRoute is empty string, we are in the "splash/loading" grace period.
+        if (targetRoute.isEmpty()) return@LaunchedEffect
+
+        val currentRoute = navController.currentDestination?.route
+        if (currentRoute != targetRoute) {
+            navController.navigate(targetRoute) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FA))) {
+        if (targetRoute.isEmpty()) {
+            // Smooth splash transition while session is syncing
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color(0xFF0D6EFD))
             }
         } else {
-            if (navController.currentDestination?.route == AppRoutes.Login.route) {
-                navController.navigate(targetRoute) {
-                    popUpTo(AppRoutes.Login.route) { inclusive = true }
-                }
-            }
-        }
-    }
-
-    NavHost(
-        navController = navController,
-        startDestination = if (targetRoute != AppRoutes.Login.route) targetRoute else AppRoutes.Login.route
-    ) {
-        composable(AppRoutes.Login.route) {
-            LoginScreen(
-                viewModel = loginViewModel,
-                onLoginSuccess = {
-                    navController.navigate(targetRoute) {
-                        popUpTo(AppRoutes.Login.route) { inclusive = true }
-                    }
-                },
-                onForgotPasswordClick = {
-                    navController.navigate(AppRoutes.ForgotPassword.route)
-                }
-            )
-        }
-        
-        composable(AppRoutes.ForgotPassword.route) {
-            val forgotPasswordViewModel: ForgotPasswordViewModel = viewModel()
-            ForgotPasswordScreen(
-                viewModel = forgotPasswordViewModel,
-                onBackToLoginClick = {
-                    navController.popBackStack()
-                }
-            )
-        }
-        
-        // Employee Scope Dashboard
-        composable(AppRoutes.EmployeeHome.route) { backStackEntry ->
-            val savedStateHandle = backStackEntry.savedStateHandle
-            val successMessage by savedStateHandle.getStateFlow<String?>("success_message", null).collectAsStateWithLifecycle()
-
-            Box(modifier = Modifier.fillMaxSize()) {
-                EmployeeDashboardScreen(
-                    onLogoutClick = { loginViewModel.logout() },
-                    onHistoryClick = { navController.navigate(AppRoutes.History.route) },
-                    onProfileClick = { navController.navigate(AppRoutes.Profile.route) },
-                    onRequestPassClick = { navController.navigate(AppRoutes.PassRequest.route) },
-                    onRequestJustificationClick = { navController.navigate(AppRoutes.JustificationRequest.route) },
-                    userName = currentUser,
-                    userEmail = currentUserEmail
-                )
-
-                AppToast(
-                    message = successMessage,
-                    isVisible = successMessage != null,
-                    onDismiss = { savedStateHandle["success_message"] = null },
-                    type = ToastType.SUCCESS,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
-            }
-        }
-
-        // Pass Request
-        composable(AppRoutes.PassRequest.route) {
-            PassRequestScreen(
-                onBackClick = { navController.navigateUp() },
-                onSuccessSubmit = { msg ->
-                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
-                    navController.navigateUp()
-                },
-                userName = currentUser,
-                userEmail = currentUserEmail
-            )
-        }
-        
-        // Justification Request
-        composable(AppRoutes.JustificationRequest.route) {
-            JustificationRequestScreen(
-                onBackClick = { navController.navigateUp() },
-                onSuccessSubmit = { msg ->
-                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
-                    navController.navigateUp()
-                },
-                userName = currentUser,
-                userEmail = currentUserEmail
-            )
-        }
-
-        // Employee History
-        composable(AppRoutes.History.route) {
-            val historyViewModel: EmployeeHistoryViewModel = viewModel()
-            EmployeeHistoryScreen(
-                onLogoutClick = { loginViewModel.logout() },
-                onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
-                onProfileClick = { navController.navigate(AppRoutes.Profile.route) },
-                viewModel = historyViewModel,
-                userName = currentUser
-            )
-        }
-
-        // Employee Profile
-        composable(AppRoutes.Profile.route) {
-            ProfileScreen(
-                onLogoutClick = { loginViewModel.logout() },
-                onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
-                onHistoryClick = { navController.navigate(AppRoutes.History.route) },
-                userName = currentUser,
-                userEmail = currentUserEmail,
-                roleTitle = currentRole
-            )
-        }
-        
-        // Security Guard Scope Dashboard
-        composable(AppRoutes.SecurityScanner.route) {
-            ScannerScreen(
-                onLogoutClick = { loginViewModel.logout() }
-            )
-        }
-
-        // Core App Generic Dashboard (Admin)
-        composable(AppRoutes.Home.route) {
-            val adminViewModel: AdminViewModel = viewModel()
-            AdminDashboardScreen(
-                viewModel = adminViewModel,
-                onLogoutSuccess = {
-                    loginViewModel.logout()
-                },
-                onNavigateToEmployeeFunction = { route ->
-                    navController.navigate(route)
-                }
-            )
-        }
-
-        // Department Head Scope Dashboard
-        composable(AppRoutes.DeptHeadDashboard.route) {
-            val deptHeadViewModel: DepartmentHeadViewModel = viewModel()
-            DepartmentHeadDashboardScreen(
-                viewModel = deptHeadViewModel,
-                onLogoutClick = { loginViewModel.logout() },
-                onNavigate = { route ->
-                    when (route) {
-                        "department_head_dashboard" -> { /* already here */ }
-                        "pass_request" -> navController.navigate(AppRoutes.DeptHeadPassRequest.route)
-                        "justification_request" -> navController.navigate(AppRoutes.DeptHeadJustificationRequest.route)
-                        "history" -> navController.navigate(AppRoutes.DeptHeadHistory.route)
-                        "profile" -> navController.navigate(AppRoutes.DeptHeadProfile.route)
-                        "dept_employees" -> navController.navigate(AppRoutes.DeptHeadEmployees.route)
-                        else -> { /* Unknown route */ }
-                    }
-                }
-            )
-        }
-
-        // Department Head: Employee Management
-        composable(AppRoutes.DeptHeadEmployees.route) {
-            val employeeViewModel: EmployeeManagementViewModel = viewModel()
-            EmployeeManagementScreen(
-                viewModel = employeeViewModel,
-                onLogoutClick = { loginViewModel.logout() },
-                onNavigate = { route ->
-                    when (route) {
-                        "department_head_dashboard" -> navController.navigate(AppRoutes.DeptHeadDashboard.route) {
-                            popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
+            NavHost(
+                navController = navController,
+                startDestination = targetRoute,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                composable(AppRoutes.Login.route) {
+                    LoginScreen(
+                        viewModel = loginViewModel,
+                        onLoginSuccess = {
+                            navController.navigate(targetRoute) {
+                                popUpTo(AppRoutes.Login.route) { inclusive = true }
+                            }
+                        },
+                        onForgotPasswordClick = {
+                            navController.navigate(AppRoutes.ForgotPassword.route)
                         }
-                        "pass_request" -> navController.navigate(AppRoutes.DeptHeadPassRequest.route)
-                        "justification_request" -> navController.navigate(AppRoutes.DeptHeadJustificationRequest.route)
-                        "history" -> navController.navigate(AppRoutes.DeptHeadHistory.route)
-                        "profile" -> navController.navigate(AppRoutes.DeptHeadProfile.route)
-                        else -> { /* Already here */ }
-                    }
-                },
-                userName = currentUser,
-                userEmail = currentUserEmail
-            )
-        }
+                    )
+                }
 
-        // Dept Head → Employee Mode: Pass Request (with Modo Empleado banner)
-        composable(AppRoutes.DeptHeadPassRequest.route) {
-            PassRequestScreen(
-                onBackClick = { navController.navigateUp() },
-                onSuccessSubmit = { msg ->
-                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
-                    navController.navigateUp()
-                },
-                showEmployeeModeBanner = true,
-                onReturnToRoleDashboard = {
-                    navController.navigate(AppRoutes.DeptHeadDashboard.route) {
-                        popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
-                    }
-                },
-                userName = currentUser,
-                userEmail = currentUserEmail
-            )
-        }
+                composable(AppRoutes.ForgotPassword.route) {
+                    val forgotPasswordViewModel: ForgotPasswordViewModel = viewModel()
+                    ForgotPasswordScreen(
+                        viewModel = forgotPasswordViewModel,
+                        onBackToLoginClick = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
 
-        // Dept Head → Employee Mode: Justification Request
-        composable(AppRoutes.DeptHeadJustificationRequest.route) {
-            JustificationRequestScreen(
-                onBackClick = { navController.navigateUp() },
-                onSuccessSubmit = { msg ->
-                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
-                    navController.navigateUp()
-                },
-                showEmployeeModeBanner = true,
-                onReturnToRoleDashboard = {
-                    navController.navigate(AppRoutes.DeptHeadDashboard.route) {
-                        popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
-                    }
-                },
-                userName = currentUser,
-                userEmail = currentUserEmail
-            )
-        }
+                // Employee Scope Dashboard
+                composable(AppRoutes.EmployeeHome.route) { backStackEntry ->
+                    val savedStateHandle = backStackEntry.savedStateHandle
+                    val successMessage by savedStateHandle.getStateFlow<String?>(
+                        "success_message",
+                        null
+                    ).collectAsStateWithLifecycle()
 
-        // Dept Head → Employee Mode: History
-        composable(AppRoutes.DeptHeadHistory.route) {
-            val historyViewModel: EmployeeHistoryViewModel = viewModel()
-            EmployeeHistoryScreen(
-                onLogoutClick = { loginViewModel.logout() },
-                onHomeClick = { navController.navigate(AppRoutes.DeptHeadDashboard.route) },
-                onProfileClick = { navController.navigate(AppRoutes.DeptHeadProfile.route) },
-                viewModel = historyViewModel,
-                showEmployeeModeBanner = true,
-                onReturnToRoleDashboard = {
-                    navController.navigate(AppRoutes.DeptHeadDashboard.route) {
-                        popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
-                    }
-                },
-                userName = currentUser
-            )
-        }
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        EmployeeDashboardScreen(
+                            onLogoutClick = { loginViewModel.logout() },
+                            onHistoryClick = { navController.navigate(AppRoutes.History.route) },
+                            onProfileClick = { navController.navigate(AppRoutes.Profile.route) },
+                            onRequestPassClick = { navController.navigate(AppRoutes.PassRequest.route) },
+                            onRequestJustificationClick = { navController.navigate(AppRoutes.JustificationRequest.route) },
+                            userName = currentUser,
+                            userEmail = currentUserEmail
+                        )
 
-        // Dept Head → Employee Mode: Profile
-        composable(AppRoutes.DeptHeadProfile.route) {
-            ProfileScreen(
-                onLogoutClick = { loginViewModel.logout() },
-                onHomeClick = { navController.navigate(AppRoutes.DeptHeadDashboard.route) },
-                onHistoryClick = { navController.navigate(AppRoutes.DeptHeadHistory.route) },
-                showEmployeeModeBanner = true,
-                onReturnToRoleDashboard = {
-                    navController.navigate(AppRoutes.DeptHeadDashboard.route) {
-                        popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
+                        AppToast(
+                            message = successMessage,
+                            isVisible = successMessage != null,
+                            onDismiss = { savedStateHandle["success_message"] = null },
+                            type = ToastType.SUCCESS,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
                     }
-                },
-                userName = currentUser,
-                userEmail = currentUserEmail,
-                roleTitle = currentRole
-            )
-        }
+                }
 
-        // Admin → Employee Mode: Pass Request
-        composable(AppRoutes.AdminPassRequest.route) {
-            PassRequestScreen(
-                onBackClick = { navController.navigateUp() },
-                onSuccessSubmit = { msg ->
-                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
-                    navController.navigateUp()
-                },
-                showEmployeeModeBanner = true,
-                onReturnToRoleDashboard = {
-                    navController.navigate(AppRoutes.Home.route) {
-                        popUpTo(AppRoutes.Home.route) { inclusive = false }
-                    }
-                },
-                userName = currentUser,
-                userEmail = currentUserEmail
-            )
-        }
+                // Pass Request
+                composable(AppRoutes.PassRequest.route) {
+                    PassRequestScreen(
+                        onBackClick = { navController.navigateUp() },
+                        onSuccessSubmit = { msg ->
+                            navController.previousBackStackEntry?.savedStateHandle?.set(
+                                "success_message",
+                                msg
+                            )
+                            navController.navigateUp()
+                        },
+                        userName = currentUser,
+                        userEmail = currentUserEmail
+                    )
+                }
 
-        // Admin → Employee Mode: Justification Request
-        composable(AppRoutes.AdminJustificationRequest.route) {
-            JustificationRequestScreen(
-                onBackClick = { navController.navigateUp() },
-                onSuccessSubmit = { msg ->
-                    navController.previousBackStackEntry?.savedStateHandle?.set("success_message", msg)
-                    navController.navigateUp()
-                },
-                showEmployeeModeBanner = true,
-                onReturnToRoleDashboard = {
-                    navController.navigate(AppRoutes.Home.route) {
-                        popUpTo(AppRoutes.Home.route) { inclusive = false }
-                    }
-                },
-                userName = currentUser,
-                userEmail = currentUserEmail
-            )
-        }
+                // Justification Request
+                composable(AppRoutes.JustificationRequest.route) {
+                    JustificationRequestScreen(
+                        onBackClick = { navController.navigateUp() },
+                        onSuccessSubmit = { msg ->
+                            navController.previousBackStackEntry?.savedStateHandle?.set(
+                                "success_message",
+                                msg
+                            )
+                            navController.navigateUp()
+                        },
+                        userName = currentUser,
+                        userEmail = currentUserEmail
+                    )
+                }
 
-        // Admin → Employee Mode: History
-        composable(AppRoutes.AdminHistory.route) {
-            val historyViewModel: EmployeeHistoryViewModel = viewModel()
-            EmployeeHistoryScreen(
-                onLogoutClick = { loginViewModel.logout() },
-                onHomeClick = { navController.navigate(AppRoutes.Home.route) },
-                onProfileClick = { navController.navigate(AppRoutes.AdminProfile.route) },
-                viewModel = historyViewModel,
-                showEmployeeModeBanner = true,
-                onReturnToRoleDashboard = {
-                    navController.navigate(AppRoutes.Home.route) {
-                        popUpTo(AppRoutes.Home.route) { inclusive = false }
-                    }
-                },
-                userName = currentUser
-            )
-        }
+                // Employee History
+                composable(AppRoutes.History.route) {
+                    val historyViewModel: EmployeeHistoryViewModel = viewModel()
+                    EmployeeHistoryScreen(
+                        onLogoutClick = { loginViewModel.logout() },
+                        onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
+                        onProfileClick = { navController.navigate(AppRoutes.Profile.route) },
+                        viewModel = historyViewModel,
+                        userName = currentUser
+                    )
+                }
 
-        // Admin → Employee Mode: Profile
-        composable(AppRoutes.AdminProfile.route) {
-            ProfileScreen(
-                onLogoutClick = { loginViewModel.logout() },
-                onHomeClick = { navController.navigate(AppRoutes.Home.route) },
-                onHistoryClick = { navController.navigate(AppRoutes.AdminHistory.route) },
-                showEmployeeModeBanner = true,
-                onReturnToRoleDashboard = {
-                    navController.navigate(AppRoutes.Home.route) {
-                        popUpTo(AppRoutes.Home.route) { inclusive = false }
-                    }
-                },
-                userName = currentUser,
-                userEmail = currentUserEmail,
-                roleTitle = currentRole
-            )
+                // Employee Profile
+                composable(AppRoutes.Profile.route) {
+                    ProfileScreen(
+                        onLogoutClick = { loginViewModel.logout() },
+                        onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
+                        onHistoryClick = { navController.navigate(AppRoutes.History.route) },
+                        userName = currentUser,
+                        userEmail = currentUserEmail,
+                        userPhone = currentUserPhone,
+                        roleTitle = currentRole
+                    )
+                }
+
+                // Security Guard Scope Dashboard
+                composable(AppRoutes.SecurityScanner.route) {
+                    ScannerScreen(
+                        onLogoutClick = { loginViewModel.logout() }
+                    )
+                }
+
+                // Core App Generic Dashboard (Admin)
+                composable(AppRoutes.Home.route) {
+                    val adminViewModel: AdminViewModel = viewModel()
+                    AdminDashboardScreen(
+                        viewModel = adminViewModel,
+                        onLogoutSuccess = {
+                            loginViewModel.logout()
+                        },
+                        onNavigateToEmployeeFunction = { route ->
+                            navController.navigate(route)
+                        },
+                        userName = currentUser,
+                        userEmail = currentUserEmail
+                    )
+                }
+
+                // Department Head Scope Dashboard
+                composable(AppRoutes.DeptHeadDashboard.route) {
+                    val deptHeadViewModel: DepartmentHeadViewModel = viewModel()
+                    DepartmentHeadDashboardScreen(
+                        viewModel = deptHeadViewModel,
+                        onLogoutClick = { loginViewModel.logout() },
+                        onNavigate = { route ->
+                            when (route) {
+                                "department_head_dashboard" -> { /* already here */
+                                }
+
+                                "pass_request" -> navController.navigate(AppRoutes.DeptHeadPassRequest.route)
+                                "justification_request" -> navController.navigate(AppRoutes.DeptHeadJustificationRequest.route)
+                                "history" -> navController.navigate(AppRoutes.DeptHeadHistory.route)
+                                "profile" -> navController.navigate(AppRoutes.DeptHeadProfile.route)
+                                "dept_employees" -> navController.navigate(AppRoutes.DeptHeadEmployees.route)
+                                else -> { /* Unknown route */
+                                }
+                            }
+                        },
+                        userName = currentUser,
+                        userEmail = currentUserEmail
+                    )
+                }
+
+                // Department Head: Employee Management
+                composable(AppRoutes.DeptHeadEmployees.route) {
+                    val employeeViewModel: EmployeeManagementViewModel = viewModel()
+                    EmployeeManagementScreen(
+                        viewModel = employeeViewModel,
+                        onLogoutClick = { loginViewModel.logout() },
+                        onNavigate = { route ->
+                            when (route) {
+                                "department_head_dashboard" -> navController.navigate(AppRoutes.DeptHeadDashboard.route) {
+                                    popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
+                                }
+
+                                "pass_request" -> navController.navigate(AppRoutes.DeptHeadPassRequest.route)
+                                "justification_request" -> navController.navigate(AppRoutes.DeptHeadJustificationRequest.route)
+                                "history" -> navController.navigate(AppRoutes.DeptHeadHistory.route)
+                                "profile" -> navController.navigate(AppRoutes.DeptHeadProfile.route)
+                                else -> { /* Already here */
+                                }
+                            }
+                        },
+                        userName = currentUser,
+                        userEmail = currentUserEmail
+                    )
+                }
+
+                // Dept Head → Employee Mode: Pass Request (with banner)
+                composable(AppRoutes.DeptHeadPassRequest.route) {
+                    PassRequestScreen(
+                        onBackClick = { navController.navigateUp() },
+                        onSuccessSubmit = { msg ->
+                            navController.previousBackStackEntry?.savedStateHandle?.set(
+                                "success_message",
+                                msg
+                            )
+                            navController.navigateUp()
+                        },
+                        showEmployeeModeBanner = true,
+                        onReturnToRoleDashboard = {
+                            navController.navigate(AppRoutes.DeptHeadDashboard.route) {
+                                popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
+                            }
+                        },
+                        userName = currentUser,
+                        userEmail = currentUserEmail
+                    )
+                }
+
+                // Dept Head → Employee Mode: Home (with banner)
+                composable(AppRoutes.DeptHeadEmployeeHome.route) {
+                    EmployeeDashboardScreen(
+                        onLogoutClick = { loginViewModel.logout() },
+                        onHistoryClick = { navController.navigate(AppRoutes.DeptHeadHistory.route) },
+                        onProfileClick = { navController.navigate(AppRoutes.DeptHeadProfile.route) },
+                        onRequestPassClick = { navController.navigate(AppRoutes.DeptHeadPassRequest.route) },
+                        onRequestJustificationClick = { navController.navigate(AppRoutes.DeptHeadJustificationRequest.route) },
+                        userName = currentUser,
+                        userEmail = currentUserEmail,
+                        showEmployeeModeBanner = true,
+                        onReturnToRoleDashboard = {
+                            navController.navigate(AppRoutes.DeptHeadDashboard.route) {
+                                popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
+                            }
+                        }
+                    )
+                }
+
+                // Dept Head → Employee Mode: Justification Request
+                composable(AppRoutes.DeptHeadJustificationRequest.route) {
+                    JustificationRequestScreen(
+                        onBackClick = { navController.navigateUp() },
+                        onSuccessSubmit = { msg ->
+                            navController.previousBackStackEntry?.savedStateHandle?.set(
+                                "success_message",
+                                msg
+                            )
+                            navController.navigateUp()
+                        },
+                        showEmployeeModeBanner = true,
+                        onReturnToRoleDashboard = {
+                            navController.navigate(AppRoutes.DeptHeadDashboard.route) {
+                                popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
+                            }
+                        },
+                        userName = currentUser,
+                        userEmail = currentUserEmail
+                    )
+                }
+
+                // Dept Head → Employee Mode: History
+                composable(AppRoutes.DeptHeadHistory.route) {
+                    val historyViewModel: EmployeeHistoryViewModel = viewModel()
+                    EmployeeHistoryScreen(
+                        onLogoutClick = { loginViewModel.logout() },
+                        onHomeClick = { navController.navigate(AppRoutes.DeptHeadEmployeeHome.route) },
+                        onProfileClick = { navController.navigate(AppRoutes.DeptHeadProfile.route) },
+                        viewModel = historyViewModel,
+                        showEmployeeModeBanner = true,
+                        onReturnToRoleDashboard = {
+                            navController.navigate(AppRoutes.DeptHeadDashboard.route) {
+                                popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
+                            }
+                        },
+                        userName = currentUser
+                    )
+                }
+
+                // Dept Head → Employee Mode: Profile
+                composable(AppRoutes.DeptHeadProfile.route) {
+                    ProfileScreen(
+                        onLogoutClick = { loginViewModel.logout() },
+                        onHomeClick = { navController.navigate(AppRoutes.DeptHeadEmployeeHome.route) },
+                        onHistoryClick = { navController.navigate(AppRoutes.DeptHeadHistory.route) },
+                        showEmployeeModeBanner = true,
+                        onReturnToRoleDashboard = {
+                            navController.navigate(AppRoutes.DeptHeadDashboard.route) {
+                                popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
+                            }
+                        },
+                        userName = currentUser,
+                        userEmail = currentUserEmail,
+                        userPhone = currentUserPhone,
+                        roleTitle = currentRole
+                    )
+                }
+                // Admin → Employee Mode: Pass Request
+                composable(AppRoutes.AdminPassRequest.route) {
+                    PassRequestScreen(
+                        onBackClick = { navController.navigateUp() },
+                        onSuccessSubmit = { msg ->
+                            navController.previousBackStackEntry?.savedStateHandle?.set(
+                                "success_message",
+                                msg
+                            )
+                            navController.navigateUp()
+                        },
+                        showEmployeeModeBanner = true,
+                        onReturnToRoleDashboard = {
+                            navController.navigate(AppRoutes.Home.route) {
+                                popUpTo(AppRoutes.Home.route) { inclusive = false }
+                            }
+                        },
+                        userName = currentUser,
+                        userEmail = currentUserEmail
+                    )
+                }
+
+                // Admin → Employee Mode: Home (with banner)
+                composable(AppRoutes.AdminEmployeeHome.route) {
+                    EmployeeDashboardScreen(
+                        onLogoutClick = { loginViewModel.logout() },
+                        onHistoryClick = { navController.navigate(AppRoutes.AdminHistory.route) },
+                        onProfileClick = { navController.navigate(AppRoutes.AdminProfile.route) },
+                        onRequestPassClick = { navController.navigate(AppRoutes.AdminPassRequest.route) },
+                        onRequestJustificationClick = { navController.navigate(AppRoutes.AdminJustificationRequest.route) },
+                        userName = currentUser,
+                        userEmail = currentUserEmail,
+                        showEmployeeModeBanner = true,
+                        onReturnToRoleDashboard = {
+                            navController.navigate(AppRoutes.Home.route) {
+                                popUpTo(AppRoutes.Home.route) { inclusive = false }
+                            }
+                        }
+                    )
+                }
+
+                // Admin → Employee Mode: Justification Request
+                composable(AppRoutes.AdminJustificationRequest.route) {
+                    JustificationRequestScreen(
+                        onBackClick = { navController.navigateUp() },
+                        onSuccessSubmit = { msg ->
+                            navController.previousBackStackEntry?.savedStateHandle?.set(
+                                "success_message",
+                                msg
+                            )
+                            navController.navigateUp()
+                        },
+                        showEmployeeModeBanner = true,
+                        onReturnToRoleDashboard = {
+                            navController.navigate(AppRoutes.Home.route) {
+                                popUpTo(AppRoutes.Home.route) { inclusive = false }
+                            }
+                        },
+                        userName = currentUser,
+                        userEmail = currentUserEmail
+                    )
+                }
+
+                // Admin → Employee Mode: History
+                composable(AppRoutes.AdminHistory.route) {
+                    val historyViewModel: EmployeeHistoryViewModel = viewModel()
+                    EmployeeHistoryScreen(
+                        onLogoutClick = { loginViewModel.logout() },
+                        onHomeClick = { navController.navigate(AppRoutes.AdminEmployeeHome.route) },
+                        onProfileClick = { navController.navigate(AppRoutes.AdminProfile.route) },
+                        viewModel = historyViewModel,
+                        showEmployeeModeBanner = true,
+                        onReturnToRoleDashboard = {
+                            navController.navigate(AppRoutes.Home.route) {
+                                popUpTo(AppRoutes.Home.route) { inclusive = false }
+                            }
+                        },
+                        userName = currentUser
+                    )
+                }
+
+                // Admin → Employee Mode: Profile
+                composable(AppRoutes.AdminProfile.route) {
+                    ProfileScreen(
+                        onLogoutClick = { loginViewModel.logout() },
+                        onHomeClick = { navController.navigate(AppRoutes.AdminEmployeeHome.route) },
+                        onHistoryClick = { navController.navigate(AppRoutes.AdminHistory.route) },
+                        showEmployeeModeBanner = true,
+                        onReturnToRoleDashboard = {
+                            navController.navigate(AppRoutes.Home.route) {
+                                popUpTo(AppRoutes.Home.route) { inclusive = false }
+                            }
+                        },
+                        userName = currentUser,
+                        userEmail = currentUserEmail,
+                        userPhone = currentUserPhone,
+                        roleTitle = currentRole
+                    )
+                }
+            }
         }
     }
 }

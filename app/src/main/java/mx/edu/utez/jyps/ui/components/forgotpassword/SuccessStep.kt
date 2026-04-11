@@ -41,7 +41,7 @@ fun SuccessStep(onBackToLoginClick: () -> Unit) {
     }
 
     Text(
-        text = "Se ha enviado un enlace para restablecer tu contraseña",
+        text = "Tu contraseña ha sido actualizada correctamente. Ya puedes acceder a tu cuenta.",
         fontSize = 16.sp,
         color = MaterialTheme.colorScheme.secondary,
         textAlign = TextAlign.Center,
@@ -49,7 +49,7 @@ fun SuccessStep(onBackToLoginClick: () -> Unit) {
     )
 
     PrimaryButton(
-        text = "Volver al Inicio de Sesión",
+        text = "Ir a Iniciar Sesión",
         onClick = onBackToLoginClick
     )
 }
