@@ -33,6 +33,7 @@ fun StatusBadge(status: EstadosIncidencia) {
         EstadosIncidencia.APROBADO -> Triple(SuccessGreenBg, SuccessGreen, Icons.Default.CheckCircle)
         EstadosIncidencia.A_TIEMPO -> Triple(SuccessGreenBg, SuccessGreen, Icons.Default.CheckCircle)
         EstadosIncidencia.RETARDO -> Triple(PendingYellowBg, PendingYellow, Icons.Default.Schedule)
+        EstadosIncidencia.FUERA -> Triple(SuccessGreenBg, SuccessGreen, Icons.Default.CheckCircle)
     }
     
     Surface(

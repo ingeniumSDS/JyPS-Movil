@@ -40,13 +40,32 @@ class AuthRepository(
 
         // FALLBACK MOCKS: Maintained for development continuity as requested
         if (correo == "maria.gonzalez@utez.edu.mx") {
-            val mock = LoginResponse(999, "María González", correo, "N/A", listOf("GUARDIA"), null, null, "MOCK_GUARD_TOKEN")
-            preferencesManager.saveSession(mock.tokenJwt, mock.roles ?: listOf("GUARDIA"), "María González", correo, "777-111-2233")
+            val mock = LoginResponse(999, "María González Hernández", correo, "N/A", listOf("GUARDIA"), null, null, "MOCK_GUARD_TOKEN")
+            preferencesManager.saveSession(
+                token = mock.tokenJwt,
+                roles = mock.roles ?: listOf("GUARDIA"),
+                name = "María",
+                email = correo,
+                phone = "777-111-2233",
+                paternal = "González",
+                maternal = "Hernández",
+                userId = 999
+            )
             return Result.success(mock)
         }
         if (correo == "juan.perez@utez.edu.mx") {
             val mock = LoginResponse(100, "Juan Pérez", correo, "777123", listOf("EMPLEADO"), 1, "Sistemas", "MOCK_EMP_TOKEN")
-            preferencesManager.saveSession(mock.tokenJwt, mock.roles ?: listOf("EMPLEADO"), "Juan Pérez", correo, "7771234567")
+            preferencesManager.saveSession(
+                token = mock.tokenJwt,
+                roles = mock.roles ?: listOf("EMPLEADO"),
+                name = "Juan",
+                email = correo,
+                phone = "7771234567",
+                paternal = "Pérez",
+                userId = 100,
+                deptName = "Sistemas",
+                deptId = 1
+            )
             return Result.success(mock)
         }
         if (correo == "root@jyps.com") {
@@ -64,7 +83,13 @@ class AuthRepository(
                 val decoded = decodeJwtPayload(data.tokenJwt)
                 
                 Log.d("AuthRepo", "Resolving profile attributes from identity provider")
-                val finalName = data.nombreCompleto ?: decoded.optString("nombre", decoded.optString("name", "Usuario"))
+                val finalName = decoded.optString("nombre", data.nombreCompleto ?: "Usuario")
+                val finalPaternal = decoded.optString("apellidoPaterno", "")
+                val finalMaternal = decoded.optString("apellidoMaterno", "")
+                val finalUserId = if (decoded.has("id")) decoded.getLong("id") else (data.id ?: 0L)
+                val finalDeptName = decoded.optString("nombreDepartamento", data.nombreDepartamento ?: "")
+                val finalDeptId = if (decoded.has("departamentoId")) decoded.getLong("departamentoId") else (data.departamentoId ?: 0L)
+                
                 val finalEmail = data.correo ?: decoded.optString("sub", correo)
                 val finalPhone = data.telefono?.takeIf { it.isNotBlank() } ?: decoded.optString("telefono", decoded.optString("phone", "No disponible"))
                 val finalRoles = data.roles ?: decoded.optJSONArray("authorities")?.let { arr ->
@@ -73,14 +98,19 @@ class AuthRepository(
                     List(arr.length()) { i -> arr.getString(i) }
                 } ?: listOf("USUARIO")
 
-                Log.d("AuthRepo", "Synchronizing resilient profile for '$finalName'")
+                Log.d("AuthRepo", "Synchronizing resilient profile for '$finalName $finalPaternal $finalMaternal'")
                 
                 preferencesManager.saveSession(
                     token = data.tokenJwt,
                     roles = finalRoles,
                     name = finalName,
                     email = finalEmail,
-                    phone = finalPhone
+                    phone = finalPhone,
+                    paternal = finalPaternal,
+                    maternal = finalMaternal,
+                    userId = finalUserId,
+                    deptName = finalDeptName,
+                    deptId = finalDeptId
                 )
                 
                 Result.success(data)

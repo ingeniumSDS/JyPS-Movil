@@ -1,3 +1,23 @@
 <resources>
     <string name="app_name">JyPS</string>
+
+    <!-- Scanner Screen -->
+    <string name="scanner_header_title">Sistema de Validación</string>
+    <string name="scanner_guard_prefix">Guardia | %s</string>
+    <string name="scanner_logout_content_description">Cerrar sesión</string>
+    <string name="scanner_manual_code_label">Ingresa el código QR</string>
+    <string name="scanner_manual_code_placeholder">Ejemplo: GDKF64NC</string>
+    <string name="scanner_verify_button">Verificar Código</string>
+    <string name="scanner_mock_info_title">Códigos de prueba disponibles:</string>
+    <string name="scanner_mock_valid">✅ GDKF64NC - Código válido (1 solo uso)</string>
+    <string name="scanner_mock_no_return">⚠️ LATE - Válido (Fin de jornada)</string>
+    <string name="scanner_mock_expired">❌ EXPIRED - Caducado</string>
+    <string name="scanner_mock_used">❌ USED - Usado</string>
+    <string name="scanner_mock_invalid">❌ INVALID - Código no válido</string>
+    <string name="scanner_btn_exit">QR Salida</string>
+    <string name="scanner_btn_no_return">QR Sin Regreso</string>
+    <string name="scanner_btn_invalid">QR Inválido</string>
+
+    <!-- Scan Results -->
+    <string name="scan_result_close">Cerrar</string>
 </resources>

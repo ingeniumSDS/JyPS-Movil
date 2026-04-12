@@ -13,6 +13,7 @@ import mx.edu.utez.jyps.data.model.UserRequest
 import mx.edu.utez.jyps.data.model.PasswordTokenRequest
 import mx.edu.utez.jyps.data.model.PasswordSetupRequest
 import mx.edu.utez.jyps.data.model.GenericMessageResponse
+import mx.edu.utez.jyps.data.model.PassResponse
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -29,6 +30,7 @@ import retrofit2.http.Query
  */
 interface ApiService {
 
+    // ── Autenticación ───────────────────────────────
     /**
      * Authenticates a user based on institutional credentials.
      * 
@@ -65,6 +67,7 @@ interface ApiService {
     @POST("api/v1/usuarios/setup")
     suspend fun establecerPassword(@Body request: PasswordSetupRequest): Response<CuentaResponse>
 
+    // ── Usuarios ────────────────────────────────────
     /**
      * Retrieves the complete register of all users in the system.
      * 
@@ -136,6 +139,7 @@ interface ApiService {
     @GET("api/v1/usuarios/{id}/cuenta")
     suspend fun getCuentaUsuario(@Path("id") id: Long): CuentaResponse
 
+    // ── Departamentos ──────────────────────────────
     /**
      * Retrieves all structural departments within the organization.
      * 
@@ -183,4 +187,14 @@ interface ApiService {
      */
     @PUT("api/v1/departamentos")
     suspend fun actualizarDepartamento(@Body request: UpdateDepartmentRequest): Response<DepartamentoResponse>
+
+    // ── Check IN/OUT ──────────────────────────────
+    /**
+     * Officializes the exit or return of a personnel pass.
+     *
+     * @param qr The unique 6-character alphanumeric code extracted from the scanned pass.
+     * @return [Response] wrapping the updated [PassResponse] indicating status transition.
+     */
+    @PATCH("api/v1/pases/{qr}")
+    suspend fun processPassCheckout(@Path("qr") qr: String): Response<PassResponse>
 }

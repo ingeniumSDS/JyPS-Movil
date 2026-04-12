@@ -20,7 +20,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
+import mx.edu.utez.jyps.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -99,11 +101,6 @@ fun ScanResultDialog(
                             color = Color(0xFF0F2C59),
                             textAlign = TextAlign.Center
                         )
-                        Text(
-                            text = info.email,
-                            fontSize = 13.sp,
-                            color = Color(0xFF64748B)
-                        )
                     }
 
                     Divider(color = Color(0xFFE2E8F0))
@@ -151,7 +148,11 @@ fun ScanResultDialog(
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = config.accentColor)
             ) {
-                Text("Cerrar", color = Color.White, fontWeight = FontWeight.Medium)
+                Text(
+                    text = stringResource(R.string.scan_result_close),
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     )
@@ -258,7 +259,6 @@ private fun scanDialogConfig(status: ScannerStatus): ScanDialogConfig? = when (s
 
 private val previewPassInfo = ScannedPassInfo(
     name = "Juan Pérez García",
-    email = "juan.perez@utez.edu.mx",
     code = "PASE004",
     date = "lunes, 6 de abril de 2026",
     exitTime = "09:30 a.m.",

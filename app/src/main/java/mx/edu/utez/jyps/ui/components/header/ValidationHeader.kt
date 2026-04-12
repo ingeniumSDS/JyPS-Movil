@@ -16,8 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import mx.edu.utez.jyps.R
 
 /**
  * Component that renders the 'Header' for the Validation screen.
@@ -51,7 +53,7 @@ fun ValidationHeader(
         ) {
             Icon(
                 imageVector = Icons.Default.QrCodeScanner,
-                contentDescription = "Scanner",
+                contentDescription = stringResource(R.string.app_name),
                 tint = Color.White,
                 modifier = Modifier.padding(4.dp)
             )
@@ -64,13 +66,13 @@ fun ValidationHeader(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = "Sistema de Validación",
+                text = stringResource(R.string.scanner_header_title),
                 color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = userName,
+                text = stringResource(R.string.scanner_guard_prefix, userName),
                 color = Color(0xFFE5E7EB), // Light gray color
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Normal
@@ -88,7 +90,7 @@ fun ValidationHeader(
         ) {
             Icon(
                 imageVector = Icons.Default.ExitToApp,
-                contentDescription = "Cerrar sesión",
+                contentDescription = stringResource(R.string.scanner_logout_content_description),
                 tint = Color.White
             )
         }

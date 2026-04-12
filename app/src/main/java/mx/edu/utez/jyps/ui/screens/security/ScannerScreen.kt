@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import mx.edu.utez.jyps.BuildConfig
@@ -26,6 +27,7 @@ import mx.edu.utez.jyps.ui.components.dialogs.ScanResultDialog
 import mx.edu.utez.jyps.ui.components.header.ValidationHeader
 import mx.edu.utez.jyps.ui.components.scanner.ManualCodeCard
 import mx.edu.utez.jyps.ui.components.scanner.ScannerCard
+import mx.edu.utez.jyps.R
 import mx.edu.utez.jyps.viewmodel.ScannerStatus
 import mx.edu.utez.jyps.viewmodel.ScannerUiState
 import mx.edu.utez.jyps.viewmodel.ScannerViewModel
@@ -109,7 +111,7 @@ fun ScannerContent(
                 .background(Color(0xFFF8F9FA))
         ) {
             ValidationHeader(
-                userName = "María González Hernández",
+                userName = uiState.currentUserName,
                 onLogoutClick = onLogoutClick
             )
 
@@ -132,20 +134,28 @@ fun ScannerContent(
                     .verticalScroll(scrollState),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Manual Code Input — Visible to ALL guards
                 ManualCodeCard(
                     code = uiState.manualCode,
                     onCodeChange = onManualCodeChange,
-                    onVerifyClick = onVerifyManualCode
+                    onVerifyClick = onVerifyManualCode,
+                    showMockInfo = uiState.currentUserEmail == "maria.gonzalez@utez.edu.mx"
                 )
 
-                // Debug helpers — only rendered in DEBUG builds to keep production clean
-                if (BuildConfig.DEBUG) {
+                // Debug mock buttons — ONLY for Maria in DEBUG builds
+                if (uiState.currentUserEmail == "maria.gonzalez@utez.edu.mx" && BuildConfig.DEBUG) {
                     Row(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        TextButton(onClick = onMockValidQR) { Text("QR Salida") }
-                        TextButton(onClick = onMockNoReturnQR) { Text("QR Sin Regreso") }
-                        TextButton(onClick = onMockInvalidQR) { Text("QR Inválido") }
+                            TextButton(onClick = onMockValidQR) { 
+                                Text(stringResource(R.string.scanner_btn_exit)) 
+                            }
+                            TextButton(onClick = onMockNoReturnQR) { 
+                                Text(stringResource(R.string.scanner_btn_no_return)) 
+                            }
+                            TextButton(onClick = onMockInvalidQR) { 
+                                Text(stringResource(R.string.scanner_btn_invalid)) 
+                            }
                     }
                 }
             }
