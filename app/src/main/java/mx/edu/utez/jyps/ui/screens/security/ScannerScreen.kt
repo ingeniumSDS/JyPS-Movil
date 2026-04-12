@@ -132,14 +132,16 @@ fun ScannerContent(
                     .verticalScroll(scrollState),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Manual Code Input — Visible to ALL guards
                 ManualCodeCard(
                     code = uiState.manualCode,
                     onCodeChange = onManualCodeChange,
-                    onVerifyClick = onVerifyManualCode
+                    onVerifyClick = onVerifyManualCode,
+                    showMockInfo = uiState.currentUserEmail == "maria.gonzalez@utez.edu.mx"
                 )
 
-                // Debug helpers — only rendered in DEBUG builds to keep production clean
-                if (BuildConfig.DEBUG) {
+                // Debug mock buttons — ONLY for Maria in DEBUG builds
+                if (uiState.currentUserEmail == "maria.gonzalez@utez.edu.mx" && BuildConfig.DEBUG) {
                     Row(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {

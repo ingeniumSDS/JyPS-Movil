@@ -99,11 +99,6 @@ fun ScanResultDialog(
                             color = Color(0xFF0F2C59),
                             textAlign = TextAlign.Center
                         )
-                        Text(
-                            text = info.email,
-                            fontSize = 13.sp,
-                            color = Color(0xFF64748B)
-                        )
                     }
 
                     Divider(color = Color(0xFFE2E8F0))
@@ -258,7 +253,6 @@ private fun scanDialogConfig(status: ScannerStatus): ScanDialogConfig? = when (s
 
 private val previewPassInfo = ScannedPassInfo(
     name = "Juan Pérez García",
-    email = "juan.perez@utez.edu.mx",
     code = "PASE004",
     date = "lunes, 6 de abril de 2026",
     exitTime = "09:30 a.m.",

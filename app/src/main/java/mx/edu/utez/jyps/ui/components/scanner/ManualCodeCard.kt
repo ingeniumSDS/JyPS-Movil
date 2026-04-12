@@ -30,6 +30,7 @@ fun ManualCodeCard(
     code: String,
     onCodeChange: (String) -> Unit,
     onVerifyClick: () -> Unit,
+    showMockInfo: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -95,47 +96,53 @@ fun ManualCodeCard(
                 )
             }
 
-            // Blue Help/Test Container
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp))
-                    .border(width = 1.dp, color = Color(0xFFBEDBFF), shape = RoundedCornerShape(8.dp))
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Códigos de prueba disponibles:",
-                    color = Color(0xFF1C398E),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            // Blue Help/Test Container — Only shown if requested (e.g., for mock user)
+            if (showMockInfo) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp))
+                        .border(
+                            width = 1.dp,
+                            color = Color(0xFFBEDBFF),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text(
-                        text = "✅ GDKF64NC - Código válido (1 solo uso)",
-                        color = Color(0xFF193CB8),
-                        fontSize = 12.sp
+                        text = "Códigos de prueba disponibles:",
+                        color = Color(0xFF1C398E),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "⚠️ LATE - Válido (Fin de jornada)",
-                        color = Color(0xFF193CB8),
-                        fontSize = 12.sp
-                    )
-                    Text(
-                        text = "❌ EXPIRED - Caducado",
-                        color = Color(0xFF193CB8),
-                        fontSize = 12.sp
-                    )
-                    Text(
-                        text = "❌ USED - Usado",
-                        color = Color(0xFF193CB8),
-                        fontSize = 12.sp
-                    )
-                    Text(
-                        text = "❌ INVALID - Código no válido",
-                        color = Color(0xFF193CB8),
-                        fontSize = 12.sp
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = "✅ GDKF64NC - Código válido (1 solo uso)",
+                            color = Color(0xFF193CB8),
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = "⚠️ LATE - Válido (Fin de jornada)",
+                            color = Color(0xFF193CB8),
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = "❌ EXPIRED - Caducado",
+                            color = Color(0xFF193CB8),
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = "❌ USED - Usado",
+                            color = Color(0xFF193CB8),
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = "❌ INVALID - Código no válido",
+                            color = Color(0xFF193CB8),
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
         }

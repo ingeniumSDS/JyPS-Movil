@@ -161,6 +161,25 @@ class PreferencesManager(private val context: Context) {
         }
 
     /**
+     * Exposes a reactive Flow of the decrypted user email.
+     */
+    val userEmailFlow: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            val encryptedEmail = preferences[EMAIL_KEY]
+            if (encryptedEmail != null) {
+                try {
+                    val decoded = Base64.decode(encryptedEmail, Base64.DEFAULT)
+                    val decrypted = aead.decrypt(decoded, null)
+                    String(decrypted, Charsets.UTF_8)
+                } catch (e: Exception) {
+                    null
+                }
+            } else {
+                null
+            }
+        }
+
+    /**
      * Synchronously resolves the current DataStore state for auth headers.
      * Required exclusively for OkHttp Interceptors which operate on blocking background threads.
      * 

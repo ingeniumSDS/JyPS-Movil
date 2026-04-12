@@ -11,5 +11,6 @@ enum class EstadosIncidencia {
     CADUCADO,
     USADO,
     A_TIEMPO,
-    RETARDO
+    RETARDO,
+    FUERA
 }
