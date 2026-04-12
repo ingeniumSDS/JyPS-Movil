@@ -8,9 +8,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import mx.edu.utez.jyps.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -46,7 +48,7 @@ fun ManualCodeCard(
             // Label and Input field
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Ingresa el código QR",
+                    text = stringResource(R.string.scanner_manual_code_label),
                     color = Color(0xFF0A0A0A),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
@@ -58,7 +60,7 @@ fun ManualCodeCard(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(
-                            text = "Ejemplo: GDKF64NC",
+                            text = stringResource(R.string.scanner_manual_code_placeholder),
                             color = Color(0xFF0A0A0A).copy(alpha = 0.5f),
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center
@@ -89,7 +91,7 @@ fun ManualCodeCard(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F2C59))
             ) {
                 Text(
-                    text = "Verificar Código",
+                    text = stringResource(R.string.scanner_verify_button),
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
@@ -111,34 +113,34 @@ fun ManualCodeCard(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Códigos de prueba disponibles:",
+                        text = stringResource(R.string.scanner_mock_info_title),
                         color = Color(0xFF1C398E),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "✅ GDKF64NC - Código válido (1 solo uso)",
+                            text = stringResource(R.string.scanner_mock_valid),
                             color = Color(0xFF193CB8),
                             fontSize = 12.sp
                         )
                         Text(
-                            text = "⚠️ LATE - Válido (Fin de jornada)",
+                            text = stringResource(R.string.scanner_mock_no_return),
                             color = Color(0xFF193CB8),
                             fontSize = 12.sp
                         )
                         Text(
-                            text = "❌ EXPIRED - Caducado",
+                            text = stringResource(R.string.scanner_mock_expired),
                             color = Color(0xFF193CB8),
                             fontSize = 12.sp
                         )
                         Text(
-                            text = "❌ USED - Usado",
+                            text = stringResource(R.string.scanner_mock_used),
                             color = Color(0xFF193CB8),
                             fontSize = 12.sp
                         )
                         Text(
-                            text = "❌ INVALID - Código no válido",
+                            text = stringResource(R.string.scanner_mock_invalid),
                             color = Color(0xFF193CB8),
                             fontSize = 12.sp
                         )

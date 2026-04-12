@@ -81,6 +81,16 @@ class PreferencesManager(private val context: Context) {
         val EMAIL_KEY = stringPreferencesKey("user_email")
         /** Key alias mapping to the encrypted user's phone number */
         val PHONE_KEY = stringPreferencesKey("user_phone")
+        /** Key alias mapping to the encrypted user's paternal lastname */
+        val PATERNAL_LASTNAME_KEY = stringPreferencesKey("user_paternal_last")
+        /** Key alias mapping to the encrypted user's maternal lastname */
+        val MATERNAL_LASTNAME_KEY = stringPreferencesKey("user_maternal_last")
+        /** Key alias mapping to the encrypted user identifier */
+        val USER_ID_KEY = stringPreferencesKey("user_id_long")
+        /** Key alias mapping to the encrypted department name */
+        val DEPT_NAME_KEY = stringPreferencesKey("dept_name")
+        /** Key alias mapping to the encrypted department identifier */
+        val DEPT_ID_KEY = stringPreferencesKey("dept_id_long")
     }
 
     /**
@@ -180,6 +190,38 @@ class PreferencesManager(private val context: Context) {
         }
 
     /**
+     * Exposes a reactive Flow of the decrypted user full name.
+     */
+    val userNameFlow: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            val encryptedName = preferences[NAME_KEY]
+            val encryptedPaternal = preferences[PATERNAL_LASTNAME_KEY]
+            val encryptedMaternal = preferences[MATERNAL_LASTNAME_KEY]
+            
+            val name = encryptedName?.let { decrypt(it) } ?: "Usuario"
+            val paternal = encryptedPaternal?.let { decrypt(it) } ?: ""
+            val maternal = encryptedMaternal?.let { decrypt(it) } ?: ""
+            
+            // Build the full name based on available parts
+            listOf(name, paternal, maternal)
+                .filter { it.isNotBlank() }
+                .joinToString(" ")
+                .trim()
+                .takeIf { it.isNotEmpty() }
+        }
+
+    /** Helper to decrypt a base64 encoded string from preferences */
+    private fun decrypt(base64: String): String? {
+        return try {
+            val decoded = Base64.decode(base64, Base64.DEFAULT)
+            val decrypted = aead.decrypt(decoded, null)
+            String(decrypted, Charsets.UTF_8)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
      * Synchronously resolves the current DataStore state for auth headers.
      * Required exclusively for OkHttp Interceptors which operate on blocking background threads.
      * 
@@ -211,13 +253,23 @@ class PreferencesManager(private val context: Context) {
         roles: List<String>,
         name: String,
         email: String,
-        phone: String
+        phone: String,
+        paternal: String = "",
+        maternal: String = "",
+        userId: Long = 0,
+        deptName: String = "",
+        deptId: Long = 0
     ) {
         val encryptedToken = aead.encrypt(token.toByteArray(Charsets.UTF_8), null)
         val encryptedRoles = aead.encrypt(roles.joinToString(",").toByteArray(Charsets.UTF_8), null)
         val encryptedName = aead.encrypt(name.toByteArray(Charsets.UTF_8), null)
         val encryptedEmail = aead.encrypt(email.toByteArray(Charsets.UTF_8), null)
         val encryptedPhone = aead.encrypt(phone.toByteArray(Charsets.UTF_8), null)
+        val encryptedPaternal = aead.encrypt(paternal.toByteArray(Charsets.UTF_8), null)
+        val encryptedMaternal = aead.encrypt(maternal.toByteArray(Charsets.UTF_8), null)
+        val encryptedUserId = aead.encrypt(userId.toString().toByteArray(Charsets.UTF_8), null)
+        val encryptedDeptName = aead.encrypt(deptName.toByteArray(Charsets.UTF_8), null)
+        val encryptedDeptId = aead.encrypt(deptId.toString().toByteArray(Charsets.UTF_8), null)
 
         context.dataStore.edit { preferences ->
             preferences[TOKEN_KEY] = Base64.encodeToString(encryptedToken, Base64.DEFAULT)
@@ -225,6 +277,11 @@ class PreferencesManager(private val context: Context) {
             preferences[NAME_KEY] = Base64.encodeToString(encryptedName, Base64.DEFAULT)
             preferences[EMAIL_KEY] = Base64.encodeToString(encryptedEmail, Base64.DEFAULT)
             preferences[PHONE_KEY] = Base64.encodeToString(encryptedPhone, Base64.DEFAULT)
+            preferences[PATERNAL_LASTNAME_KEY] = Base64.encodeToString(encryptedPaternal, Base64.DEFAULT)
+            preferences[MATERNAL_LASTNAME_KEY] = Base64.encodeToString(encryptedMaternal, Base64.DEFAULT)
+            preferences[USER_ID_KEY] = Base64.encodeToString(encryptedUserId, Base64.DEFAULT)
+            preferences[DEPT_NAME_KEY] = Base64.encodeToString(encryptedDeptName, Base64.DEFAULT)
+            preferences[DEPT_ID_KEY] = Base64.encodeToString(encryptedDeptId, Base64.DEFAULT)
         }
     }
 
@@ -239,6 +296,11 @@ class PreferencesManager(private val context: Context) {
             preferences.remove(NAME_KEY)
             preferences.remove(EMAIL_KEY)
             preferences.remove(PHONE_KEY)
+            preferences.remove(PATERNAL_LASTNAME_KEY)
+            preferences.remove(MATERNAL_LASTNAME_KEY)
+            preferences.remove(USER_ID_KEY)
+            preferences.remove(DEPT_NAME_KEY)
+            preferences.remove(DEPT_ID_KEY)
         }
     }
 }

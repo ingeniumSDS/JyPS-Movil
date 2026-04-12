@@ -20,7 +20,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
+import mx.edu.utez.jyps.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -146,7 +148,11 @@ fun ScanResultDialog(
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = config.accentColor)
             ) {
-                Text("Cerrar", color = Color.White, fontWeight = FontWeight.Medium)
+                Text(
+                    text = stringResource(R.string.scan_result_close),
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     )

@@ -67,7 +67,8 @@ data class ScannerUiState(
     val manualCode: String = "",
     val errorToast: String? = null,
     val isQrInFrame: Boolean = false,
-    val currentUserEmail: String = ""
+    val currentUserEmail: String = "",
+    val currentUserName: String = ""
 )
 
 /**
@@ -99,6 +100,11 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             preferencesManager.userEmailFlow.collect { email ->
                 _uiState.value = _uiState.value.copy(currentUserEmail = email ?: "")
+            }
+        }
+        viewModelScope.launch {
+            preferencesManager.userNameFlow.collect { name ->
+                _uiState.value = _uiState.value.copy(currentUserName = name ?: "Usuario")
             }
         }
     }
