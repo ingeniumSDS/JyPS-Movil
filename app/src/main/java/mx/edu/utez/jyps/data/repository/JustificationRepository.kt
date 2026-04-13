@@ -191,4 +191,26 @@ class JustificationRepository(
             null
         }
     }
+    
+    /**
+     * Attempts to permanently remove a justification from the backend.
+     * 
+     * @param id The primary key of the record to delete.
+     * @return [Result] wrapping the operation's outcome.
+     */
+    suspend fun eliminarJustificante(id: Long): Result<Unit> {
+        return try {
+            Timber.d("Iniciando DELETE /api/v1/justificantes/$id")
+            val response = api.eliminarJustificante(id)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errorRaw = response.errorBody()?.string() ?: "Error desconocido"
+                Result.failure(Exception("Error al eliminar justificante: $errorRaw"))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error al intentar eliminar el justificante $id")
+            Result.failure(e)
+        }
+    }
 }

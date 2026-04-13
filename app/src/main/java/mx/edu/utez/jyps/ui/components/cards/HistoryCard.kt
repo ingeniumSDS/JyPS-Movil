@@ -41,7 +41,8 @@ fun HistoryCard(
     onEdit: () -> Unit = {},
     onDelete: () -> Unit = {},
     onShowQr: () -> Unit = {},
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    showEditButton: Boolean = true
 ) {
     Card(
         modifier = Modifier
@@ -166,12 +167,14 @@ fun HistoryCard(
 
                 if (item.status == EstadosIncidencia.PENDIENTE) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
-                            onClick = onEdit,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Editar", fontSize = 12.sp)
+                        if (showEditButton) {
+                            OutlinedButton(
+                                onClick = onEdit,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Editar", fontSize = 12.sp)
+                            }
                         }
                         OutlinedButton(
                             onClick = onDelete,

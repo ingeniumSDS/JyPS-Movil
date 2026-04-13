@@ -228,7 +228,8 @@ fun EmployeeHistoryScreen(
                                     },
                                     onDelete = { viewModel.promptDelete(item.id) },
                                     onShowQr = { viewModel.promptShowQr(item) },
-                                    onClick = { viewModel.onItemClickDetails(item) }
+                                    onClick = { viewModel.onItemClickDetails(item) },
+                                    showEditButton = userEmail == "juan.perez@utez.edu.mx"
                                 )
                             }
                         }

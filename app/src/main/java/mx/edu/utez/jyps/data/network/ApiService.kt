@@ -37,7 +37,7 @@ import retrofit2.http.Query
  */
 interface ApiService {
 
-    // ── Autenticación ───────────────────────────────
+    // â”€â”€ AutenticaciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /**
      * Authenticates a user based on institutional credentials.
      * 
@@ -74,7 +74,7 @@ interface ApiService {
     @POST("api/v1/usuarios/setup")
     suspend fun establecerPassword(@Body request: PasswordSetupRequest): Response<CuentaResponse>
 
-    // ── Usuarios ────────────────────────────────────
+    // â”€â”€ Usuarios â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /**
      * Retrieves the complete register of all users in the system.
      * 
@@ -146,7 +146,7 @@ interface ApiService {
     @GET("api/v1/usuarios/{id}/cuenta")
     suspend fun getCuentaUsuario(@Path("id") id: Long): CuentaResponse
 
-    // ── Departamentos ──────────────────────────────
+    // â”€â”€ Departamentos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /**
      * Retrieves all structural departments within the organization.
      * 
@@ -195,7 +195,7 @@ interface ApiService {
     @PUT("api/v1/departamentos")
     suspend fun actualizarDepartamento(@Body request: UpdateDepartmentRequest): Response<DepartamentoResponse>
 
-    // ── Check IN/OUT ──────────────────────────────
+    // â”€â”€ Check IN/OUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /**
      * Officializes the exit or return of a personnel pass.
      *
@@ -205,7 +205,7 @@ interface ApiService {
     @PATCH("api/v1/pases/{qr}")
     suspend fun processPassCheckout(@Path("qr") qr: String): Response<PassResponse>
 
-    // ── Pases de Salida ──────────────────────────────
+    // â”€â”€ Pases de Salida â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /**
      * Retrieves the complete list of exit passes associated with a specific employee.
      *
@@ -247,7 +247,7 @@ interface ApiService {
     @DELETE("api/v1/pases/{id}")
     suspend fun eliminarPase(@Path("id") id: Long): Response<ResponseBody>
 
-    // ── Justificantes ───────────────────────────────
+    // â”€â”€ Justificantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /**
      * Retrieves all justifications associated with a specific employee.
      *
@@ -295,4 +295,10 @@ interface ApiService {
         @Part("data") data: RequestBody,
         @Part archivos: List<MultipartBody.Part>?
     ): Response<JustificationResponse>
+
+    /**
+     * Permanently removes a pending justification record from the system.
+     */
+    @DELETE("api/v1/justificantes/{id}")
+    suspend fun eliminarJustificante(@Path("id") id: Long): Response<ResponseBody>
 }

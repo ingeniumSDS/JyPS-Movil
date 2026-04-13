@@ -261,12 +261,21 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
             // Real backend deletion
             _uiState.update { it.copy(isLoading = true) }
             
+            val itemToValidate = targetPase ?: targetJust
+            if (itemToValidate != null && itemToValidate.status != EstadosIncidencia.PENDIENTE) {
+                _uiState.update { it.copy(
+                    isLoading = false,
+                    requestToDelete = null,
+                    isSuccessOp = true,
+                    opMessage = "Solo se pueden eliminar solicitudes en estado Pendiente."
+                ) }
+                return@launch
+            }
+
             val result = if (targetPase != null) {
                 passRepository.eliminarPase(targetId.toLong())
             } else if (targetJust != null) {
-                // Assuming JustificationRepository has/will have a delete method too, 
-                // but focused on Pases for now. If not implemented, we mock it.
-                Result.success(Unit) 
+                justificationRepository.eliminarJustificante(targetId.toLong())
             } else {
                 Result.failure(Exception("Item matching ID not found in local state."))
             }
