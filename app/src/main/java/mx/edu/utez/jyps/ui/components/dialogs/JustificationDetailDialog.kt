@@ -1,25 +1,34 @@
 package mx.edu.utez.jyps.ui.components.dialogs
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Attachment
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import mx.edu.utez.jyps.data.model.HistoryItem
 import mx.edu.utez.jyps.data.model.EstadosIncidencia
+import android.net.Uri
 
 /**
  * Dialog displaying detailed information about a submitted justification.
@@ -31,7 +40,9 @@ import mx.edu.utez.jyps.data.model.EstadosIncidencia
 fun JustificationDetailDialog(
     item: HistoryItem,
     onDismissRequest: () -> Unit,
-    onDownload: (String) -> Unit = {}
+    onDownload: (String) -> Unit = {},
+    localFileUri: Uri? = null,
+    isDownloading: Boolean = false
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -67,14 +78,29 @@ fun JustificationDetailDialog(
                     value = item.description
                 )
 
-                item.fileName?.let {
-                    DetailRow(
-                        icon = Icons.Default.Attachment,
-                        label = "Evidencia Adjunta (Toca para descargar)",
-                        value = it,
-                        valueColor = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable { onDownload(it) }
-                    )
+                item.fileName?.let { fileName ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        DetailRow(
+                            icon = Icons.Default.Attachment,
+                            label = "Evidencia Adjunta (Toca para descargar)",
+                            value = item.displayFileName ?: fileName,
+                            valueColor = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(enabled = !isDownloading) { onDownload(fileName) }
+                        )
+
+                        if (isDownloading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
 
                 item.rejectionReason?.let {
@@ -84,6 +110,44 @@ fun JustificationDetailDialog(
                         value = it,
                         valueColor = Color.Red
                     )
+                }
+
+                // File Preview (Only show if downloaded)
+                localFileUri?.let { uri ->
+                    Column(modifier = Modifier.padding(top = 8.dp)) {
+                        Text(
+                            text = "Previsualización:",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                .background(Color(0xFFF9FAFB)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (item.fileName?.endsWith(".pdf", true) == true) {
+                                Icon(
+                                    imageVector = Icons.Default.PictureAsPdf,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = Color(0xFFC62828)
+                                )
+                            } else {
+                                AsyncImage(
+                                    model = uri,
+                                    contentDescription = "Preview",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
                 }
             }
         },

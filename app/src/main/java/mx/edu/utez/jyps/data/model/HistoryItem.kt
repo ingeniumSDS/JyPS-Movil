@@ -25,6 +25,7 @@ data class HistoryItem(
     val time: String,
     val code: String,
     val fileName: String? = null,
+    val displayFileName: String? = null,
     val rejectionReason: String? = null,
     val internalInfo: String? = null
 )

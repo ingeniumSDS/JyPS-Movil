@@ -36,6 +36,9 @@ data class EmployeeHistoryState(
     val requestToEditJustification: HistoryItem? = null,
     val requestToShowQr: HistoryItem? = null,
     val selectedItemForDetail: HistoryItem? = null,
+    val isLoading: Boolean = false,
+    val isDownloadingFile: Boolean = false,
+    val downloadedFiles: Map<String, android.net.Uri> = emptyMap(),
     val isSuccessOp: Boolean = false,
     val opMessage: String? = null
 )
@@ -61,6 +64,7 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
      */
     fun refreshHistory() {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
             val email = preferencesManager.userEmailFlow.first() ?: ""
             val userId = preferencesManager.userIdFlow.first()
             
@@ -73,6 +77,7 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
             if (userId > 0) {
                 fetchRealHistory(userId)
             }
+            _uiState.update { it.copy(isLoading = false) }
         }
     }
 
@@ -101,7 +106,10 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
                     date = res.requestedDate,
                     time = "N/A",
                     code = "JUST-${res.id}",
-                    fileName = res.attachments.firstOrNull()?.originalName,
+                    fileName = res.attachments.firstOrNull()?.let { 
+                        it.downloadUrl.substringAfterLast("/") 
+                    },
+                    displayFileName = res.attachments.firstOrNull()?.originalName,
                     rejectionReason = res.managerComment
                 )
             }
@@ -283,7 +291,10 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
                     val updatedItem = item.copy(
                         description = res.description,
                         rejectionReason = res.managerComment,
-                        fileName = res.attachments.firstOrNull()?.originalName,
+                        fileName = res.attachments.firstOrNull()?.let { 
+                            it.downloadUrl.substringAfterLast("/") 
+                        },
+                        displayFileName = res.attachments.firstOrNull()?.originalName,
                         internalInfo = if (res.attachments.isNotEmpty()) "ID Empleado: ${res.employeeId}" else null
                     )
                     _uiState.update { it.copy(selectedItemForDetail = updatedItem) }
@@ -304,14 +315,76 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
      * @param fileName The server-side filename.
      */
     fun downloadJustificationFile(empleadoId: Long, fileName: String) {
+        if (_uiState.value.isDownloadingFile) return
+        
         viewModelScope.launch {
-            Timber.d("Iniciando descarga de: $fileName para el empleado: $empleadoId")
-            // Visual feedback of intent
-            _uiState.update { it.copy(
-                isSuccessOp = true,
-                opMessage = "Iniciando descarga de $fileName..."
-            ) }
+            _uiState.update { it.copy(isDownloadingFile = true) }
+            Timber.d("Validando descarga real de: $fileName...")
+            
+            repository.downloadJustificanteFile(empleadoId, fileName).onSuccess { body ->
+                // Solo informamos cuando tenemos respuesta positiva del servidor
+                _uiState.update { it.copy(
+                    isSuccessOp = true,
+                    opMessage = "Descarga iniciada con éxito."
+                ) }
+                saveAndOpenProviderFile(body, fileName)
+            }.onFailure { e ->
+                Timber.e(e, "Error al bajar el archivo del servidor.")
+                _uiState.update { it.copy(
+                    isDownloadingFile = false,
+                    isSuccessOp = true,
+                    opMessage = "No se pudo conectar con el servidor de archivos."
+                ) }
+            }
         }
+    }
+
+    /**
+     * Persists the byte stream to local cache and notifies the UI.
+     */
+    private fun saveAndOpenProviderFile(body: okhttp3.ResponseBody, fileName: String) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val file = java.io.File(getApplication<Application>().cacheDir, fileName)
+                file.outputStream().use { os ->
+                    body.byteStream().use { it.copyTo(os) }
+                }
+                
+                val uri = androidx.core.content.FileProvider.getUriForFile(
+                    getApplication(),
+                    "${getApplication<Application>().packageName}.provider",
+                    file
+                )
+                
+                _uiState.update { state ->
+                    state.copy(
+                        downloadedFiles = state.downloadedFiles + (fileName to uri),
+                        isDownloadingFile = false,
+                        opMessage = "Archivo listo para visualizar."
+                    )
+                }
+                
+                // Intent logic to open the file automatically
+                openFileIntent(uri, fileName)
+                
+            } catch (e: Exception) {
+                Timber.e(e, "Error al guardar el archivo en caché")
+            }
+        }
+    }
+
+    private fun openFileIntent(uri: android.net.Uri, fileName: String) {
+        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, getMimeType(fileName))
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        getApplication<Application>().startActivity(intent)
+    }
+
+    private fun getMimeType(fileName: String): String {
+        return if (fileName.endsWith(".pdf", true)) "application/pdf" 
+               else "image/*"
     }
 
     /** Clears the selected item to hide the detail overlay. */
