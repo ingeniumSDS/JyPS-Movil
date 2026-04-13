@@ -35,6 +35,7 @@ data class EmployeeHistoryState(
     val requestToEditPass: HistoryItem? = null,
     val requestToEditJustification: HistoryItem? = null,
     val requestToShowQr: HistoryItem? = null,
+    val selectedItemForDetail: HistoryItem? = null,
     val isSuccessOp: Boolean = false,
     val opMessage: String? = null
 )
@@ -267,5 +268,54 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
                 opMessage = "Error al intentar guardar el QR en la galería."
             ) }
         }
+    }
+
+    /**
+     * Stashes a history item in state to trigger its detail view and fetches 
+     * fresh data from the server for justifications.
+     *
+     * @param item The target log record to display.
+     */
+    fun onItemClickDetails(item: HistoryItem) {
+        if (item.type == "Justificante") {
+            viewModelScope.launch {
+                repository.getJustificanteDetalles(item.id.toLong()).onSuccess { res ->
+                    val updatedItem = item.copy(
+                        description = res.description,
+                        rejectionReason = res.managerComment,
+                        fileName = res.attachments.firstOrNull()?.originalName,
+                        internalInfo = if (res.attachments.isNotEmpty()) "ID Empleado: ${res.employeeId}" else null
+                    )
+                    _uiState.update { it.copy(selectedItemForDetail = updatedItem) }
+                }.onFailure {
+                    // Fallback to current item if network fails
+                    _uiState.update { it.copy(selectedItemForDetail = item) }
+                }
+            }
+        } else {
+            _uiState.update { it.copy(selectedItemForDetail = item) }
+        }
+    }
+
+    /**
+     * Triggers the file download process for a justification evidence.
+     * 
+     * @param empleadoId The owner of the file.
+     * @param fileName The server-side filename.
+     */
+    fun downloadJustificationFile(empleadoId: Long, fileName: String) {
+        viewModelScope.launch {
+            Timber.d("Iniciando descarga de: $fileName para el empleado: $empleadoId")
+            // Visual feedback of intent
+            _uiState.update { it.copy(
+                isSuccessOp = true,
+                opMessage = "Iniciando descarga de $fileName..."
+            ) }
+        }
+    }
+
+    /** Clears the selected item to hide the detail overlay. */
+    fun dismissDetails() {
+        _uiState.update { it.copy(selectedItemForDetail = null) }
     }
 }

@@ -37,11 +37,32 @@ class JustificationRepository(
      */
     suspend fun getJustificantesPorEmpleado(empleadoId: Long): Result<List<JustificationResponse>> {
         return try {
-            Timber.d("GET /api/v1/justificantes/empleado?empleadoId=$empleadoId")
+            Timber.d("Iniciando petición GET /api/v1/justificantes/empleado para el ID: $empleadoId")
             val response = api.getJustificantesPorEmpleado(empleadoId)
             Result.success(response)
         } catch (e: Exception) {
-            Timber.e(e, "Error al obtener justificantes para el empleado $empleadoId")
+            Timber.e(e, "Fallo al recuperar justificantes reales palpa el empleado $empleadoId")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Retrieves the structural details of a single justification request.
+     *
+     * @param id The justification unique ID.
+     * @return [Result] containing the [JustificationResponse] if successful.
+     */
+    suspend fun getJustificanteDetalles(id: Long): Result<JustificationResponse> {
+        return try {
+            Timber.d("Petición GET /api/v1/justificantes/$id/detalles enviada")
+            val response = api.getJustificanteDetalles(id)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Hubo un problema al obtener los detalles del servidor."))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error crítico durante la recuperación de detalles del justificante $id")
             Result.failure(e)
         }
     }

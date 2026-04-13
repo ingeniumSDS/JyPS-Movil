@@ -29,6 +29,8 @@ import mx.edu.utez.jyps.ui.components.dialogs.ApprovedPassQrDialog
 import mx.edu.utez.jyps.ui.components.dialogs.ConfirmDeleteDialog
 import mx.edu.utez.jyps.ui.components.dialogs.EditJustificationDialog
 import mx.edu.utez.jyps.ui.components.dialogs.EditPassDialog
+import mx.edu.utez.jyps.ui.components.dialogs.JustificationDetailDialog
+import mx.edu.utez.jyps.ui.components.dialogs.PassDetailDialog
 import mx.edu.utez.jyps.ui.components.header.EmployeeHeader
 import mx.edu.utez.jyps.ui.components.navigation.AppBottomNavigationBar
 import mx.edu.utez.jyps.ui.components.navigation.FilterTab
@@ -120,6 +122,24 @@ fun EmployeeHistoryScreen(
         )
     }
 
+    uiState.selectedItemForDetail?.let { item ->
+        if (item.type == "Justificante") {
+            JustificationDetailDialog(
+                item = item,
+                onDismissRequest = { viewModel.dismissDetails() },
+                onDownload = { fileName ->
+                    val empId = item.internalInfo?.substringAfter(": ")?.toLongOrNull() ?: 0L
+                    viewModel.downloadJustificationFile(empId, fileName)
+                }
+            )
+        } else {
+            PassDetailDialog(
+                item = item,
+                onDismissRequest = { viewModel.dismissDetails() }
+            )
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             topBar = { EmployeeHeader(userName = userName, onLogoutClick = onLogoutClick) },
@@ -184,7 +204,8 @@ fun EmployeeHistoryScreen(
                                 else viewModel.promptEditJustification(item) 
                             },
                             onDelete = { viewModel.promptDelete(item.id) },
-                            onShowQr = { viewModel.promptShowQr(item) }
+                            onShowQr = { viewModel.promptShowQr(item) },
+                            onClick = { viewModel.onItemClickDetails(item) }
                         )
                     }
                 }

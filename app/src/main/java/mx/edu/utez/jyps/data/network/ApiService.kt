@@ -214,6 +214,15 @@ interface ApiService {
     suspend fun getJustificantesPorEmpleado(@Query("empleadoId") empleadoId: Long): List<JustificationResponse>
 
     /**
+     * Retrieves full granular details for a specific justification request.
+     *
+     * @param id The primary key identifier of the justification.
+     * @return [Response] wrapping the [JustificationResponse] data.
+     */
+    @GET("api/v1/justificantes/{id}/detalles")
+    suspend fun getJustificanteDetalles(@Path("id") id: Long): Response<JustificationResponse>
+
+    /**
      * Downloads an attached file associated with a specific justification.
      *
      * @param empleadoId The employee ID who owns the file.
