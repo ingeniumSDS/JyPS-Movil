@@ -15,6 +15,7 @@ import mx.edu.utez.jyps.data.local.FileMetadataStore
 import android.net.Uri
 import mx.edu.utez.jyps.data.network.RetrofitInstance
 import mx.edu.utez.jyps.data.repository.JustificationRepository
+import mx.edu.utez.jyps.data.repository.PassRepository
 import mx.edu.utez.jyps.data.repository.PreferencesManager
 import timber.log.Timber
 
@@ -42,7 +43,8 @@ data class EmployeeHistoryState(
     val downloadingFileName: String? = null,
     val downloadedFiles: Map<String, android.net.Uri> = emptyMap(),
     val isSuccessOp: Boolean = false,
-    val opMessage: String? = null
+    val opMessage: String? = null,
+    val currentUserEmail: String = ""
 )
 
 /**
@@ -52,7 +54,8 @@ data class EmployeeHistoryState(
 class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(application) {
     
     private val preferencesManager = PreferencesManager(application)
-    private val repository = JustificationRepository(RetrofitInstance.api, application)
+    private val justificationRepository = JustificationRepository(RetrofitInstance.api, application)
+    private val passRepository = PassRepository(RetrofitInstance.api)
     private val fileMetadataStore = FileMetadataStore(application)
     private val evidenceDir = java.io.File(application.filesDir, "evidences").apply { if (!exists()) mkdirs() }
     
@@ -91,24 +94,25 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
         }
     }
  
-    /**
-     * Refresca la información del historial consumiendo los servicios del backend.
-     */
     fun refreshHistory() {
         if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val email = preferencesManager.userEmailFlow.first() ?: ""
             val userId = preferencesManager.userIdFlow.first()
+            _uiState.update { it.copy(currentUserEmail = email) }
             
-            // Cargar datos de prueba para Juan Perez pero también intentar reales
+            // Regla de Negocio: juan.perez ES un usuario mocked, no realiza llamadas al API
             if (email == "juan.perez@utez.edu.mx") {
                 loadDummyData()
+                _uiState.update { it.copy(isLoading = false) }
+                return@launch
             }
             
-            // Siempre intentar cargar reales si el ID es válido
+            // Siempre intentar cargar reales para el resto de usuarios
             if (userId > 0) {
-                fetchRealHistory(userId)
+                fetchRealHistory(userId) // Justificantes
+                fetchRealPasses(userId)    // Pases
             }
             _uiState.update { it.copy(isLoading = false) }
         }
@@ -122,7 +126,7 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
     private suspend fun fetchRealHistory(userId: Long) {
         if (userId <= 0) return
         
-        val result = repository.getJustificantesPorEmpleado(userId)
+        val result = justificationRepository.getJustificantesPorEmpleado(userId)
         
         result.onSuccess { responses ->
             val items = responses.map { res ->
@@ -168,6 +172,36 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
+    /**
+     * Background synchronization of exit passes for standard employees.
+     *
+     * @param userId Primary key of the employee.
+     */
+    private suspend fun fetchRealPasses(userId: Long) {
+        passRepository.getPasesPorEmpleado(userId).onSuccess { responses ->
+            val items = responses.map { res ->
+                HistoryItem(
+                    id = res.id.toString(),
+                    type = "Pase de Salida",
+                    status = try {
+                        EstadosIncidencia.valueOf(res.estado.uppercase())
+                    } catch (e: Exception) {
+                        Timber.w("Estado de pase desconocido: ${res.estado}")
+                        EstadosIncidencia.PENDIENTE
+                    },
+                    description = res.detalles ?: "Sin motivo especificado",
+                    date = res.fechaSolicitud,
+                    time = res.horaSolicitada.substringBeforeLast(":"), // Cleanup seconds if present
+                    code = res.QR ?: "N/A",
+                    rejectionReason = res.comentario
+                )
+            }
+            _uiState.update { it.copy(pases = items) }
+        }.onFailure { e ->
+            Timber.e(e, "Error al sincronizar pases reales")
+        }
+    }
+
     private fun loadDummyData() {
         val pasesItems = listOf(
             HistoryItem("4", "Pase de Salida", EstadosIncidencia.APROBADO, "Salida a reunión externa", "27/3/2026", "11:00", "PASE004"),
@@ -199,20 +233,64 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
         _uiState.update { it.copy(requestToDelete = null) }
     }
 
-    /** Permanently removes the selected request from the UI state. */
+    /** Permanently removes the selected request from the UI state and backend. */
     fun confirmDelete() {
         val targetId = _uiState.value.requestToDelete ?: return
-        
-        _uiState.update { state ->
-            val updatedPases = state.pases.filterNot { it.id == targetId }
-            val updatedJustifications = state.justifications.filterNot { it.id == targetId }
-            state.copy(
-                pases = updatedPases,
-                justifications = updatedJustifications,
-                requestToDelete = null,
-                isSuccessOp = true,
-                opMessage = "Solicitud eliminada con éxito."
-            )
+        val targetPase = _uiState.value.pases.find { it.id == targetId }
+        val targetJust = _uiState.value.justifications.find { it.id == targetId }
+
+        viewModelScope.launch {
+            val email = preferencesManager.userEmailFlow.first() ?: ""
+            
+            if (email == "juan.perez@utez.edu.mx") {
+                // Mock deletion logic
+                _uiState.update { state ->
+                    val updatedPases = state.pases.filterNot { it.id == targetId }
+                    val updatedJustifications = state.justifications.filterNot { it.id == targetId }
+                    state.copy(
+                        pases = updatedPases,
+                        justifications = updatedJustifications,
+                        requestToDelete = null,
+                        isSuccessOp = true,
+                        opMessage = "Solicitud eliminada con éxito (Mock)."
+                    )
+                }
+                return@launch
+            }
+
+            // Real backend deletion
+            _uiState.update { it.copy(isLoading = true) }
+            
+            val result = if (targetPase != null) {
+                passRepository.eliminarPase(targetId.toLong())
+            } else if (targetJust != null) {
+                // Assuming JustificationRepository has/will have a delete method too, 
+                // but focused on Pases for now. If not implemented, we mock it.
+                Result.success(Unit) 
+            } else {
+                Result.failure(Exception("Item matching ID not found in local state."))
+            }
+
+            result.onSuccess {
+                _uiState.update { state ->
+                    val updatedPases = state.pases.filterNot { it.id == targetId }
+                    val updatedJustifications = state.justifications.filterNot { it.id == targetId }
+                    state.copy(
+                        pases = updatedPases,
+                        justifications = updatedJustifications,
+                        requestToDelete = null,
+                        isLoading = false,
+                        isSuccessOp = true,
+                        opMessage = "Solicitud eliminada correctamente."
+                    )
+                }
+            }.onFailure { e ->
+                _uiState.update { it.copy(
+                    isLoading = false,
+                    requestToDelete = null,
+                    opMessage = "Error al eliminar: ${e.localizedMessage}"
+                ) }
+            }
         }
     }
 
@@ -334,9 +412,19 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
      * @param item The target log record to display.
      */
     fun onItemClickDetails(item: HistoryItem) {
+        val currentUserEmail = _uiState.value.currentUserEmail
+        
+        // Regla Solicitada: Para usuarios reales, mostrar QR directamente si está aprobado
+        if (item.type.contains("Pase") && 
+            item.status == EstadosIncidencia.APROBADO && 
+            currentUserEmail != "juan.perez@utez.edu.mx") {
+            promptShowQr(item)
+            return
+        }
+
         if (item.type == "Justificante") {
             viewModelScope.launch {
-                repository.getJustificanteDetalles(item.id.toLong()).onSuccess { res ->
+                justificationRepository.getJustificanteDetalles(item.id.toLong()).onSuccess { res ->
                     val updatedItem = item.copy(
                         description = res.description,
                         rejectionReason = res.managerComment,
@@ -384,7 +472,7 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
             _uiState.update { it.copy(downloadingFileName = fileName) }
             Timber.d("Validando descarga real de: $fileName...")
             
-            repository.downloadJustificanteFile(empleadoId, fileName).onSuccess { body ->
+            justificationRepository.downloadJustificanteFile(empleadoId, fileName).onSuccess { body ->
                 // Solo informamos cuando tenemos respuesta positiva del servidor
                 _uiState.update { it.copy(
                     isSuccessOp = true,

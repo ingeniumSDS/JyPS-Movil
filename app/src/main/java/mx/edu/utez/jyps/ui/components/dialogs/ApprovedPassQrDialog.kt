@@ -9,6 +9,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -54,12 +56,14 @@ import mx.edu.utez.jyps.utils.WalletTokenMockGenerator
 @Composable
 fun ApprovedPassQrDialog(
     item: HistoryItem,
+    userEmail: String, // Recibe el email del usuario logueado para control de acceso
     onDismissRequest: () -> Unit,
     onDownloadMock: (Bitmap) -> Unit
 ) {
     val context = LocalContext.current
     var qrBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     var rawBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(item.code) {
         // Generate QR code safely in a side-effect
@@ -87,12 +91,14 @@ fun ApprovedPassQrDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .wrapContentHeight(),
+                .fillMaxHeight(0.90f), // Limit height to ensure it doesn't overflow the screen
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(scrollState), // Habilitar scroll para contenido largo
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header with Close
@@ -106,7 +112,7 @@ fun ApprovedPassQrDialog(
                         Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color(0xFF64748B))
                     }
                 }
-                Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFE2E8F0))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFE2E8F0))
 
                 // The QR Image Wrapper
                 Box(
@@ -190,43 +196,45 @@ fun ApprovedPassQrDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Add to Google Wallet CTA
-                Button(
-                    onClick = {
-                        try {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                // Sign JWT on the fly
-                                val fakeJwt = WalletTokenMockGenerator.generateSignedWalletToken(
-                                    passCode = item.code,
-                                    motive = item.description,
-                                    employeeName = "Docente Administrativo UTEZ"
-                                )
-                                // Launch via Intent for Maximum Compatibility
-                                val saveUri = "https://pay.google.com/gp/v/save/$fakeJwt"
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(saveUri))
-                                context.startActivity(intent)
+                // Add to Google Wallet CTA - VISIBLE SOLO PARA USUARIO MOCKED (WIP)
+                if (userEmail == "juan.perez@utez.edu.mx") {
+                    Button(
+                        onClick = {
+                            try {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    // Sign JWT on the fly
+                                    val fakeJwt = WalletTokenMockGenerator.generateSignedWalletToken(
+                                        passCode = item.code,
+                                        motive = item.description,
+                                        employeeName = "Docente Administrativo UTEZ"
+                                    )
+                                    // Launch via Intent for Maximum Compatibility
+                                    val saveUri = "https://pay.google.com/gp/v/save/$fakeJwt"
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(saveUri))
+                                    context.startActivity(intent)
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
                             }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
-                ) {
-                    Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Añadir a la Cartera de Google", color = Color.White, fontWeight = FontWeight.Medium)
-                }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                    ) {
+                        Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Añadir a la Cartera de Google", color = Color.White, fontWeight = FontWeight.Medium)
+                    }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                 // Download CTA
                 OutlinedButton(
                     onClick = { rawBitmap?.let { onDownloadMock(it) } },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(8.dp),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp)
+                    border = ButtonDefaults.outlinedButtonBorder(true).copy(width = 1.dp)
                 ) {
                     Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
@@ -254,6 +262,7 @@ fun ApprovedPassQrDialog(
 fun ApprovedPassQrDialogPreview() {
     ApprovedPassQrDialog(
         item = HistoryItem("1", "Pase", EstadosIncidencia.APROBADO, "Salida Personal", "20/2/2026", "10:00", "PASE001"),
+        userEmail = "juan.perez@utez.edu.mx",
         onDismissRequest = {},
         onDownloadMock = {}
     )

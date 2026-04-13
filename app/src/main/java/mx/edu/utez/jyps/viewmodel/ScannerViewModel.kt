@@ -211,8 +211,8 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
                        response.estado.uppercase() == EstadosIncidencia.RETARDO.name
 
         val info = ScannedPassInfo(
-            name = response.nombreCompleto,
-            code = response.QR,
+            name = response.nombreCompleto ?: "Empleado",
+            code = response.QR ?: "N/A",
             date = formatIsoDate(response.fechaSolicitud),
             exitTime = formatIsoTime(response.horaSalidaReal ?: response.horaSolicitada),
             returnDeadline = formatIsoTime(response.horaEsperada),

@@ -52,12 +52,13 @@ fun PassRequestScreen(
     showEmployeeModeBanner: Boolean = false,
     onReturnToRoleDashboard: () -> Unit = {},
     userName: String = "Juan",
-    userEmail: String = "juan.perez@utez.edu.mx"
+    userEmail: String = "juan.perez@utez.edu.mx",
+    userId: Long = 0L
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(userName, userEmail) {
-        viewModel.setUserInfo(userName, userEmail)
+    LaunchedEffect(userName, userEmail, userId) {
+        viewModel.setUserInfo(userName, userEmail, userId)
     }
     
     androidx.compose.runtime.LaunchedEffect(uiState.isSuccess) {
@@ -262,7 +263,7 @@ fun PassRequestScreen(
                             onClick = onBackClick,
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(8.dp),
-                            border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.7.dp),
+                            border = ButtonDefaults.outlinedButtonBorder(true).copy(width = 1.7.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Text("Cancelar", fontWeight = FontWeight.Medium)

@@ -14,12 +14,14 @@ import mx.edu.utez.jyps.data.model.PasswordTokenRequest
 import mx.edu.utez.jyps.data.model.PasswordSetupRequest
 import mx.edu.utez.jyps.data.model.GenericMessageResponse
 import mx.edu.utez.jyps.data.model.PassResponse
+import mx.edu.utez.jyps.data.model.PassRequest
 import mx.edu.utez.jyps.data.model.JustificationResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.PATCH
@@ -202,6 +204,48 @@ interface ApiService {
      */
     @PATCH("api/v1/pases/{qr}")
     suspend fun processPassCheckout(@Path("qr") qr: String): Response<PassResponse>
+
+    // ── Pases de Salida ──────────────────────────────
+    /**
+     * Retrieves the complete list of exit passes associated with a specific employee.
+     *
+     * @param empleadoId The unique database identifier of the employee.
+     * @return [List] of [PassResponse] objects.
+     */
+    @GET("api/v1/pases/empleado")
+    suspend fun getPasesPorEmpleado(@Query("empleadoId") empleadoId: Long): List<PassResponse>
+
+    /**
+     * Retrieves full granular details for a specific exit pass.
+     *
+     * @param id The primary key identifier of the pass.
+     * @return [Response] wrapping the [PassResponse] data.
+     */
+    @GET("api/v1/pases/{id}/detalles")
+    suspend fun getPaseDetalles(@Path("id") id: Long): Response<PassResponse>
+
+    /**
+     * Registers a new exit pass request with optional logic for attachments.
+     * 
+     * @param data Request body containing pass metadata encoded as application/json.
+     * @param archivos Optional file parts (Ignored for standard passes per backend specs).
+     * @return [Response] wrapping the created [PassResponse].
+     */
+    @Multipart
+    @POST("api/v1/pases")
+    suspend fun crearPase(
+        @Part("data") data: RequestBody,
+        @Part archivos: List<MultipartBody.Part>? = null
+    ): Response<PassResponse>
+
+    /**
+     * Permanently removes a pending exit pass from the system.
+     * 
+     * @param id The primary key identifier of the pass.
+     * @return [Response] with [ResponseBody] indicating success or network failure.
+     */
+    @DELETE("api/v1/pases/{id}")
+    suspend fun eliminarPase(@Path("id") id: Long): Response<ResponseBody>
 
     // ── Justificantes ───────────────────────────────
     /**

@@ -59,7 +59,8 @@ fun EmployeeHistoryScreen(
     viewModel: EmployeeHistoryViewModel,
     showEmployeeModeBanner: Boolean = false,
     onReturnToRoleDashboard: () -> Unit = {},
-    userName: String = "Empleado"
+    userName: String = "Empleado",
+    userEmail: String = ""
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedFilter by remember { mutableStateOf(HistoryFilter.PASES) }
@@ -111,6 +112,7 @@ fun EmployeeHistoryScreen(
     uiState.requestToShowQr?.let { item ->
         ApprovedPassQrDialog(
             item = item,
+            userEmail = userEmail,
             onDismissRequest = { viewModel.dismissShowQr() },
             onDownloadMock = { bitmap ->
                 coroutineScope.launch {

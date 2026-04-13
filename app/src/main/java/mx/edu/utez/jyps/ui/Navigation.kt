@@ -90,6 +90,7 @@ fun NavigationHost(
     val currentUser by authViewModel.userName.collectAsStateWithLifecycle()
     val currentUserEmail by authViewModel.userEmail.collectAsStateWithLifecycle()
     val currentUserPhone by authViewModel.userPhone.collectAsStateWithLifecycle()
+    val currentUserId by authViewModel.userId.collectAsStateWithLifecycle()
 
     // SECURE NAVIGATION LOGIC: Derived from unified session state
     val targetRoute = remember(sessionToken, roles) {
@@ -210,7 +211,8 @@ fun NavigationHost(
                             navController.navigateUp()
                         },
                         userName = currentUser,
-                        userEmail = currentUserEmail
+                        userEmail = currentUserEmail,
+                        userId = currentUserId
                     )
                 }
 
@@ -238,7 +240,8 @@ fun NavigationHost(
                         onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
                         onProfileClick = { navController.navigate(AppRoutes.Profile.route) },
                         viewModel = historyViewModel,
-                        userName = currentUser
+                        userName = currentUser,
+                        userEmail = currentUserEmail
                     )
                 }
 
@@ -405,7 +408,8 @@ fun NavigationHost(
                                 popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
                             }
                         },
-                        userName = currentUser
+                        userName = currentUser,
+                        userEmail = currentUserEmail
                     )
                 }
 
@@ -504,7 +508,8 @@ fun NavigationHost(
                                 popUpTo(AppRoutes.Home.route) { inclusive = false }
                             }
                         },
-                        userName = currentUser
+                        userName = currentUser,
+                        userEmail = currentUserEmail
                     )
                 }
 

@@ -1,10 +1,16 @@
 package mx.edu.utez.jyps.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import mx.edu.utez.jyps.data.model.PassRequest
+import mx.edu.utez.jyps.data.network.RetrofitInstance
+import mx.edu.utez.jyps.data.repository.PassRepository
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -53,8 +59,12 @@ data class PassRequestState(
  * ViewModel responsible for the logic of requesting a Pass.
  */
 class PassRequestViewModel : ViewModel() {
+    private val repository = PassRepository(RetrofitInstance.api)
     private val _uiState = MutableStateFlow(PassRequestState())
     val uiState: StateFlow<PassRequestState> = _uiState.asStateFlow()
+
+    /** Primary key identifier for the logged user, used for real API calls. */
+    private var userId: Long = 0
 
     init {
         checkActivePasses()
@@ -65,8 +75,10 @@ class PassRequestViewModel : ViewModel() {
      *
      * @param name Name representing the auth.
      * @param email Verified email.
+     * @param id The internal database ID of the employee.
      */
-    fun setUserInfo(name: String, email: String) {
+    fun setUserInfo(name: String, email: String, id: Long = 0) {
+        this.userId = id
         _uiState.update { it.copy(fullName = name, email = email) }
     }
 
@@ -119,20 +131,52 @@ class PassRequestViewModel : ViewModel() {
     }
 
     /**
-     * Assembles payload assuming all state transitions map clearly 
-     * out of the scope and performs IO task mapping.
+     * Assembles payload and executes the network request or mock simulator.
      */
     fun onSubmit() {
         if (!_uiState.value.isFormValid) return
         
         _uiState.update { it.copy(isLoading = true, error = null) }
         
-        // Simulating API call (Dummy Data rule)
-        _uiState.update { 
-            it.copy(
-                isLoading = false,
-                isSuccess = true
-            ) 
+        // Mantener lógica mocked para el usuario de demostración solicitado
+        if (_uiState.value.email == "juan.perez@utez.edu.mx") {
+            viewModelScope.launch {
+                delay(1200) // Simular latencia de red
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        isSuccess = true
+                    ) 
+                }
+            }
+            return
+        }
+
+        // Lógica real para usuarios ordinarios
+        viewModelScope.launch {
+            val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+            val passRequest = PassRequest(
+                empleadoId = userId,
+                horaSolicitada = "${_uiState.value.selectedDate}T${_uiState.value.selectedTime?.format(timeFormatter) ?: "00:00:00"}",
+                fechaSolicitud = _uiState.value.selectedDate.toString(),
+                detalles = _uiState.value.details
+            )
+
+            repository.crearPase(passRequest).onSuccess {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        isSuccess = true
+                    ) 
+                }
+            }.onFailure { e ->
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        error = "Error al solicitar pase: ${e.localizedMessage}"
+                    ) 
+                }
+            }
         }
     }
 

@@ -71,7 +71,7 @@ class AuthRepository(
         }
         if (correo == "root@jyps.com") {
             val mock = LoginResponse(1, "Administrador Root", correo, "0000", listOf("ADMINISTRADOR"), null, null, "MOCK_ADMIN_TOKEN")
-            preferencesManager.saveSession(mock.tokenJwt, mock.roles ?: listOf("ADMINISTRADOR"), "Administrador Root", correo, "000-000-0000")
+            preferencesManager.saveSession(mock.tokenJwt, mock.roles ?: listOf("ADMINISTRADOR"), "Administrador Root", correo, "000-000-0000", userId = 1L)
             return Result.success(mock)
         }
 
