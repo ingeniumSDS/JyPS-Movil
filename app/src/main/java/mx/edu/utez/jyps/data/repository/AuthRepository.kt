@@ -38,6 +38,7 @@ class AuthRepository(
     suspend fun login(correo: String, pass: String): Result<LoginResponse> {
         Log.d("AuthRepo", "POST /api/v1/usuarios/login")
 
+        /* Work In Progress - Future Features - No Delete */
         // FALLBACK MOCKS: Maintained for development continuity as requested
         if (correo == "maria.gonzalez@utez.edu.mx") {
             val mock = LoginResponse(999, "María González Hernández", correo, "N/A", listOf("GUARDIA"), null, null, "MOCK_GUARD_TOKEN")

@@ -51,6 +51,7 @@ object WalletTokenMockGenerator {
      */
     @RequiresApi(Build.VERSION_CODES.O)
     fun generateSignedWalletToken(passCode: String, motive: String, employeeName: String): String {
+        /* Work In Progress - Future Features - No Delete */
         val privateKey = getPrivateKey()
         val algorithm = Algorithm.RSA256(null, privateKey)
         val objectId = "$ISSUER_ID.${UUID.randomUUID()}"

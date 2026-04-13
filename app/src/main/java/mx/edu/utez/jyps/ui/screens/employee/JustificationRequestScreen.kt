@@ -41,6 +41,7 @@ import mx.edu.utez.jyps.ui.components.common.ToastType
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
 import mx.edu.utez.jyps.ui.components.common.EmployeeModeBanner
 import mx.edu.utez.jyps.viewmodel.JustificationRequestViewModel
+import mx.edu.utez.jyps.viewmodel.JustificationUiState
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
@@ -77,8 +78,8 @@ fun JustificationRequestScreen(
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
     var localValidationToast by remember { mutableStateOf<String?>(null) }
 
-    androidx.compose.runtime.LaunchedEffect(uiState.isSuccess) {
-        if (uiState.isSuccess) {
+    LaunchedEffect(uiState.uiState) {
+        if (uiState.uiState is JustificationUiState.Success) {
             viewModel.resetSuccess()
             onSuccessSubmit("Solicitud registrada con éxito.")
         }
@@ -437,10 +438,10 @@ fun JustificationRequestScreen(
                             onClick = { viewModel.onSubmit() },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(8.dp),
-                            enabled = uiState.isFormValid && !uiState.isLoading,
+                            enabled = uiState.isFormValid && uiState.uiState !is JustificationUiState.Loading,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28A745)) // Exact Green from Figma
                         ) {
-                            if (uiState.isLoading) {
+                            if (uiState.uiState is JustificationUiState.Loading) {
                                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                             } else {
                                 Text("Enviar Solicitud", fontWeight = FontWeight.Medium)
@@ -467,8 +468,8 @@ fun JustificationRequestScreen(
     }
 
     AppToast(
-        message = uiState.error,
-        isVisible = uiState.error != null,
+        message = (uiState.uiState as? JustificationUiState.Error)?.message,
+        isVisible = uiState.uiState is JustificationUiState.Error,
         onDismiss = { viewModel.clearError() },
         type = ToastType.ERROR,
         modifier = Modifier.align(Alignment.BottomCenter)

@@ -1,12 +1,20 @@
 package mx.edu.utez.jyps.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.data.model.HistoryItem
 import mx.edu.utez.jyps.data.model.EstadosIncidencia
+import mx.edu.utez.jyps.data.network.RetrofitInstance
+import mx.edu.utez.jyps.data.repository.JustificationRepository
+import mx.edu.utez.jyps.data.repository.PreferencesManager
+import timber.log.Timber
 
 /**
  * State representing the global employee history list and active modal overlays.
@@ -35,12 +43,62 @@ data class EmployeeHistoryState(
  * ViewModel responsible for tracking active history requests and allowing 
  * mutations (Edit/Delete) on items stuck in state PENDIENTE.
  */
-class EmployeeHistoryViewModel : ViewModel() {
+class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(application) {
+    
+    private val preferencesManager = PreferencesManager(application)
+    private val repository = JustificationRepository(RetrofitInstance.api, application)
+    
     private val _uiState = MutableStateFlow(EmployeeHistoryState())
     val uiState: StateFlow<EmployeeHistoryState> = _uiState.asStateFlow()
-
+ 
     init {
-        loadDummyData()
+        loadHistory()
+    }
+ 
+    /**
+     * Orchestrates the history fetching sequence after resolving identity.
+     */
+    private fun loadHistory() {
+        viewModelScope.launch {
+            val email = preferencesManager.userEmailFlow.first() ?: ""
+            val userId = preferencesManager.userIdFlow.first()
+            
+            if (email == "juan.perez@utez.edu.mx") {
+                loadDummyData()
+            } else {
+                fetchRealHistory(userId)
+            }
+        }
+    }
+
+    /**
+     * Performs a background synchronization of real justifications from the repository.
+     *
+     * @param userId The ID of the employee to filter.
+     */
+    private suspend fun fetchRealHistory(userId: Long) {
+        if (userId <= 0) return
+        
+        val result = repository.getJustificantesPorEmpleado(userId)
+        
+        result.onSuccess { responses ->
+            val items = responses.map { res ->
+                HistoryItem(
+                    id = res.id.toString(),
+                    type = "Justificante",
+                    status = try { EstadosIncidencia.valueOf(res.status) } catch (e: Exception) { EstadosIncidencia.PENDIENTE },
+                    description = res.description,
+                    date = res.requestedDate,
+                    time = "N/A",
+                    code = "JUST-${res.id}",
+                    fileName = res.attachments.firstOrNull()?.originalName,
+                    rejectionReason = res.managerComment
+                )
+            }
+            _uiState.update { it.copy(justifications = items) }
+        }.onFailure { e ->
+            Timber.e(e, "Failed to load real history for user $userId")
+        }
     }
 
     private fun loadDummyData() {
@@ -172,7 +230,9 @@ class EmployeeHistoryViewModel : ViewModel() {
      * @param item The pass whose QR will be displayed.
      */
     fun promptShowQr(item: HistoryItem) {
+        /* Work In Progress - Future Features - No Delete */
         _uiState.update { it.copy(requestToShowQr = item) }
+        Timber.d("QR Visualization requested for code ${item.code} [WIP]")
     }
 
     /** Closes the QR code dialog. */

@@ -14,13 +14,18 @@ import mx.edu.utez.jyps.data.model.PasswordTokenRequest
 import mx.edu.utez.jyps.data.model.PasswordSetupRequest
 import mx.edu.utez.jyps.data.model.GenericMessageResponse
 import mx.edu.utez.jyps.data.model.PassResponse
+import mx.edu.utez.jyps.data.model.JustificationResponse
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -197,4 +202,44 @@ interface ApiService {
      */
     @PATCH("api/v1/pases/{qr}")
     suspend fun processPassCheckout(@Path("qr") qr: String): Response<PassResponse>
+
+    // ── Justificantes ───────────────────────────────
+    /**
+     * Retrieves all justifications associated with a specific employee.
+     *
+     * @param empleadoId The unique database identifier of the employee.
+     * @return [List] of [JustificationResponse] objects.
+     */
+    @GET("api/v1/justificantes/empleado")
+    suspend fun getJustificantesPorEmpleado(@Query("empleadoId") empleadoId: Long): List<JustificationResponse>
+
+    /**
+     * Downloads an attached file associated with a specific justification.
+     *
+     * @param empleadoId The employee ID who owns the file.
+     * @param nombreArchivo The exact name of the file to retrieve.
+     * @return [Response] with a [ResponseBody] representing the file content.
+     */
+    @GET("api/v1/justificantes/{empleadoId}/{nombreArchivo}")
+    suspend fun descargarArchivoJustificante(
+        @Path("empleadoId") empleadoId: Long,
+        @Path("nombreArchivo") nombreArchivo: String
+    ): Response<ResponseBody>
+
+    /**
+     * Registers a new justification request with optional file evidence.
+     * Uses multipart encoding to handle binary data transmission.
+     *
+     * @param empleadoId The employee owner of the request.
+     * @param fechaSolicitada The target date to justify (YYYY-MM-DD).
+     * @param descripcion Detailed explanation of the incident.
+     * @param archivos Optional list of files to be uploaded as evidence.
+     * @return [Response] wrapping the created [JustificationResponse].
+     */
+    @Multipart
+    @POST("api/v1/justificantes")
+    suspend fun crearJustificante(
+        @Part("data") data: RequestBody,
+        @Part archivos: List<MultipartBody.Part>?
+    ): Response<JustificationResponse>
 }
