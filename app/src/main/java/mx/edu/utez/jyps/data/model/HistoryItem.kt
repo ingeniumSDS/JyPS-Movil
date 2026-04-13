@@ -3,6 +3,17 @@ package mx.edu.utez.jyps.data.model
 import mx.edu.utez.jyps.data.model.EstadosIncidencia
 
 /**
+ * Data class representing a file attached to a history record.
+ * 
+ * @property technicalName UUID-prefixed name used for backend requests.
+ * @property displayName Human-readable original filename.
+ */
+data class AttachmentItem(
+    val technicalName: String,
+    val displayName: String
+)
+
+/**
  * Data class encapsulating the properties of a Pass or Justification history log record.
  *
  * @property id Unique identifier.
@@ -12,7 +23,7 @@ import mx.edu.utez.jyps.data.model.EstadosIncidencia
  * @property date String formatted date.
  * @property time String formatted time.
  * @property code Scannable code validation.
- * @property fileName Attached evidence path/name.
+ * @property attachments List of files (1-3) associated with the record.
  * @property rejectionReason Motive of rejection if status is RECHAZADO.
  * @property internalInfo Private internal text information.
  */
@@ -24,8 +35,7 @@ data class HistoryItem(
     val date: String,
     val time: String,
     val code: String,
-    val fileName: String? = null,
-    val displayFileName: String? = null,
+    val attachments: List<AttachmentItem> = emptyList(),
     val rejectionReason: String? = null,
     val internalInfo: String? = null
 )

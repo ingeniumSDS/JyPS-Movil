@@ -11,10 +11,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Attachment
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.animation.core.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +33,7 @@ import coil.compose.AsyncImage
 import mx.edu.utez.jyps.data.model.HistoryItem
 import mx.edu.utez.jyps.data.model.EstadosIncidencia
 import android.net.Uri
+import mx.edu.utez.jyps.utils.FileUtils
 
 /**
  * Dialog displaying detailed information about a submitted justification.
@@ -41,11 +46,12 @@ fun JustificationDetailDialog(
     item: HistoryItem,
     onDismissRequest: () -> Unit,
     onDownload: (String) -> Unit = {},
-    localFileUri: Uri? = null,
-    isDownloading: Boolean = false
+    downloadedFiles: Map<String, Uri> = emptyMap(),
+    downloadingFileName: String? = null
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
+        containerColor = Color.White,
         confirmButton = {
             TextButton(onClick = onDismissRequest) {
                 Text("Cerrar")
@@ -78,27 +84,116 @@ fun JustificationDetailDialog(
                     value = item.description
                 )
 
-                item.fileName?.let { fileName ->
+                item.attachments.forEach { attachment ->
+                    val fileUri = downloadedFiles[attachment.technicalName]
+                    val isThisFileDownloading = downloadingFileName == attachment.technicalName
+                    
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Thumbnail side-by-side with name
+                        if (fileUri != null) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Color(0xFFF1F5F9))
+                            ) {
+                                if (attachment.displayName.endsWith(".pdf", true)) {
+                                    Icon(
+                                        imageVector = Icons.Default.PictureAsPdf,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp).align(Alignment.Center),
+                                        tint = Color(0xFFC62828)
+                                    )
+                                } else {
+                                    AsyncImage(
+                                        model = fileUri,
+                                        contentDescription = "Preview",
+                                        modifier = Modifier.size(32.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+
                         DetailRow(
                             icon = Icons.Default.Attachment,
-                            label = "Evidencia Adjunta (Toca para descargar)",
-                            value = item.displayFileName ?: fileName,
+                            label = "Evidencia Adjunta",
+                            value = FileUtils.formatFileName(attachment.displayName),
                             valueColor = MaterialTheme.colorScheme.primary,
+                            valueDecoration = TextDecoration.Underline,
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable(enabled = !isDownloading) { onDownload(fileName) }
+                                .clickable(enabled = downloadingFileName == null) { onDownload(attachment.technicalName) }
                         )
 
-                        if (isDownloading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                        if (isThisFileDownloading) {
+                            if (fileUri == null) {
+                                // First time download: show filling animation
+                                val infiniteTransition = rememberInfiniteTransition(label = "downloadFill")
+                                val fillHeight by infiniteTransition.animateFloat(
+                                    initialValue = 0f,
+                                    targetValue = 1f,
+                                    animationSpec = infiniteRepeatable(
+                                        animation = tween(1200, easing = LinearEasing),
+                                        repeatMode = RepeatMode.Restart
+                                    ),
+                                    label = "fill"
+                                )
+
+                                Box(
+                                    modifier = Modifier.size(20.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    // Background icon (Empty state)
+                                    Icon(
+                                        imageVector = Icons.Default.Download,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = Color.LightGray.copy(alpha = 0.5f)
+                                    )
+                                    
+                                    // Foreground icon (Filling state)
+                                    // Clipped from top to bottom
+                                    Icon(
+                                        imageVector = Icons.Default.Download,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .graphicsLayer {
+                                                // Clip the icon to show only the Top-to-Bottom progress
+                                                clip = true
+                                                shape = object : androidx.compose.ui.graphics.Shape {
+                                                    override fun createOutline(
+                                                        size: androidx.compose.ui.geometry.Size,
+                                                        layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+                                                        density: androidx.compose.ui.unit.Density
+                                                    ): androidx.compose.ui.graphics.Outline {
+                                                        return androidx.compose.ui.graphics.Outline.Rectangle(
+                                                            androidx.compose.ui.geometry.Rect(
+                                                                left = 0f,
+                                                                top = 0f,
+                                                                right = size.width,
+                                                                bottom = size.height * fillHeight
+                                                            )
+                                                        )
+                                                    }
+                                                }
+                                            },
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            } else {
+                                // Re-opening: show standard loader
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
@@ -112,43 +207,7 @@ fun JustificationDetailDialog(
                     )
                 }
 
-                // File Preview (Only show if downloaded)
-                localFileUri?.let { uri ->
-                    Column(modifier = Modifier.padding(top = 8.dp)) {
-                        Text(
-                            text = "Previsualización:",
-                            fontSize = 12.sp,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
-                                .background(Color(0xFFF9FAFB)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (item.fileName?.endsWith(".pdf", true) == true) {
-                                Icon(
-                                    imageVector = Icons.Default.PictureAsPdf,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = Color(0xFFC62828)
-                                )
-                            } else {
-                                AsyncImage(
-                                    model = uri,
-                                    contentDescription = "Preview",
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                        }
-                    }
-                }
+                // Removed separate big preview box as it is now side-by-side
             }
         },
         shape = RoundedCornerShape(16.dp)
@@ -164,6 +223,7 @@ private fun DetailRow(
     label: String,
     value: String,
     valueColor: Color = Color.Unspecified,
+    valueDecoration: TextDecoration? = null,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -188,7 +248,8 @@ private fun DetailRow(
                 text = value,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Normal,
-                color = valueColor
+                color = valueColor,
+                textDecoration = valueDecoration
             )
         }
     }
@@ -226,12 +287,12 @@ fun JustificationDetailDialogPreview() {
         item = HistoryItem(
             id = "1",
             type = "Justificante",
-            status = EstadosIncidencia.PENDIENTE,
+            status = mx.edu.utez.jyps.data.model.EstadosIncidencia.PENDIENTE,
             description = "Consulta médica por gripe estacional y malestar general.",
             date = "12/04/2026",
             time = "N/A",
             code = "JUST-100",
-            fileName = "receta_medica.pdf"
+            attachments = listOf(mx.edu.utez.jyps.data.model.AttachmentItem("tech.pdf", "receta_medica.pdf"))
         ),
         onDismissRequest = {}
     )

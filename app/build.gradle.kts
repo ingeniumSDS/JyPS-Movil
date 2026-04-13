@@ -101,6 +101,9 @@ dependencies {
     implementation(libs.camera.lifecycle)
     implementation(libs.camera.view)
     implementation(libs.timber)
+    
+    // Security and Encrypted Storage
+    implementation(libs.androidx.security.crypto)
 
     // Add the dependencies for any other desired Firebase products
     // https://firebase.google.com/docs/android/setup#available-libraries

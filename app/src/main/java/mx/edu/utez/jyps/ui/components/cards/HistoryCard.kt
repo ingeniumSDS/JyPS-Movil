@@ -21,8 +21,10 @@ import androidx.compose.ui.unit.sp
 import mx.edu.utez.jyps.data.model.EstadosIncidencia
 import mx.edu.utez.jyps.ui.components.status.StatusBadge
 import mx.edu.utez.jyps.ui.theme.*
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import mx.edu.utez.jyps.data.model.HistoryItem
+import mx.edu.utez.jyps.utils.FileUtils
 
 /**
  * Reusable card for history items (Passes or Justifications).
@@ -106,8 +108,18 @@ fun HistoryCard(
                     }
                 }
 
-                item.fileName?.let {
-                    Text("📎 $it", fontSize = 12.sp, color = Color(0xFF155DFC))
+                if (item.attachments.isNotEmpty()) {
+                    val firstFile = item.attachments.first()
+                    val fileName = FileUtils.formatFileName(firstFile.displayName)
+                    val extraText = if (item.attachments.size > 1) " y ${item.attachments.size - 1} más" else ""
+                    
+                    Text(
+                        text = "📎 $fileName$extraText",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        textDecoration = TextDecoration.Underline
+                    )
                 }
 
                 item.internalInfo?.let { 

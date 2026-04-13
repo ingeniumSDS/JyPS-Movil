@@ -72,13 +72,11 @@ fun EmployeeHistoryScreen(
         viewModel.refreshHistory()
     }
 
-    // Display SnackBar messages from the ViewModel
-    LaunchedEffect(uiState.isSuccessOp) {
-        if (uiState.isSuccessOp) {
-            uiState.opMessage?.let { msg ->
-                snackbarHostState.showSnackbar(msg)
-                viewModel.clearOpMessage()
-            }
+    // Display SnackBar messages from the ViewModel (Success or Error)
+    LaunchedEffect(uiState.opMessage) {
+        uiState.opMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearOpMessage()
         }
     }
 
@@ -132,8 +130,8 @@ fun EmployeeHistoryScreen(
                     val empId = item.internalInfo?.substringAfter(": ")?.toLongOrNull() ?: 0L
                     viewModel.downloadJustificationFile(empId, fileName)
                 },
-                localFileUri = uiState.downloadedFiles[item.fileName],
-                isDownloading = uiState.isDownloadingFile
+                downloadedFiles = uiState.downloadedFiles,
+                downloadingFileName = uiState.downloadingFileName
             )
         } else {
             PassDetailDialog(
