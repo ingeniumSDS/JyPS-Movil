@@ -97,7 +97,7 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
             }
             _uiState.update { it.copy(justifications = items) }
         }.onFailure { e ->
-            Timber.e(e, "Failed to load real history for user $userId")
+            Timber.e(e, "Error al cargar el historial real para el usuario $userId")
         }
     }
 
@@ -232,7 +232,7 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
     fun promptShowQr(item: HistoryItem) {
         /* Work In Progress - Future Features - No Delete */
         _uiState.update { it.copy(requestToShowQr = item) }
-        Timber.d("QR Visualization requested for code ${item.code} [WIP]")
+        Timber.d("Visualización de QR solicitada para el código ${item.code} [WIP]")
     }
 
     /** Closes the QR code dialog. */

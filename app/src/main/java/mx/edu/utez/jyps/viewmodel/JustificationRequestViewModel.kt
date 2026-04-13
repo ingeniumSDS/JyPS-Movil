@@ -79,11 +79,13 @@ class JustificationRequestViewModel(application: android.app.Application) : Andr
         viewModelScope.launch {
             preferencesManager.userIdFlow.collect { id ->
                 _uiState.update { it.copy(userId = id) }
+                android.util.Log.d("JustificationVM", "ID de usuario cargado: $id")
             }
         }
         viewModelScope.launch {
             preferencesManager.deptIdFlow.collect { id ->
                 _uiState.update { it.copy(jefeId = id) }
+                android.util.Log.d("JustificationVM", "ID de jefe (departamento) cargado: $id")
             }
         }
         viewModelScope.launch {
@@ -190,17 +192,20 @@ class JustificationRequestViewModel(application: android.app.Application) : Andr
     }
 
     /**
-     * Constructs and executes submit API boundary natively sequence map.
+     * Construye y ejecuta la secuencia nativa para enviar la solicitud a la API.
      */
     fun onSubmit() {
-        if (!_uiState.value.isFormValid) return
+        if (!_uiState.value.isFormValid) {
+            showError("Asegúrate de completar todos los campos y adjuntar al menos un archivo.")
+            return
+        }
         
         val currentState = _uiState.value
         _uiState.update { it.copy(uiState = JustificationUiState.Loading) }
         
-        // JUAN PEREZ MOCK LOGIC SEGREGATION
+        // SEGREGACIÓN DE LÓGICA MOCK PARA JUAN PÉREZ
         if (currentState.email == "juan.perez@utez.edu.mx") {
-            android.util.Log.d("JustificationVM", "Executing MOCK submit for Juan Pérez")
+            android.util.Log.d("JustificationVM", "Ejecutando envío MOCK para Juan Pérez")
             viewModelScope.launch {
                 kotlinx.coroutines.delay(1000)
                 _uiState.update { it.copy(uiState = JustificationUiState.Success) }
@@ -245,4 +250,7 @@ class JustificationRequestViewModel(application: android.app.Application) : Andr
 }
 
 private val JustificationRequestState.isFormValid: Boolean
-    get() = uiState !is JustificationUiState.Loading && selectedDate != null && details.length in detailsMinLimit..detailsLimit
+    get() = uiState !is JustificationUiState.Loading && 
+            selectedDate != null && 
+            details.length in detailsMinLimit..detailsLimit &&
+            attachedUris.isNotEmpty()

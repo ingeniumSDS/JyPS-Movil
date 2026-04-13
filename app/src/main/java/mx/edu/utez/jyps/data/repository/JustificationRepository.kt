@@ -41,7 +41,7 @@ class JustificationRepository(
             val response = api.getJustificantesPorEmpleado(empleadoId)
             Result.success(response)
         } catch (e: Exception) {
-            Timber.e(e, "Error fetching justifications for employee $empleadoId")
+            Timber.e(e, "Error al obtener justificantes para el empleado $empleadoId")
             Result.failure(e)
         }
     }
@@ -63,7 +63,7 @@ class JustificationRepository(
                 Result.failure(Exception("Error al descargar archivo: ${response.code()}"))
             }
         } catch (e: Exception) {
-            Timber.e(e, "Failed to download file $fileName for employee $empleadoId")
+            Timber.e(e, "Fallo al descargar el archivo $fileName para el empleado $empleadoId")
             Result.failure(e)
         }
     }
@@ -114,8 +114,8 @@ class JustificationRepository(
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                val errorRaw = response.errorBody()?.string() ?: "Unknown server error"
-                Timber.e("Justification creation FAILED: $errorRaw")
+                val errorRaw = response.errorBody()?.string() ?: "Error de servidor desconocido"
+                Timber.e("FALLÓ la creación del justificante: $errorRaw")
                 
                 // Try to extract "mensaje" from JSON error body
                 val friendlyMessage = try {
@@ -128,7 +128,7 @@ class JustificationRepository(
                 Result.failure(Exception(friendlyMessage))
             }
         } catch (e: Exception) {
-            Timber.e(e, "Exception during justification creation")
+            Timber.e(e, "Excepción durante la creación del justificante")
             Result.failure(e)
         }
     }
@@ -166,7 +166,7 @@ class JustificationRepository(
                 null
             }
         } catch (e: Exception) {
-            Timber.e(e, "Failed to prepare file part for URI: $uri")
+            Timber.e(e, "Fallo al preparar la parte del archivo para el URI: $uri")
             null
         }
     }
