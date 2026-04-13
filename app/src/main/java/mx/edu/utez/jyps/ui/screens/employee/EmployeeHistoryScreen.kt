@@ -64,6 +64,11 @@ fun EmployeeHistoryScreen(
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Refresh history every time the screen is entered
+    LaunchedEffect(Unit) {
+        viewModel.refreshHistory()
+    }
+
     // Display SnackBar messages from the ViewModel
     LaunchedEffect(uiState.isSuccessOp) {
         if (uiState.isSuccessOp) {

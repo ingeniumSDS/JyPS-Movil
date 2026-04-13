@@ -43,12 +43,13 @@ import mx.edu.utez.jyps.ui.components.common.AppToast
 import mx.edu.utez.jyps.ui.components.common.ToastType
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
 import mx.edu.utez.jyps.ui.components.common.EmployeeModeBanner
-import mx.edu.utez.jyps.viewmodel.JustificationRequestViewModel
-import mx.edu.utez.jyps.viewmodel.JustificationUiState
-import java.io.File
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import mx.edu.utez.jyps.viewmodel.JustificationRequestViewModel
+import mx.edu.utez.jyps.viewmodel.JustificationUiState
+import java.io.File
 
 /**
  * Screen that allows an employee to request a justification (Justificante) for an absence.
@@ -125,26 +126,73 @@ fun JustificationRequestScreen(
 
 
     if (uiState.showDatePicker) {
-        val todayMillis = System.currentTimeMillis()
-        val selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                val date = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneId.systemDefault()).toLocalDate()
-                val today = LocalDate.now()
-                val limit = today.minusDays(3)
-                return !date.isAfter(today) && !date.isBefore(limit)
+        val datePickerState = rememberDatePickerState(
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    val date = Instant.ofEpochMilli(utcTimeMillis)
+                        .atZone(ZoneId.of("UTC"))
+                        .toLocalDate()
+                    val today = LocalDate.now()
+                    
+                    // 1. Ocultar fechas futuras
+                    if (date.isAfter(today)) return false
+                    
+                    // 2. Domingo no es día hábil en la UTEZ (no se selecciona como incidencia)
+                    if (date.dayOfWeek == DayOfWeek.SUNDAY) return false
+                    
+                    // 3. Regla de los 3 días hábiles posteriores
+                    // Contamos cuántos días hábiles (Lun-Sab) han pasado desde 'date' hasta hoy
+                    var businessDaysCount = 0
+                    var tempDate = date.plusDays(1)
+                    while (tempDate.isBefore(today) || tempDate.isEqual(today)) {
+                        if (tempDate.dayOfWeek != DayOfWeek.SUNDAY) {
+                            businessDaysCount++
+                        }
+                        tempDate = tempDate.plusDays(1)
+                    }
+                    
+                    return businessDaysCount < 3
+                }
             }
-        }
-        val datePickerState = rememberDatePickerState(selectableDates = selectableDates)
+        )
         
         DatePickerDialog(
             onDismissRequest = { viewModel.onDateDismiss() },
             confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let {
-                        val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
-                        viewModel.onDateSelected(date)
-                    }
-                }) { Text("Aceptar") }
+                val selectedMillis = datePickerState.selectedDateMillis
+                val isValid = remember(selectedMillis) {
+                    selectedMillis?.let { millis ->
+                        val date = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.of("UTC"))
+                            .toLocalDate()
+                        val today = LocalDate.now()
+                        
+                        var businessDaysCount = 0
+                        var tempDate = date.plusDays(1)
+                        while (tempDate.isBefore(today) || tempDate.isEqual(today)) {
+                            if (tempDate.dayOfWeek != DayOfWeek.SUNDAY) businessDaysCount++
+                            tempDate = tempDate.plusDays(1)
+                        }
+                        
+                        !date.isAfter(today) && 
+                        date.dayOfWeek != DayOfWeek.SUNDAY && 
+                        businessDaysCount < 3
+                    } ?: false
+                }
+
+                TextButton(
+                    onClick = {
+                        selectedMillis?.let { millis ->
+                            val date = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.of("UTC"))
+                                .toLocalDate()
+                            viewModel.onDateSelected(date)
+                        }
+                    },
+                    enabled = isValid
+                ) { 
+                    Text("Aceptar") 
+                }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.onDateDismiss() }) { Text("Cancelar") }

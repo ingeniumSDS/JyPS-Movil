@@ -52,20 +52,24 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
     val uiState: StateFlow<EmployeeHistoryState> = _uiState.asStateFlow()
  
     init {
-        loadHistory()
+        refreshHistory()
     }
  
     /**
-     * Orchestrates the history fetching sequence after resolving identity.
+     * Refresca la información del historial consumiendo los servicios del backend.
      */
-    private fun loadHistory() {
+    fun refreshHistory() {
         viewModelScope.launch {
             val email = preferencesManager.userEmailFlow.first() ?: ""
             val userId = preferencesManager.userIdFlow.first()
             
+            // Cargar datos de prueba para Juan Perez pero también intentar reales
             if (email == "juan.perez@utez.edu.mx") {
                 loadDummyData()
-            } else {
+            }
+            
+            // Siempre intentar cargar reales si el ID es válido
+            if (userId > 0) {
                 fetchRealHistory(userId)
             }
         }
@@ -86,7 +90,12 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
                 HistoryItem(
                     id = res.id.toString(),
                     type = "Justificante",
-                    status = try { EstadosIncidencia.valueOf(res.status) } catch (e: Exception) { EstadosIncidencia.PENDIENTE },
+                    status = try { 
+                        EstadosIncidencia.valueOf(res.status.uppercase()) 
+                    } catch (e: Exception) { 
+                        Timber.w("Estado desconocido: ${res.status}")
+                        EstadosIncidencia.PENDIENTE 
+                    },
                     description = res.description,
                     date = res.requestedDate,
                     time = "N/A",
