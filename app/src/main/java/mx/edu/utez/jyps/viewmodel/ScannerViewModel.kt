@@ -203,35 +203,26 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun mapResponseToStatus(response: PassResponse): ScannerStatus {
-        val now = ZonedDateTime.now()
-        val formattedNow = now.format(timeFormatter)
-        
-        // Determinar si es un estado de retorno
-        val isReturn = response.estado.uppercase() == EstadosIncidencia.A_TIEMPO.name || 
-                       response.estado.uppercase() == EstadosIncidencia.RETARDO.name
-
         val info = ScannedPassInfo(
             name = response.nombreCompleto ?: "Empleado",
             code = response.QR ?: "N/A",
             date = formatIsoDate(response.fechaSolicitud),
-            exitTime = formatIsoTime(response.horaSalidaReal ?: response.horaSolicitada),
+            exitTime = formatIsoTime(response.horaSalidaReal),
             returnDeadline = formatIsoTime(response.horaEsperada),
-            actualReturnTime = if (isReturn) formattedNow else ""
+            actualReturnTime = if (response.horaRetornoReal != null) formatIsoTime(response.horaRetornoReal) else ""
         )
 
-        return when (response.estado.uppercase()) {
-            EstadosIncidencia.APROBADO.name,
-            EstadosIncidencia.FUERA.name -> {
-                if (response.horaEsperada.isNullOrBlank() || response.horaEsperada == "0") {
-                    ScannerStatus.ExitNoReturn(info)
-                } else {
-                    ScannerStatus.ExitGranted(info)
-                }
-            }
-            EstadosIncidencia.A_TIEMPO.name -> ScannerStatus.ReturnOnTime(info)
-            EstadosIncidencia.RETARDO.name -> ScannerStatus.ReturnLate(info)
-            EstadosIncidencia.CADUCADO.name -> ScannerStatus.ExpiredPass(info)
-            EstadosIncidencia.USADO.name -> ScannerStatus.AlreadyUsed(info)
+        val hasHoraRetornoReal = response.horaRetornoReal != null
+        val upperState = response.estado.uppercase()
+
+        return when {
+            upperState == EstadosIncidencia.A_TIEMPO.name && !hasHoraRetornoReal -> ScannerStatus.ExitNoReturn(info)
+            upperState == EstadosIncidencia.FUERA.name -> ScannerStatus.ExitGranted(info)
+            upperState == EstadosIncidencia.A_TIEMPO.name && hasHoraRetornoReal -> ScannerStatus.ReturnOnTime(info)
+            upperState == EstadosIncidencia.RETARDO.name && hasHoraRetornoReal -> ScannerStatus.ReturnLate(info)
+            upperState == EstadosIncidencia.CADUCADO.name -> ScannerStatus.ExpiredPass(info)
+            upperState == EstadosIncidencia.USADO.name -> ScannerStatus.AlreadyUsed(info)
+            upperState == EstadosIncidencia.APROBADO.name -> ScannerStatus.ExitGranted(info) // Fallback just in case
             else -> ScannerStatus.InvalidCode("Estado de pase desconocido: ${response.estado}")
         }
     }
@@ -248,7 +239,7 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun formatIsoTime(isoString: String?): String {
-        if (isoString.isNullOrBlank() || isoString == "0") return "N/A (Sin regreso)"
+        if (isoString.isNullOrBlank() || isoString == "0") return "N/A"
         return try {
             val cleaned = if (isoString.contains("T")) isoString else "1970-01-01T$isoString"
             val normalized = if (cleaned.contains("+") || cleaned.endsWith("Z")) cleaned else "${cleaned}Z"

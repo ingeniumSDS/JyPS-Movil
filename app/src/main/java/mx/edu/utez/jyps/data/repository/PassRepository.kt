@@ -34,6 +34,51 @@ class PassRepository(private val api: ApiService) {
     }
 
     /**
+     * Fetches all passes associated with a specific manager from the backend.
+     *
+     * @param jefeId Unique identifier of the manager.
+     * @return [Result] wrapping the list of [PassResponse] objects.
+     */
+    suspend fun getPasesPorJefe(jefeId: Long): Result<List<PassResponse>> {
+        return try {
+            Timber.d("GET /api/v1/pases/jefe?jefeId=$jefeId")
+            val response = api.getPasesPorJefe(jefeId)
+            Result.success(response)
+        } catch (e: Exception) {
+            Timber.e(e, "Error during GET /api/v1/pases/jefe")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Allows a manager to review a pending exit pass.
+     *
+     * @param paseDeSalidaId ID of the pass.
+     * @param estado The new status (e.g., APROBADO, RECHAZADO).
+     * @param comentario Manager's observation.
+     * @return [Result] wrapping the updated [PassResponse].
+     */
+    suspend fun revisarPase(paseDeSalidaId: Long, estado: String, comentario: String?): Result<PassResponse> {
+        return try {
+            Timber.d("PUT /api/v1/pases/revisar")
+            val request = mx.edu.utez.jyps.data.model.ReviewPassRequest(
+                paseDeSalidaId = paseDeSalidaId,
+                estado = estado,
+                comentario = comentario
+            )
+            val response = api.revisarPase(request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                throw Exception("Failed to review pass: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error during PUT /api/v1/pases/revisar")
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Retrieves full granular details for a specific exit pass.
      * 
      * @param id The primary key identifier of the pass.

@@ -15,3 +15,16 @@ data class PassRequest(
     val fechaSolicitud: String,
     val detalles: String
 )
+
+/**
+ * Data Transfer Object for reviewing an exit pass.
+ *
+ * @property paseDeSalidaId The ID of the pass to review.
+ * @property estado The new state.
+ * @property comentario Manager's observation.
+ */
+data class ReviewPassRequest(
+    val paseDeSalidaId: Long,
+    val estado: String,
+    val comentario: String?
+)

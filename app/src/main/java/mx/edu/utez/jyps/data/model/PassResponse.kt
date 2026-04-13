@@ -28,7 +28,7 @@ data class PassResponse(
     val fechaSolicitud: String,
     val horaSalidaReal: String? = null,
     val horaEsperada: String,
-    val detalles: String? = null,
+    val descripcion: String? = null,
     val estado: String,
     val QR: String? = null,
     val archivos: List<String>? = null,

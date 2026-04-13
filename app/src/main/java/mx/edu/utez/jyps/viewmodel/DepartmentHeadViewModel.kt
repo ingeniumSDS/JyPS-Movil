@@ -1,13 +1,22 @@
 package mx.edu.utez.jyps.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.data.model.RequestItem
 import mx.edu.utez.jyps.data.model.RequestStatus
 import mx.edu.utez.jyps.data.model.RequestType
+import mx.edu.utez.jyps.data.network.RetrofitInstance
+import mx.edu.utez.jyps.data.repository.JustificationRepository
+import mx.edu.utez.jyps.data.repository.PassRepository
+import mx.edu.utez.jyps.data.repository.PreferencesManager
+import timber.log.Timber
 
 /**
  * Filter options available in the dashboard's chip row.
@@ -38,14 +47,20 @@ data class DepartmentHeadUiState(
     val rejectedCount: Int = 0,
     val showPendingAlert: Boolean = false,
     val selectedItem: RequestItem? = null,
-    val showRejectDialog: Boolean = false
+    val showRejectDialog: Boolean = false,
+    val isLoading: Boolean = false
 )
 
 /**
  * ViewModel serving the Department Head dashboard.
- * Manages mock request data, filtering, and state transitions for approve/reject actions.
+ * Manages real request data fetching, filtering, and state transitions for approve/reject actions.
+ * Follows manual dependency instantiation to comply with project standards.
  */
-class DepartmentHeadViewModel : ViewModel() {
+class DepartmentHeadViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val preferencesManager = PreferencesManager(application)
+    private val justificationRepository = JustificationRepository(RetrofitInstance.api, application)
+    private val passRepository = PassRepository(RetrofitInstance.api)
 
     private val _uiState = MutableStateFlow(DepartmentHeadUiState())
     val uiState: StateFlow<DepartmentHeadUiState> = _uiState.asStateFlow()
@@ -54,7 +69,93 @@ class DepartmentHeadViewModel : ViewModel() {
     private val pendingAlertThreshold = 5
 
     init {
-        loadMockData()
+        refreshHistory()
+    }
+
+    /**
+     * Synchronizes the dashboard data with the backend.
+     * Fetches both justifications and passes associated with the current manager.
+     */
+    fun refreshHistory() {
+        if (_uiState.value.isLoading) return
+        
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            
+            val email = preferencesManager.userEmailFlow.first() ?: ""
+            val userId = preferencesManager.userIdFlow.first()
+            
+            // Business Rule: Mocked user does not make real API calls
+            if (email == "juan.perez@utez.edu.mx") {
+                loadMockData()
+                _uiState.update { it.copy(isLoading = false) }
+                return@launch
+            }
+
+            if (userId > 0) {
+                fetchRealData(userId)
+            }
+            
+            _uiState.update { it.copy(isLoading = false) }
+        }
+    }
+
+    /**
+     * Fetches justifications and passes from repositories and maps them to [RequestItem].
+     * 
+     * @param jefeId The manager ID to filter by.
+     */
+    private suspend fun fetchRealData(jefeId: Long) {
+        val passesResult = passRepository.getPasesPorJefe(jefeId)
+        val justificationsResult = justificationRepository.getJustificantesPorJefe(jefeId)
+
+        val passItems = passesResult.getOrNull()?.map { res ->
+            RequestItem(
+                id = res.id.toString(),
+                employeeName = res.nombreCompleto ?: "Empleado ${res.empleadoId}",
+                employeeEmail = "N/A", // Email not present in specific list responses
+                requestType = RequestType.PASS,
+                reason = res.descripcion ?: "Sin descripción",
+                date = res.fechaSolicitud,
+                time = res.horaSolicitada.substringBeforeLast(":"),
+                exitTime = res.horaEsperada.substringAfter("T").substringBeforeLast(":").takeIf { it.isNotEmpty() },
+                status = mapBackendStatus(res.estado)
+            )
+        } ?: emptyList()
+
+        val justificationItems = justificationsResult.getOrNull()?.map { res ->
+            RequestItem(
+                id = res.id.toString(),
+                employeeName = res.nombreCompleto ?: "Empleado ${res.employeeId}",
+                employeeEmail = "N/A",
+                requestType = RequestType.JUSTIFICATION,
+                reason = res.description,
+                date = res.requestedDate,
+                time = "N/A",
+                status = mapBackendStatus(res.status),
+                attachmentName = res.attachments.firstOrNull()?.originalName
+            )
+        } ?: emptyList()
+
+        val allRequests = passItems + justificationItems
+        _uiState.update { state -> 
+            rebuildState(allRequests.sortedByDescending { it.id.toLongOrNull() ?: 0L }, state.activeFilter)
+        }
+    }
+
+    /**
+     * Helper to map backend status strings to UI [RequestStatus].
+     */
+    private fun mapBackendStatus(status: String): RequestStatus = try {
+        when (status.uppercase()) {
+            "PENDIENTE" -> RequestStatus.PENDING
+            "APROBADO" -> RequestStatus.APPROVED
+            "RECHAZADO" -> RequestStatus.REJECTED
+            "USADO", "A_TIEMPO", "RETARDO", "FUERA" -> RequestStatus.USED
+            else -> RequestStatus.PENDING
+        }
+    } catch (e: Exception) {
+        RequestStatus.PENDING
     }
 
     // region Public actions
@@ -104,23 +205,54 @@ class DepartmentHeadViewModel : ViewModel() {
     }
 
     /**
-     * Approves a pending request — updates status to APPROVED, refreshes counters.
+     * Approves a pending request — updates status to APPROVED in backend.
      *
-     * @param id Tracking unique identifier of the approval action payload boundary.
+     * @param id Tracking unique identifier.
      */
     fun approveRequest(id: String) {
-        updateRequestStatus(id, RequestStatus.APPROVED)
-        _uiState.update { it.copy(selectedItem = null, showRejectDialog = false) }
+        val item = _uiState.value.requests.find { it.id == id } ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, selectedItem = null, showRejectDialog = false) }
+            val userId = preferencesManager.userIdFlow.first()
+            
+            val result = if (item.requestType == RequestType.PASS) {
+                passRepository.revisarPase(id.toLong(), "APROBADO", null)
+            } else {
+                justificationRepository.revisarJustificante(id.toLong(), "APROBADO", null)
+            }
+
+            result.onSuccess {
+                refreshHistory()
+            }.onFailure { e ->
+                Timber.e(e, "Error approving request $id")
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
     }
 
     /**
-     * Rejects a pending request — updates status to REJECTED, refreshes counters.
+     * Rejects a pending request — updates status to REJECTED in backend.
      * @param id Request identifier.
      * @param reason Rejection reason (preset or custom).
      */
     fun rejectRequest(id: String, reason: String) {
-        updateRequestStatus(id, RequestStatus.REJECTED)
-        _uiState.update { it.copy(selectedItem = null, showRejectDialog = false) }
+        val item = _uiState.value.requests.find { it.id == id } ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, selectedItem = null, showRejectDialog = false) }
+            
+            val result = if (item.requestType == RequestType.PASS) {
+                passRepository.revisarPase(id.toLong(), "RECHAZADO", reason)
+            } else {
+                justificationRepository.revisarJustificante(id.toLong(), "RECHAZADO", reason)
+            }
+
+            result.onSuccess {
+                refreshHistory()
+            }.onFailure { e ->
+                Timber.e(e, "Error rejecting request $id")
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
     }
 
     // endregion

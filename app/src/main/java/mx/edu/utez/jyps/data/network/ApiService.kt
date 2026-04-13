@@ -16,6 +16,8 @@ import mx.edu.utez.jyps.data.model.GenericMessageResponse
 import mx.edu.utez.jyps.data.model.PassResponse
 import mx.edu.utez.jyps.data.model.PassRequest
 import mx.edu.utez.jyps.data.model.JustificationResponse
+import mx.edu.utez.jyps.data.model.ReviewPassRequest
+import mx.edu.utez.jyps.data.model.ReviewJustificationRequest
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
@@ -216,6 +218,24 @@ interface ApiService {
     suspend fun getPasesPorEmpleado(@Query("empleadoId") empleadoId: Long): List<PassResponse>
 
     /**
+     * Retrieves the complete list of exit passes associated with a specific manager/department head.
+     * 
+     * @param jefeId The unique database identifier of the manager.
+     * @return [List] of [PassResponse] objects.
+     */
+    @GET("api/v1/pases/jefe")
+    suspend fun getPasesPorJefe(@Query("jefeId") jefeId: Long): List<PassResponse>
+
+    /**
+     * Allows a manager to review a pending exit pass, approving or rejecting it.
+     * 
+     * @param request [ReviewPassRequest] containing the review details.
+     * @return [Response] wrapping the updated [PassResponse].
+     */
+    @PUT("api/v1/pases/revisar")
+    suspend fun revisarPase(@Body request: ReviewPassRequest): Response<PassResponse>
+
+    /**
      * Retrieves full granular details for a specific exit pass.
      *
      * @param id The primary key identifier of the pass.
@@ -256,6 +276,24 @@ interface ApiService {
      */
     @GET("api/v1/justificantes/empleado")
     suspend fun getJustificantesPorEmpleado(@Query("empleadoId") empleadoId: Long): List<JustificationResponse>
+
+    /**
+     * Retrieves the complete list of justification requests associated with a specific manager/department head.
+     * 
+     * @param jefeId The unique database identifier of the manager.
+     * @return [List] of [JustificationResponse] objects.
+     */
+    @GET("api/v1/justificantes/jefe")
+    suspend fun getJustificantesPorJefe(@Query("jefeId") jefeId: Long): List<JustificationResponse>
+
+    /**
+     * Allows a manager to review a pending justification, approving or rejecting it.
+     * 
+     * @param request [ReviewJustificationRequest] containing the review details.
+     * @return [Response] wrapping the updated [JustificationResponse].
+     */
+    @PUT("api/v1/justificantes/revisar")
+    suspend fun revisarJustificante(@Body request: ReviewJustificationRequest): Response<JustificationResponse>
 
     /**
      * Retrieves full granular details for a specific justification request.

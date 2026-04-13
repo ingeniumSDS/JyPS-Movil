@@ -189,7 +189,7 @@ class EmployeeHistoryViewModel(application: Application) : AndroidViewModel(appl
                         Timber.w("Estado de pase desconocido: ${res.estado}")
                         EstadosIncidencia.PENDIENTE
                     },
-                    description = res.detalles ?: "Sin motivo especificado",
+                    description = res.descripcion ?: "Sin motivo especificado",
                     date = res.fechaSolicitud,
                     time = res.horaSolicitada.substringBeforeLast(":"), // Cleanup seconds if present
                     code = res.QR ?: "N/A",

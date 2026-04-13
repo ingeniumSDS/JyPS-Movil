@@ -1,11 +1,14 @@
 package mx.edu.utez.jyps.ui.screens.departmenthead
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -128,136 +131,145 @@ fun DepartmentHeadDashboardScreen(
             },
             containerColor = Color(0xFFF8F9FA)
         ) { padding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Header
-                item {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Dashboard",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1F2937)
-                    )
-                    Text(
-                        text = "Vista general del sistema de pases y justificantes",
-                        fontSize = 14.sp,
-                        color = Color(0xFF6B7280)
-                    )
-                }
-
-                // Stats cards — 2x2 grid
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            StatCard(
-                                label = "Total Solicitudes",
-                                count = uiState.totalCount,
-                                icon = Icons.Default.Assessment,
-                                iconBgColor = Color(0xFFE8F0FE),
-                                iconTint = Color(0xFF0F2C59)
-                            )
-                            StatCard(
-                                label = "Aprobadas",
-                                count = uiState.approvedCount,
-                                icon = Icons.Default.CheckCircle,
-                                iconBgColor = Color(0xFFDCFCE7),
-                                iconTint = Color(0xFF016630)
-                            )
-                        }
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            StatCard(
-                                label = "Pendientes",
-                                count = uiState.pendingCount,
-                                icon = Icons.Default.Pending,
-                                iconBgColor = Color(0xFFFEF9C2),
-                                iconTint = Color(0xFF894B00)
-                            )
-                            StatCard(
-                                label = "Rechazadas",
-                                count = uiState.rejectedCount,
-                                icon = Icons.Default.DoNotDisturbOn,
-                                iconBgColor = Color(0xFFFFE2E2),
-                                iconTint = Color(0xFF9F0712)
-                            )
-                        }
-                    }
-                }
-
-                // Alert banner — only when pending count exceeds threshold
-                if (uiState.showPendingAlert) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Header
                     item {
-                        AlertBannerCard(pendingCount = uiState.pendingCount)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Dashboard",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F2937)
+                        )
+                        Text(
+                            text = "Vista general del sistema de pases y justificantes",
+                            fontSize = 14.sp,
+                            color = Color(0xFF6B7280)
+                        )
                     }
-                }
 
-                // Request list card
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Todas las Solicitudes",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = Color(0xFF1F2937)
-                            )
-                            Text(
-                                text = "Haz click en una solicitud para ver detalles",
-                                fontSize = 13.sp,
-                                color = Color(0xFF9CA3AF),
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            FilterChipRow(
-                                options = listOf(
-                                    FilterOption("Todos", uiState.totalCount, "ALL"),
-                                    FilterOption("Pendientes", uiState.pendingCount, "PENDING"),
-                                    FilterOption("Aprobadas", uiState.approvedCount, "APPROVED"),
-                                    FilterOption("Rechazadas", uiState.rejectedCount, "REJECTED")
-                                ),
-                                selectedKey = uiState.activeFilter.name,
-                                onFilterSelected = { key ->
-                                    viewModel.onFilterChange(RequestFilter.valueOf(key))
-                                }
-                            )
+                    // Stats cards — 2x2 grid
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                StatCard(
+                                    label = "Total Solicitudes",
+                                    count = uiState.totalCount,
+                                    icon = Icons.Default.Assessment,
+                                    iconBgColor = Color(0xFFE8F0FE),
+                                    iconTint = Color(0xFF0F2C59)
+                                )
+                                StatCard(
+                                    label = "Aprobadas",
+                                    count = uiState.approvedCount,
+                                    icon = Icons.Default.CheckCircle,
+                                    iconBgColor = Color(0xFFDCFCE7),
+                                    iconTint = Color(0xFF016630)
+                                )
+                            }
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                StatCard(
+                                    label = "Pendientes",
+                                    count = uiState.pendingCount,
+                                    icon = Icons.Default.Pending,
+                                    iconBgColor = Color(0xFFFEF9C2),
+                                    iconTint = Color(0xFF894B00)
+                                )
+                                StatCard(
+                                    label = "Rechazadas",
+                                    count = uiState.rejectedCount,
+                                    icon = Icons.Default.DoNotDisturbOn,
+                                    iconBgColor = Color(0xFFFFE2E2),
+                                    iconTint = Color(0xFF9F0712)
+                                )
+                            }
                         }
                     }
+
+                    // Alert banner — only when pending count exceeds threshold
+                    if (uiState.showPendingAlert) {
+                        item {
+                            AlertBannerCard(pendingCount = uiState.pendingCount)
+                        }
+                    }
+
+                    // Request list card
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Todas las Solicitudes",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = Color(0xFF1F2937)
+                                )
+                                Text(
+                                    text = "Haz click en una solicitud para ver detalles",
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF9CA3AF),
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                FilterChipRow(
+                                    options = listOf(
+                                        FilterOption("Todos", uiState.totalCount, "ALL"),
+                                        FilterOption("Pendientes", uiState.pendingCount, "PENDING"),
+                                        FilterOption("Aprobadas", uiState.approvedCount, "APPROVED"),
+                                        FilterOption("Rechazadas", uiState.rejectedCount, "REJECTED")
+                                    ),
+                                    selectedKey = uiState.activeFilter.name,
+                                    onFilterSelected = { key ->
+                                        viewModel.onFilterChange(RequestFilter.valueOf(key))
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Filtered request cards
+                    items(
+                        items = uiState.filteredRequests,
+                        key = { it.id }
+                    ) { request ->
+                        RequestCard(
+                            item = request,
+                            onClick = { viewModel.onRequestClick(request) }
+                        )
+                    }
+
+                    // Bottom spacing
+                    item { Spacer(modifier = Modifier.height(16.dp)) }
                 }
 
-                // Filtered request cards
-                items(
-                    items = uiState.filteredRequests,
-                    key = { it.id }
-                ) { request ->
-                    RequestCard(
-                        item = request,
-                        onClick = { viewModel.onRequestClick(request) }
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = Color(0xFF0F2C59)
                     )
                 }
-
-                // Bottom spacing
-                item { Spacer(modifier = Modifier.height(16.dp)) }
             }
         }
     }

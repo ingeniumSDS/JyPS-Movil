@@ -47,6 +47,51 @@ class JustificationRepository(
     }
 
     /**
+     * Retrieves the complete list of justifications associated with a specific manager.
+     * 
+     * @param jefeId The unique database identifier of the manager.
+     * @return [Result] wrapping the [List] of [JustificationResponse] on success.
+     */
+    suspend fun getJustificantesPorJefe(jefeId: Long): Result<List<JustificationResponse>> {
+        return try {
+            Timber.d("GET /api/v1/justificantes/jefe?jefeId=$jefeId")
+            val response = api.getJustificantesPorJefe(jefeId)
+            Result.success(response)
+        } catch (e: Exception) {
+            Timber.e(e, "Error during GET /api/v1/justificantes/jefe for $jefeId")
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Allows a manager to review a pending justification.
+     *
+     * @param justificanteId ID of the justification.
+     * @param estado The new status (e.g., APROBADO, RECHAZADO).
+     * @param comentario Manager's observation.
+     * @return [Result] wrapping the updated [JustificationResponse].
+     */
+    suspend fun revisarJustificante(justificanteId: Long, estado: String, comentario: String?): Result<JustificationResponse> {
+        return try {
+            Timber.d("PUT /api/v1/justificantes/revisar")
+            val request = mx.edu.utez.jyps.data.model.ReviewJustificationRequest(
+                justificanteId = justificanteId,
+                estado = estado,
+                comentario = comentario
+            )
+            val response = api.revisarJustificante(request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                throw Exception("Failed to review justification: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error during PUT /api/v1/justificantes/revisar")
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Retrieves the structural details of a single justification request.
      *
      * @param id The justification unique ID.

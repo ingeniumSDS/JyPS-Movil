@@ -50,3 +50,16 @@ data class JustificationResponse(
     @SerializedName("archivos")
     val attachments: List<JustificationFileResponse> = emptyList()
 )
+
+/**
+ * Data Transfer Object for reviewing a justification.
+ *
+ * @property justificanteId The ID of the justification to review.
+ * @property estado The new state (e.g., APROBADO, RECHAZADO).
+ * @property comentario Manager's observation.
+ */
+data class ReviewJustificationRequest(
+    val justificanteId: Long,
+    val estado: String,
+    val comentario: String?
+)
