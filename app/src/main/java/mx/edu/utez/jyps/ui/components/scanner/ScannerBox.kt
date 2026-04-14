@@ -43,6 +43,7 @@ import androidx.compose.ui.zIndex
  */
 @Composable
 fun ScannerBox(
+    isScanning: Boolean = true,
     isQrInFrame: Boolean = false,
     onQrDetected: (String) -> Unit = {},
     onFrameWithQr: (Boolean) -> Unit = {},
@@ -57,10 +58,25 @@ fun ScannerBox(
     ) {
         // Layer 1: Live camera preview (fills the square via FILL_CENTER crop)
         CameraPreview(
+            isScanning = isScanning,
             onQrDetected = onQrDetected,
             onFrameWithQr = onFrameWithQr,
             modifier = Modifier.matchParentSize()
         )
+
+        // Layer 1.5: Security Blackout Overlay — ensures no accidental scans and provides visual feedback
+        AnimatedVisibility(
+            visible = !isScanning,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.matchParentSize().zIndex(0.5f)
+        ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(Color.Black)
+            )
+        }
 
         // Layer 2: Golden corner brackets — always visible over the camera feed
         GoldenCornerOverlay(
