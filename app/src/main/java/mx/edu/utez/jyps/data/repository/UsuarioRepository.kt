@@ -65,6 +65,29 @@ class UsuarioRepository(
     }
 
     /**
+     * Retrieves all users associated with a specific department.
+     * 
+     * @param departamentoId The target department identifier.
+     * @return [List] of [Usuario] objects belonging to the specified department.
+     */
+    suspend fun getUsuariosByDepartamento(departamentoId: Long): List<Usuario> {
+        _loadState.value = LoadResult.Loading
+        return try {
+            Log.d(TAG, "GET /api/v1/$departamentoId/usuarios")
+            val response = apiService.getUsuariosByDepartamento(departamentoId)
+            
+            Log.d(TAG, "Synchronizing local state with ${response.size} departmental employees")
+            _allUsers.value = response
+            _loadState.value = LoadResult.Success(Unit)
+            response
+        } catch (e: Exception) {
+            Log.e(TAG, "Departmental fetch failure at /api/v1/$departamentoId/usuarios: ${e.message}", e)
+            _loadState.value = LoadResult.Error(e.localizedMessage ?: "Error de comunicación")
+            emptyList()
+        }
+    }
+
+    /**
      * Fetches a specific user by their unique database identifier.
      * 
      * @param id The primary key of the user to fetch.
