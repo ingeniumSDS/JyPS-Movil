@@ -111,7 +111,8 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
 
         val passItems = passesResult.getOrNull()?.map { res ->
             RequestItem(
-                id = res.id.toString(),
+                id = "P-${res.id}",
+                numericId = res.id,
                 employeeName = res.nombreCompleto ?: "Empleado ${res.empleadoId}",
                 employeeEmail = "N/A", // Email not present in specific list responses
                 requestType = RequestType.PASS,
@@ -125,7 +126,8 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
 
         val justificationItems = justificationsResult.getOrNull()?.map { res ->
             RequestItem(
-                id = res.id.toString(),
+                id = "J-${res.id}",
+                numericId = res.id,
                 employeeName = res.nombreCompleto ?: "Empleado ${res.employeeId}",
                 employeeEmail = "N/A",
                 requestType = RequestType.JUSTIFICATION,
@@ -139,7 +141,7 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
 
         val allRequests = passItems + justificationItems
         _uiState.update { state -> 
-            rebuildState(allRequests.sortedByDescending { it.id.toLongOrNull() ?: 0L }, state.activeFilter)
+            rebuildState(allRequests.sortedByDescending { it.date }, state.activeFilter)
         }
     }
 
@@ -216,9 +218,9 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
             val userId = preferencesManager.userIdFlow.first()
             
             val result = if (item.requestType == RequestType.PASS) {
-                passRepository.revisarPase(id.toLong(), "APROBADO", null)
+                passRepository.revisarPase(item.numericId, "APROBADO", null)
             } else {
-                justificationRepository.revisarJustificante(id.toLong(), "APROBADO", null)
+                justificationRepository.revisarJustificante(item.numericId, "APROBADO", null)
             }
 
             result.onSuccess {
@@ -241,9 +243,9 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
             _uiState.update { it.copy(isLoading = true, selectedItem = null, showRejectDialog = false) }
             
             val result = if (item.requestType == RequestType.PASS) {
-                passRepository.revisarPase(id.toLong(), "RECHAZADO", reason)
+                passRepository.revisarPase(item.numericId, "RECHAZADO", reason)
             } else {
-                justificationRepository.revisarJustificante(id.toLong(), "RECHAZADO", reason)
+                justificationRepository.revisarJustificante(item.numericId, "RECHAZADO", reason)
             }
 
             result.onSuccess {
@@ -458,6 +460,7 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
         attachment: String? = null
     ) = RequestItem(
         id = id,
+        numericId = id.toLong(),
         employeeName = name,
         employeeEmail = email,
         requestType = type,
