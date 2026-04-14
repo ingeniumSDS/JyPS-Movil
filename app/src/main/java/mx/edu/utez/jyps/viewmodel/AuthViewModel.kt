@@ -29,7 +29,8 @@ data class SessionState(
     val userName: String = "Usuario",
     val userEmail: String = "",
     val userPhone: String = "No disponible",
-    val userId: Long = 0L
+    val userId: Long = 0L,
+    val deptId: Long = 0L
 )
 
 /**
@@ -53,15 +54,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         repository.tokenFlow,
         repository.rolesFlow,
         preferencesManager.userProfileFlow,
-        preferencesManager.userIdFlow
-    ) { token, roles, profile, userId ->
+        preferencesManager.userIdFlow,
+        preferencesManager.deptIdFlow
+    ) { token, roles, profile, userId, deptId ->
         SessionState(
             isLoggedIn = !token.isNullOrEmpty(),
             roles = roles?.split(",")?.filter { it.isNotEmpty() } ?: emptyList(),
             userName = profile.first,
             userEmail = profile.second,
             userPhone = profile.third,
-            userId = userId
+            userId = userId,
+            deptId = deptId
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SessionState())
 
@@ -87,6 +90,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "No disponible")
 
     val userId: StateFlow<Long> = sessionState.map { it.userId }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
+
+    val deptId: StateFlow<Long> = sessionState.map { it.deptId }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 

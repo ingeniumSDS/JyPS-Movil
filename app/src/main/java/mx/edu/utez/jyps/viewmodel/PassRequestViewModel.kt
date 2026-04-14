@@ -43,7 +43,8 @@ data class PassRequestState(
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
     val hasActivePassError: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val jefeId: Long = 0
 ) {
     val dateDisplay: String
         get() = selectedDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
@@ -65,6 +66,7 @@ class PassRequestViewModel : ViewModel() {
 
     /** Primary key identifier for the logged user, used for real API calls. */
     private var userId: Long = 0
+    private var jefeId: Long = 0
 
     init {
         checkActivePasses()
@@ -77,9 +79,11 @@ class PassRequestViewModel : ViewModel() {
      * @param email Verified email.
      * @param id The internal database ID of the employee.
      */
-    fun setUserInfo(name: String, email: String, id: Long = 0) {
+    fun setUserInfo(name: String, email: String, id: Long = 0, jefeId: Long = 0) {
         this.userId = id
-        _uiState.update { it.copy(fullName = name, email = email) }
+        this.jefeId = jefeId
+        timber.log.Timber.d("PassRequestVM: User=$id, Jefe=$jefeId, Name=$name")
+        _uiState.update { it.copy(fullName = name, email = email, jefeId = jefeId) }
     }
 
     private fun checkActivePasses() {
@@ -136,6 +140,11 @@ class PassRequestViewModel : ViewModel() {
     fun onSubmit() {
         if (!_uiState.value.isFormValid) return
         
+        if (_uiState.value.jefeId == 0L) {
+            _uiState.update { it.copy(error = "No tienes un jefe encargado asignado. Contacta con administración.") }
+            return
+        }
+        
         _uiState.update { it.copy(isLoading = true, error = null) }
         
         // Mantener lógica mocked para el usuario de demostración solicitado
@@ -157,9 +166,10 @@ class PassRequestViewModel : ViewModel() {
             val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
             val passRequest = PassRequest(
                 empleadoId = userId,
+                jefeId = jefeId,
                 horaSolicitada = "${_uiState.value.selectedDate}T${_uiState.value.selectedTime?.format(timeFormatter) ?: "00:00:00"}",
                 fechaSolicitud = _uiState.value.selectedDate.toString(),
-                detalles = _uiState.value.details
+                descripcion = _uiState.value.details
             )
 
             repository.crearPase(passRequest).onSuccess {

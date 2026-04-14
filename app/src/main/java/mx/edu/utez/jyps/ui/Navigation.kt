@@ -91,6 +91,7 @@ fun NavigationHost(
     val currentUserEmail by authViewModel.userEmail.collectAsStateWithLifecycle()
     val currentUserPhone by authViewModel.userPhone.collectAsStateWithLifecycle()
     val currentUserId by authViewModel.userId.collectAsStateWithLifecycle()
+    val currentDeptId by authViewModel.deptId.collectAsStateWithLifecycle()
 
     // SECURE NAVIGATION LOGIC: Derived from unified session state
     val targetRoute = remember(sessionToken, roles) {
@@ -349,7 +350,9 @@ fun NavigationHost(
                             }
                         },
                         userName = currentUser,
-                        userEmail = currentUserEmail
+                        userEmail = currentUserEmail,
+                        userId = currentUserId,
+                        jefeId = currentDeptId
                     )
                 }
 
@@ -449,7 +452,9 @@ fun NavigationHost(
                             }
                         },
                         userName = currentUser,
-                        userEmail = currentUserEmail
+                        userEmail = currentUserEmail,
+                        userId = currentUserId,
+                        jefeId = currentDeptId
                     )
                 }
 

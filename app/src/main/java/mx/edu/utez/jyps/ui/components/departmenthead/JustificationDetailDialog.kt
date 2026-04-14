@@ -249,6 +249,7 @@ fun JustificationDetailDialogPreview() {
     JustificationDetailDialog(
         item = RequestItem(
             id = "2",
+            numericId = 2L,
             employeeName = "Fernando Castillo Pérez",
             employeeEmail = "fernando.castillo@utez.edu.mx",
             requestType = RequestType.JUSTIFICATION,

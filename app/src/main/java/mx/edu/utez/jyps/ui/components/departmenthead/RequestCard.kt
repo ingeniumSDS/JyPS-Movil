@@ -133,6 +133,7 @@ fun RequestCardPreview() {
     RequestCard(
         item = RequestItem(
             id = "1",
+            numericId = 1L,
             employeeName = "Juan Pérez García",
             employeeEmail = "juan.perez@utez.edu.mx",
             requestType = RequestType.PASS,

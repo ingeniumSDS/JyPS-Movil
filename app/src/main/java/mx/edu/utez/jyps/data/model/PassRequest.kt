@@ -11,9 +11,10 @@ package mx.edu.utez.jyps.data.model
  */
 data class PassRequest(
     val empleadoId: Long,
+    val jefeId: Long,
     val horaSolicitada: String,
     val fechaSolicitud: String,
-    val detalles: String
+    val descripcion: String
 )
 
 /**
