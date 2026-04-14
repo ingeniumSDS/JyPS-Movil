@@ -301,6 +301,7 @@ class PreferencesManager(private val context: Context) {
         val encryptedDeptName = aead.encrypt(deptName.toByteArray(Charsets.UTF_8), null)
         val encryptedDeptId = aead.encrypt(deptId.toString().toByteArray(Charsets.UTF_8), null)
 
+        android.util.Log.d("PrefsManager", "Saving session: UserID=$userId, DeptID=$deptId")
         context.dataStore.edit { preferences ->
             preferences[TOKEN_KEY] = Base64.encodeToString(encryptedToken, Base64.DEFAULT)
             preferences[ROLES_KEY] = Base64.encodeToString(encryptedRoles, Base64.DEFAULT)

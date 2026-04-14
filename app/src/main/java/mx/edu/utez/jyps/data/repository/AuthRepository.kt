@@ -91,6 +91,7 @@ class AuthRepository(
                 val finalDeptName = decoded.optString("nombreDepartamento", data.nombreDepartamento ?: "")
                 val finalDeptId = if (decoded.has("departamentoId")) decoded.getLong("departamentoId") else (data.departamentoId ?: 0L)
                 
+                Log.d("AuthRepo", "Resolved Identity: ID=$finalUserId, DeptID=$finalDeptId, DeptName='$finalDeptName'")
                 val finalEmail = data.correo ?: decoded.optString("sub", correo)
                 val finalPhone = data.telefono?.takeIf { it.isNotBlank() } ?: decoded.optString("telefono", decoded.optString("phone", "No disponible"))
                 val finalRoles = data.roles ?: decoded.optJSONArray("authorities")?.let { arr ->

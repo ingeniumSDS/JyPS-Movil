@@ -93,6 +93,8 @@ fun NavigationHost(
     val currentUserId by authViewModel.userId.collectAsStateWithLifecycle()
     val currentDeptId by authViewModel.deptId.collectAsStateWithLifecycle()
 
+    android.util.Log.d("NavigationHost", "Current session: User=$currentUserId, Dept=$currentDeptId")
+
     // SECURE NAVIGATION LOGIC: Derived from unified session state
     val targetRoute = remember(sessionToken, roles) {
         when {

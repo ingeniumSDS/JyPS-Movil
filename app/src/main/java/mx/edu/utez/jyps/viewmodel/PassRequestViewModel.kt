@@ -1,6 +1,6 @@
 package mx.edu.utez.jyps.viewmodel
 
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,7 +59,8 @@ data class PassRequestState(
 /**
  * ViewModel responsible for the logic of requesting a Pass.
  */
-class PassRequestViewModel : ViewModel() {
+class PassRequestViewModel(application: android.app.Application) : AndroidViewModel(application) {
+    private val preferencesManager = mx.edu.utez.jyps.data.repository.PreferencesManager(application)
     private val repository = PassRepository(RetrofitInstance.api)
     private val _uiState = MutableStateFlow(PassRequestState())
     val uiState: StateFlow<PassRequestState> = _uiState.asStateFlow()
@@ -70,6 +71,19 @@ class PassRequestViewModel : ViewModel() {
 
     init {
         checkActivePasses()
+        viewModelScope.launch {
+            preferencesManager.deptIdFlow.collect { id ->
+                this@PassRequestViewModel.jefeId = id
+                _uiState.update { it.copy(jefeId = id) }
+                timber.log.Timber.d("PassRequestVM: Automatically loaded JefeId=$id from preferences")
+            }
+        }
+        viewModelScope.launch {
+            preferencesManager.userIdFlow.collect { id ->
+                this@PassRequestViewModel.userId = id
+                timber.log.Timber.d("PassRequestVM: Automatically loaded UserId=$id from preferences")
+            }
+        }
     }
 
     /**
