@@ -115,7 +115,9 @@ fun ScanResultDialog(
                     ) {
                         ScanDetailRow(label = "Fecha", value = info.date)
                         ScanDetailRow(label = "Hora de salida", value = info.exitTime)
-                        ScanDetailRow(label = "Límite de regreso", value = info.returnDeadline)
+                        if (config.showReturnDeadline) {
+                            ScanDetailRow(label = "Límite de regreso", value = info.returnDeadline)
+                        }
                         if (info.actualReturnTime.isNotEmpty()) {
                             ScanDetailRow(
                                 label = "Hora de regreso",
@@ -177,7 +179,8 @@ private data class ScanDialogConfig(
     val title: String,
     val subtitle: String,
     val bodyMessage: String = "",
-    val passInfo: ScannedPassInfo? = null
+    val passInfo: ScannedPassInfo? = null,
+    val showReturnDeadline: Boolean = true
 )
 
 /**
@@ -204,7 +207,8 @@ private fun scanDialogConfig(status: ScannerStatus): ScanDialogConfig? = when (s
         headerBg = Color(0xFFEFF6FF),
         title = "✅ Salida Autorizada",
         subtitle = "No se requiere regreso — Fin de jornada",
-        passInfo = status.info
+        passInfo = status.info,
+        showReturnDeadline = false
     )
 
     is ScannerStatus.ReturnOnTime -> ScanDialogConfig(
