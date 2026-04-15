@@ -29,9 +29,22 @@ class ScannerRepository(private val api: ApiService) {
                 Timber.d("Sincronización con el servidor completada con éxito")
                 Result.success(body)
             } else {
-                val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
-                Timber.e("Fallo al procesar /api/v1/pases/$qr: ${response.code()} - $errorMsg")
-                Result.failure(Exception(errorMsg))
+                val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                Timber.e("Fallo al procesar /api/v1/pases/$qr: ${response.code()} - $errorBody")
+                // Extract human-readable message from backend JSON error body
+                val friendlyMessage = try {
+                    val json = org.json.JSONObject(errorBody)
+                    val mensaje = json.optString("mensaje", "")
+                    when {
+                        mensaje.contains("horaSalidaReal") ->
+                            "Este pase aún no ha registrado su salida. El empleado debe escanear primero al salir."
+                        mensaje.isNotBlank() -> mensaje
+                        else -> "Error del servidor (${response.code()})"
+                    }
+                } catch (e: Exception) {
+                    "Error al procesar la respuesta del servidor"
+                }
+                Result.failure(Exception(friendlyMessage))
             }
         } catch (e: Exception) {
             Timber.e("Error al intentar PATCH /api/v1/pases/$qr: ${e.message}", e)
