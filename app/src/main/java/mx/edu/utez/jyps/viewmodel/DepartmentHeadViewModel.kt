@@ -75,9 +75,11 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
     /**
      * Synchronizes the dashboard data with the backend.
      * Fetches both justifications and passes associated with the current manager.
+     *
+     * @param force When true, bypasses the in-flight loading guard (used after approve/reject).
      */
-    fun refreshHistory() {
-        if (_uiState.value.isLoading) return
+    fun refreshHistory(force: Boolean = false) {
+        if (!force && _uiState.value.isLoading) return
         
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -224,7 +226,7 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
             }
 
             result.onSuccess {
-                refreshHistory()
+                refreshHistory(force = true)
             }.onFailure { e ->
                 Timber.e(e, "Error approving request $id")
                 _uiState.update { it.copy(isLoading = false) }
@@ -249,7 +251,7 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
             }
 
             result.onSuccess {
-                refreshHistory()
+                refreshHistory(force = true)
             }.onFailure { e ->
                 Timber.e(e, "Error rejecting request $id")
                 _uiState.update { it.copy(isLoading = false) }
