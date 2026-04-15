@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import mx.edu.utez.jyps.data.model.PassRequest
 import mx.edu.utez.jyps.data.model.PassResponse
 import mx.edu.utez.jyps.data.network.ApiService
+import mx.edu.utez.jyps.utils.CrashlyticsHelper
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import timber.log.Timber
@@ -23,12 +24,16 @@ class PassRepository(private val api: ApiService) {
      * @return [Result] wrapping the list of [PassResponse] objects.
      */
     suspend fun getPasesPorEmpleado(empleadoId: Long): Result<List<PassResponse>> {
+        val endpoint = "/api/v1/pases/empleado"
         return try {
-            Timber.d("GET /api/v1/pases/empleado?empleadoId=$empleadoId")
+            CrashlyticsHelper.logApiCall("GET", endpoint)
+            Timber.d("GET $endpoint?empleadoId=$empleadoId")
             val response = api.getPasesPorEmpleado(empleadoId)
+            CrashlyticsHelper.logApiSuccess("GET", endpoint)
             Result.success(response)
         } catch (e: Exception) {
-            Timber.e(e, "Error during GET /api/v1/pases/empleado")
+            Timber.e(e, "Error during GET $endpoint")
+            CrashlyticsHelper.logApiError("GET", endpoint, e)
             Result.failure(e)
         }
     }
@@ -40,12 +45,16 @@ class PassRepository(private val api: ApiService) {
      * @return [Result] wrapping the list of [PassResponse] objects.
      */
     suspend fun getPasesPorJefe(jefeId: Long): Result<List<PassResponse>> {
+        val endpoint = "/api/v1/pases/jefe"
         return try {
-            Timber.d("GET /api/v1/pases/jefe?jefeId=$jefeId")
+            CrashlyticsHelper.logApiCall("GET", endpoint)
+            Timber.d("GET $endpoint?jefeId=$jefeId")
             val response = api.getPasesPorJefe(jefeId)
+            CrashlyticsHelper.logApiSuccess("GET", endpoint)
             Result.success(response)
         } catch (e: Exception) {
-            Timber.e(e, "Error during GET /api/v1/pases/jefe")
+            Timber.e(e, "Error during GET $endpoint")
+            CrashlyticsHelper.logApiError("GET", endpoint, e)
             Result.failure(e)
         }
     }
@@ -59,8 +68,12 @@ class PassRepository(private val api: ApiService) {
      * @return [Result] wrapping the updated [PassResponse].
      */
     suspend fun revisarPase(paseDeSalidaId: Long, estado: String, comentario: String?): Result<PassResponse> {
+        val endpoint = "/api/v1/pases/revisar"
         return try {
-            Timber.d("PUT /api/v1/pases/revisar")
+            CrashlyticsHelper.logApiCall("PUT", endpoint)
+            CrashlyticsHelper.logAction("PassRepository", "review_pass",
+                mapOf("paseId" to paseDeSalidaId.toString(), "estado" to estado))
+            Timber.d("PUT $endpoint")
             val request = mx.edu.utez.jyps.data.model.ReviewPassRequest(
                 paseDeSalidaId = paseDeSalidaId,
                 estado = estado,
@@ -68,12 +81,14 @@ class PassRepository(private val api: ApiService) {
             )
             val response = api.revisarPase(request)
             if (response.isSuccessful && response.body() != null) {
+                CrashlyticsHelper.logApiSuccess("PUT", endpoint, response.code())
                 Result.success(response.body()!!)
             } else {
                 throw Exception("Failed to review pass: ${response.code()}")
             }
         } catch (e: Exception) {
-            Timber.e(e, "Error during PUT /api/v1/pases/revisar")
+            Timber.e(e, "Error during PUT $endpoint")
+            CrashlyticsHelper.logApiError("PUT", endpoint, e)
             Result.failure(e)
         }
     }
@@ -85,16 +100,20 @@ class PassRepository(private val api: ApiService) {
      * @return [Result] wrapping the [PassResponse] data.
      */
     suspend fun getPaseDetalles(id: Long): Result<PassResponse> {
+        val endpoint = "/api/v1/pases/$id/detalles"
         return try {
-            Timber.d("GET /api/v1/pases/$id/detalles")
+            CrashlyticsHelper.logApiCall("GET", endpoint)
+            Timber.d("GET $endpoint")
             val response = api.getPaseDetalles(id)
             if (response.isSuccessful && response.body() != null) {
+                CrashlyticsHelper.logApiSuccess("GET", endpoint, response.code())
                 Result.success(response.body()!!)
             } else {
                 throw Exception("Failed to fetch pass details: ${response.code()}")
             }
         } catch (e: Exception) {
-            Timber.e(e, "Error during GET /api/v1/pases/$id/detalles")
+            Timber.e(e, "Error during GET $endpoint")
+            CrashlyticsHelper.logApiError("GET", endpoint, e)
             Result.failure(e)
         }
     }
@@ -106,19 +125,26 @@ class PassRepository(private val api: ApiService) {
      * @return [Result] wrapping the created [PassResponse].
      */
     suspend fun crearPase(request: PassRequest): Result<PassResponse> {
+        val endpoint = "/api/v1/pases"
         return try {
-            Timber.d("POST /api/v1/pases")
+            CrashlyticsHelper.logApiCall("POST", endpoint)
+            CrashlyticsHelper.logAction("PassRepository", "create_pass",
+                mapOf("jefeId" to (request.jefeId?.toString() ?: "null"),
+                      "empleadoId" to (request.empleadoId?.toString() ?: "null")))
+            Timber.d("POST $endpoint")
             val json = Gson().toJson(request)
             val dataPart = json.toRequestBody("application/json".toMediaTypeOrNull())
             
             val response = api.crearPase(dataPart, null)
             if (response.isSuccessful && response.body() != null) {
+                CrashlyticsHelper.logApiSuccess("POST", endpoint, response.code())
                 Result.success(response.body()!!)
             } else {
                 throw Exception("Failed to create pass: ${response.code()}")
             }
         } catch (e: Exception) {
-            Timber.e(e, "Error during POST /api/v1/pases")
+            Timber.e(e, "Error during POST $endpoint")
+            CrashlyticsHelper.logApiError("POST", endpoint, e)
             Result.failure(e)
         }
     }
@@ -130,16 +156,20 @@ class PassRepository(private val api: ApiService) {
      * @return [Result] indicating success or failure of the deletion.
      */
     suspend fun eliminarPase(id: Long): Result<Unit> {
+        val endpoint = "/api/v1/pases/$id"
         return try {
-            Timber.d("DELETE /api/v1/pases/$id")
+            CrashlyticsHelper.logApiCall("DELETE", endpoint)
+            Timber.d("DELETE $endpoint")
             val response = api.eliminarPase(id)
             if (response.isSuccessful) {
+                CrashlyticsHelper.logApiSuccess("DELETE", endpoint, response.code())
                 Result.success(Unit)
             } else {
                 throw Exception("Delete operation failed: ${response.code()}")
             }
         } catch (e: Exception) {
-            Timber.e(e, "Error during DELETE /api/v1/pases/$id")
+            Timber.e(e, "Error during DELETE $endpoint")
+            CrashlyticsHelper.logApiError("DELETE", endpoint, e)
             Result.failure(e)
         }
     }

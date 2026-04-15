@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.data.network.RetrofitInstance
 import mx.edu.utez.jyps.data.repository.AuthRepository
 import mx.edu.utez.jyps.data.repository.PreferencesManager
+import mx.edu.utez.jyps.utils.CrashlyticsHelper
 
 /**
  * Represents the unified, immutable state of an active user session.
@@ -126,8 +127,19 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             _errorMessage.value = null
 
             val result = repository.login(email, pwd)
+            result.onSuccess {
+                // Tag Crashlytics session with authenticated identity
+                val session = sessionState.value
+                CrashlyticsHelper.setUserContext(
+                    userId = session.userId,
+                    role = session.roles.firstOrNull() ?: "UNKNOWN",
+                    deptId = session.deptId,
+                    email = session.userEmail
+                )
+            }
             result.onFailure { error ->
                 _errorMessage.value = error.message
+                CrashlyticsHelper.logAction("Login", "login_failed", mapOf("email" to email))
             }
             _isLoading.value = false
         }
@@ -138,6 +150,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun logout() {
         viewModelScope.launch {
+            CrashlyticsHelper.clearUserContext()
             repository.logout()
         }
     }

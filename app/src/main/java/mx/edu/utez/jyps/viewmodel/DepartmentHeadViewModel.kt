@@ -16,6 +16,7 @@ import mx.edu.utez.jyps.data.network.RetrofitInstance
 import mx.edu.utez.jyps.data.repository.JustificationRepository
 import mx.edu.utez.jyps.data.repository.PassRepository
 import mx.edu.utez.jyps.data.repository.PreferencesManager
+import mx.edu.utez.jyps.utils.CrashlyticsHelper
 import timber.log.Timber
 
 /**
@@ -217,6 +218,8 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
         val item = _uiState.value.requests.find { it.id == id } ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, selectedItem = null, showRejectDialog = false) }
+            CrashlyticsHelper.logAction("DeptHeadDashboard", "approve_request",
+                mapOf("id" to id, "type" to item.requestType.name, "employee" to item.employeeName))
             val userId = preferencesManager.userIdFlow.first()
             
             val result = if (item.requestType == RequestType.PASS) {
@@ -229,6 +232,7 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
                 refreshHistory(force = true)
             }.onFailure { e ->
                 Timber.e(e, "Error approving request $id")
+                CrashlyticsHelper.recordNonFatal("approve_request_$id", e)
                 _uiState.update { it.copy(isLoading = false) }
             }
         }
@@ -243,6 +247,8 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
         val item = _uiState.value.requests.find { it.id == id } ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, selectedItem = null, showRejectDialog = false) }
+            CrashlyticsHelper.logAction("DeptHeadDashboard", "reject_request",
+                mapOf("id" to id, "type" to item.requestType.name, "reason" to reason.take(50)))
             
             val result = if (item.requestType == RequestType.PASS) {
                 passRepository.revisarPase(item.numericId, "RECHAZADO", reason)
@@ -254,6 +260,7 @@ class DepartmentHeadViewModel(application: Application) : AndroidViewModel(appli
                 refreshHistory(force = true)
             }.onFailure { e ->
                 Timber.e(e, "Error rejecting request $id")
+                CrashlyticsHelper.recordNonFatal("reject_request_$id", e)
                 _uiState.update { it.copy(isLoading = false) }
             }
         }

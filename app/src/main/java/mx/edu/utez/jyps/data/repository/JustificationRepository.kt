@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import mx.edu.utez.jyps.data.model.JustificationResponse
 import mx.edu.utez.jyps.data.network.ApiService
+import mx.edu.utez.jyps.utils.CrashlyticsHelper
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -36,12 +37,16 @@ class JustificationRepository(
      * @return [Result] wrapping the [List] of [JustificationResponse] on success.
      */
     suspend fun getJustificantesPorEmpleado(empleadoId: Long): Result<List<JustificationResponse>> {
+        val endpoint = "/api/v1/justificantes/empleado"
         return try {
-            Timber.d("Iniciando petición GET /api/v1/justificantes/empleado para el ID: $empleadoId")
+            CrashlyticsHelper.logApiCall("GET", endpoint)
+            Timber.d("GET $endpoint?empleadoId=$empleadoId")
             val response = api.getJustificantesPorEmpleado(empleadoId)
+            CrashlyticsHelper.logApiSuccess("GET", endpoint)
             Result.success(response)
         } catch (e: Exception) {
-            Timber.e(e, "Fallo al recuperar justificantes reales palpa el empleado $empleadoId")
+            Timber.e(e, "Error during GET $endpoint")
+            CrashlyticsHelper.logApiError("GET", endpoint, e)
             Result.failure(e)
         }
     }
@@ -53,12 +58,16 @@ class JustificationRepository(
      * @return [Result] wrapping the [List] of [JustificationResponse] on success.
      */
     suspend fun getJustificantesPorJefe(jefeId: Long): Result<List<JustificationResponse>> {
+        val endpoint = "/api/v1/justificantes/jefe"
         return try {
-            Timber.d("GET /api/v1/justificantes/jefe?jefeId=$jefeId")
+            CrashlyticsHelper.logApiCall("GET", endpoint)
+            Timber.d("GET $endpoint?jefeId=$jefeId")
             val response = api.getJustificantesPorJefe(jefeId)
+            CrashlyticsHelper.logApiSuccess("GET", endpoint)
             Result.success(response)
         } catch (e: Exception) {
-            Timber.e(e, "Error during GET /api/v1/justificantes/jefe for $jefeId")
+            Timber.e(e, "Error during GET $endpoint")
+            CrashlyticsHelper.logApiError("GET", endpoint, e)
             Result.failure(e)
         }
     }
@@ -72,8 +81,12 @@ class JustificationRepository(
      * @return [Result] wrapping the updated [JustificationResponse].
      */
     suspend fun revisarJustificante(justificanteId: Long, estado: String, comentario: String?): Result<JustificationResponse> {
+        val endpoint = "/api/v1/justificantes/revisar"
         return try {
-            Timber.d("PUT /api/v1/justificantes/revisar")
+            CrashlyticsHelper.logApiCall("PUT", endpoint)
+            CrashlyticsHelper.logAction("JustificationRepo", "review_justification",
+                mapOf("justificanteId" to justificanteId.toString(), "estado" to estado))
+            Timber.d("PUT $endpoint")
             val request = mx.edu.utez.jyps.data.model.ReviewJustificationRequest(
                 justificanteId = justificanteId,
                 estado = estado,
@@ -81,12 +94,14 @@ class JustificationRepository(
             )
             val response = api.revisarJustificante(request)
             if (response.isSuccessful && response.body() != null) {
+                CrashlyticsHelper.logApiSuccess("PUT", endpoint, response.code())
                 Result.success(response.body()!!)
             } else {
                 throw Exception("Failed to review justification: ${response.code()}")
             }
         } catch (e: Exception) {
-            Timber.e(e, "Error during PUT /api/v1/justificantes/revisar")
+            Timber.e(e, "Error during PUT $endpoint")
+            CrashlyticsHelper.logApiError("PUT", endpoint, e)
             Result.failure(e)
         }
     }
@@ -98,16 +113,20 @@ class JustificationRepository(
      * @return [Result] containing the [JustificationResponse] if successful.
      */
     suspend fun getJustificanteDetalles(id: Long): Result<JustificationResponse> {
+        val endpoint = "/api/v1/justificantes/$id/detalles"
         return try {
-            Timber.d("Petición GET /api/v1/justificantes/$id/detalles enviada")
+            CrashlyticsHelper.logApiCall("GET", endpoint)
+            Timber.d("GET $endpoint")
             val response = api.getJustificanteDetalles(id)
             if (response.isSuccessful && response.body() != null) {
+                CrashlyticsHelper.logApiSuccess("GET", endpoint, response.code())
                 Result.success(response.body()!!)
             } else {
                 Result.failure(Exception("Hubo un problema al obtener los detalles del servidor."))
             }
         } catch (e: Exception) {
-            Timber.e(e, "Error crítico durante la recuperación de detalles del justificante $id")
+            Timber.e(e, "Error during GET $endpoint")
+            CrashlyticsHelper.logApiError("GET", endpoint, e)
             Result.failure(e)
         }
     }
@@ -153,6 +172,9 @@ class JustificationRepository(
     ): Result<JustificationResponse> {
         return try {
             Timber.d("POST /api/v1/justificantes")
+            CrashlyticsHelper.logApiCall("POST", "/api/v1/justificantes")
+            CrashlyticsHelper.logAction("JustificationRepo", "create_justification",
+                mapOf("empleadoId" to empleadoId.toString(), "jefeId" to jefeId.toString()))
             
             // 1. Convert metadata fields to a single JSON RequestBody (part name "data")
             val json = """
@@ -178,6 +200,7 @@ class JustificationRepository(
             )
 
             if (response.isSuccessful && response.body() != null) {
+                CrashlyticsHelper.logApiSuccess("POST", "/api/v1/justificantes")
                 Result.success(response.body()!!)
             } else {
                 val errorRaw = response.errorBody()?.string() ?: "Error de servidor desconocido"
@@ -195,6 +218,7 @@ class JustificationRepository(
             }
         } catch (e: Exception) {
             Timber.e(e, "Excepción durante la creación del justificante")
+            CrashlyticsHelper.logApiError("POST", "/api/v1/justificantes", e)
             Result.failure(e)
         }
     }
@@ -244,17 +268,21 @@ class JustificationRepository(
      * @return [Result] wrapping the operation's outcome.
      */
     suspend fun eliminarJustificante(id: Long): Result<Unit> {
+        val endpoint = "/api/v1/justificantes/$id"
         return try {
-            Timber.d("Iniciando DELETE /api/v1/justificantes/$id")
+            CrashlyticsHelper.logApiCall("DELETE", endpoint)
+            Timber.d("DELETE $endpoint")
             val response = api.eliminarJustificante(id)
             if (response.isSuccessful) {
+                CrashlyticsHelper.logApiSuccess("DELETE", endpoint)
                 Result.success(Unit)
             } else {
                 val errorRaw = response.errorBody()?.string() ?: "Error desconocido"
                 Result.failure(Exception("Error al eliminar justificante: $errorRaw"))
             }
         } catch (e: Exception) {
-            Timber.e(e, "Error al intentar eliminar el justificante $id")
+            Timber.e(e, "Error during DELETE $endpoint")
+            CrashlyticsHelper.logApiError("DELETE", endpoint, e)
             Result.failure(e)
         }
     }

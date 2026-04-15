@@ -3,6 +3,7 @@ package mx.edu.utez.jyps.data.repository
 import android.util.Log
 import mx.edu.utez.jyps.data.model.PassResponse
 import mx.edu.utez.jyps.data.network.ApiService
+import mx.edu.utez.jyps.utils.CrashlyticsHelper
 import timber.log.Timber
 
 /**
@@ -20,13 +21,16 @@ class ScannerRepository(private val api: ApiService) {
      * @return [Result] wrapping the updated [PassResponse] on success, or an [Exception] on failure.
      */
     suspend fun processPassCheckout(qr: String): Result<PassResponse> {
+        val endpoint = "/api/v1/pases/$qr"
         return try {
-            Timber.d("PATCH /api/v1/pases/$qr")
+            CrashlyticsHelper.logApiCall("PATCH", endpoint)
+            CrashlyticsHelper.logAction("Scanner", "scan_qr", mapOf("code" to qr))
+            Timber.d("PATCH $endpoint")
             val response = api.processPassCheckout(qr)
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
-                Timber.d("Mapeando respuesta del pase $qr con estado ${body.estado}")
-                Timber.d("Sincronización con el servidor completada con éxito")
+                CrashlyticsHelper.logApiSuccess("PATCH", endpoint, response.code())
+                Timber.d("Pass $qr processed with status ${body.estado}")
                 Result.success(body)
             } else {
                 val errorBody = response.errorBody()?.string() ?: "Error desconocido"
@@ -47,7 +51,8 @@ class ScannerRepository(private val api: ApiService) {
                 Result.failure(Exception(friendlyMessage))
             }
         } catch (e: Exception) {
-            Timber.e("Error al intentar PATCH /api/v1/pases/$qr: ${e.message}", e)
+            Timber.e("Error during PATCH $endpoint: ${e.message}", e)
+            CrashlyticsHelper.logApiError("PATCH", endpoint, e)
             Result.failure(Exception("Error de conexión: Verifica tu internet"))
         }
     }
