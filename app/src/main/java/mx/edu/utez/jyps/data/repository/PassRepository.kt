@@ -140,7 +140,14 @@ class PassRepository(private val api: ApiService) {
                 CrashlyticsHelper.logApiSuccess("POST", endpoint, response.code())
                 Result.success(response.body()!!)
             } else {
-                throw Exception("Failed to create pass: ${response.code()}")
+                val errorBody = response.errorBody()?.string() ?: ""
+                val friendlyMessage = try {
+                    val json = org.json.JSONObject(errorBody)
+                    json.optString("mensaje", "").ifBlank { "Error al crear el pase (${response.code()})" }
+                } catch (e: Exception) {
+                    "Error al crear el pase (${response.code()})"
+                }
+                throw Exception(friendlyMessage)
             }
         } catch (e: Exception) {
             Timber.e(e, "Error during POST $endpoint")

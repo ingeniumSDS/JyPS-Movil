@@ -197,7 +197,7 @@ class PassRequestViewModel(application: android.app.Application) : AndroidViewMo
                 _uiState.update { 
                     it.copy(
                         isLoading = false,
-                        error = "Error al solicitar pase: ${e.localizedMessage}"
+                        error = e.message ?: "No se pudo enviar la solicitud. Intenta de nuevo."
                     ) 
                 }
             }
