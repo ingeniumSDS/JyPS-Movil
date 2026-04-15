@@ -37,6 +37,15 @@ import mx.edu.utez.jyps.viewmodel.AuthViewModel
 import mx.edu.utez.jyps.viewmodel.LoginViewModel
 import mx.edu.utez.jyps.ui.components.common.AppToast
 import mx.edu.utez.jyps.ui.components.common.ToastType
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Feedback
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import com.google.firebase.appdistribution.FirebaseAppDistribution
+import mx.edu.utez.jyps.BuildConfig
+import mx.edu.utez.jyps.R
 
 /**
  * AppRoutes defines the immutable navigation destinations for the application.

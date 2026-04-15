@@ -17,8 +17,8 @@ android {
         applicationId = "mx.edu.utez.jyps"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.0.7-beta"
+        versionCode = 5
+        versionName = "1.0.8_pre-release1"
 
         // Wallet Secure Environment Injection
         val keystoreProperties = Properties()
@@ -89,6 +89,12 @@ dependencies {
     // When using the BoM, don't specify versions in Firebase dependencies
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
+
+    // Firebase App Distribution — In-app tester feedback
+    // API-only lib: safe for all variants (no-op if full SDK absent)
+    implementation(libs.firebase.appdistribution.api.ktx)
+    // Full SDK: debug-only — enables notification trigger + screenshot feedback
+    debugImplementation(libs.firebase.appdistribution)
 
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.tink.android)
