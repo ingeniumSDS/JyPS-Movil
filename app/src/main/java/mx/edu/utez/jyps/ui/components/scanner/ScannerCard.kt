@@ -31,6 +31,7 @@ import mx.edu.utez.jyps.viewmodel.ScannerStatus
 @Composable
 fun ScannerCard(
     status: ScannerStatus,
+    isScanning: Boolean = true,
     isQrInFrame: Boolean = false,
     onQrDetected: (String) -> Unit = {},
     onFrameWithQr: (Boolean) -> Unit = {},
@@ -58,9 +59,10 @@ fun ScannerCard(
                 fontSize = 13.sp,
                 color = Color(0xFF64748B)
             )
-
+ 
             // Real camera with golden overlay and animated QR indicator
             ScannerBox(
+                isScanning = isScanning,
                 isQrInFrame = isQrInFrame,
                 onQrDetected = onQrDetected,
                 onFrameWithQr = onFrameWithQr

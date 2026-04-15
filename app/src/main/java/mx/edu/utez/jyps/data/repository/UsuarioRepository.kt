@@ -9,6 +9,7 @@ import mx.edu.utez.jyps.data.model.EstadoCuentaResponse
 import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.data.model.UserRequest
 import mx.edu.utez.jyps.data.network.ApiService
+import mx.edu.utez.jyps.utils.CrashlyticsHelper
 
 /**
  * Sealed class to distinguish between "no data" and "error" states.
@@ -46,20 +47,50 @@ class UsuarioRepository(
      * @return [List] of [Usuario] objects retrieved from the server.
      */
     suspend fun getUsuarios(): List<Usuario> {
+        val endpoint = "/api/v1/usuarios"
         _loadState.value = LoadResult.Loading
         return try {
-            Log.d(TAG, "GET /api/v1/usuarios")
+            CrashlyticsHelper.logApiCall("GET", endpoint)
+            Log.d(TAG, "GET $endpoint")
             val response = apiService.getUsuarios()
             
             Log.d(TAG, "Mapping ${response.size} users from remote response")
             _allUsers.value = response
             
-            Log.d(TAG, "Local cache synchronized successfully")
+            CrashlyticsHelper.logApiSuccess("GET", endpoint)
             _loadState.value = LoadResult.Success(Unit)
             response
         } catch (e: Exception) {
-            Log.e(TAG, "Fetch failure at /api/v1/usuarios: ${e.message}", e)
+            Log.e(TAG, "Fetch failure at $endpoint: ${e.message}", e)
+            CrashlyticsHelper.logApiError("GET", endpoint, e)
             _loadState.value = LoadResult.Error(e.localizedMessage ?: "Error desconocido")
+            emptyList()
+        }
+    }
+
+    /**
+     * Retrieves all users associated with a specific department.
+     * 
+     * @param departamentoId The target department identifier.
+     * @return [List] of [Usuario] objects belonging to the specified department.
+     */
+    suspend fun getUsuariosByDepartamento(departamentoId: Long): List<Usuario> {
+        val endpoint = "/api/v1/$departamentoId/usuarios"
+        _loadState.value = LoadResult.Loading
+        return try {
+            CrashlyticsHelper.logApiCall("GET", endpoint)
+            Log.d(TAG, "GET $endpoint")
+            val response = apiService.getUsuariosByDepartamento(departamentoId)
+            
+            Log.d(TAG, "Synchronizing local state with ${response.size} departmental employees")
+            _allUsers.value = response
+            CrashlyticsHelper.logApiSuccess("GET", endpoint)
+            _loadState.value = LoadResult.Success(Unit)
+            response
+        } catch (e: Exception) {
+            Log.e(TAG, "Departmental fetch failure at $endpoint: ${e.message}", e)
+            CrashlyticsHelper.logApiError("GET", endpoint, e)
+            _loadState.value = LoadResult.Error(e.localizedMessage ?: "Error de comunicación")
             emptyList()
         }
     }
@@ -117,11 +148,14 @@ class UsuarioRepository(
      * @return [Result] wrapping the created [Usuario] or an exception.
      */
     suspend fun registrarUsuario(request: UserRequest): Result<Usuario> {
+        val endpoint = "/api/v1/usuarios"
         return try {
-            Log.d(TAG, "POST /api/v1/usuarios")
+            CrashlyticsHelper.logApiCall("POST", endpoint)
+            Log.d(TAG, "POST $endpoint")
             val response = apiService.registrarUsuario(request)
             
             if (response.isSuccessful && response.body() != null) {
+                CrashlyticsHelper.logApiSuccess("POST", endpoint, response.code())
                 Log.d(TAG, "Identity record created successfully")
                 getUsuarios()
                 Result.success(response.body()!!)
@@ -131,7 +165,8 @@ class UsuarioRepository(
                 Result.failure(Exception(err))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Resource creation failure at /api/v1/usuarios: ${e.message}", e)
+            Log.e(TAG, "Resource creation failure at $endpoint: ${e.message}", e)
+            CrashlyticsHelper.logApiError("POST", endpoint, e)
             Result.failure(e)
         }
     }
@@ -144,11 +179,14 @@ class UsuarioRepository(
      * @return [Result] wrapping the updated [Usuario] or an exception.
      */
     suspend fun actualizarUsuario(id: Long, request: UserRequest): Result<Usuario> {
+        val endpoint = "/api/v1/usuarios/$id"
         return try {
-            Log.d(TAG, "PUT /api/v1/usuarios/$id")
+            CrashlyticsHelper.logApiCall("PUT", endpoint)
+            Log.d(TAG, "PUT $endpoint")
             val response = apiService.actualizarUsuario(id, request)
             
             if (response.isSuccessful && response.body() != null) {
+                CrashlyticsHelper.logApiSuccess("PUT", endpoint, response.code())
                 Log.d(TAG, "Profile update applied successfully")
                 getUsuarios()
                 Result.success(response.body()!!)
@@ -158,7 +196,8 @@ class UsuarioRepository(
                 Result.failure(Exception(err))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Update failure at /api/v1/usuarios/$id: ${e.message}", e)
+            Log.e(TAG, "Update failure at $endpoint: ${e.message}", e)
+            CrashlyticsHelper.logApiError("PUT", endpoint, e)
             Result.failure(e)
         }
     }
@@ -170,11 +209,14 @@ class UsuarioRepository(
      * @return [Result] wrapping the new [EstadoCuentaResponse].
      */
     suspend fun toggleEstadoUsuario(id: Long): Result<EstadoCuentaResponse> {
+        val endpoint = "/api/v1/usuarios/$id/estado"
         return try {
-            Log.d(TAG, "PATCH /api/v1/usuarios/$id/estado")
+            CrashlyticsHelper.logApiCall("PATCH", endpoint)
+            Log.d(TAG, "PATCH $endpoint")
             val response = apiService.toggleEstadoUsuario(id)
             
             if (response.isSuccessful && response.body() != null) {
+                CrashlyticsHelper.logApiSuccess("PATCH", endpoint, response.code())
                 Log.d(TAG, "Account status toggled successfully")
                 getUsuarios()
                 Result.success(response.body()!!)
@@ -184,7 +226,8 @@ class UsuarioRepository(
                 Result.failure(Exception(err))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Status transition failure at /api/v1/usuarios/$id/estado: ${e.message}", e)
+            Log.e(TAG, "Status transition failure at $endpoint: ${e.message}", e)
+            CrashlyticsHelper.logApiError("PATCH", endpoint, e)
             Result.failure(e)
         }
     }

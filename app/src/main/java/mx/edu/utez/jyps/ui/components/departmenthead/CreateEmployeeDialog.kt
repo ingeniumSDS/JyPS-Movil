@@ -19,30 +19,32 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
-import mx.edu.utez.jyps.ui.components.inputs.AppDropdown
+import mx.edu.utez.jyps.ui.components.admin.TimeFieldWithPicker
 import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * Redesigned CreateEmployeeDialog following Figma mockup.
+ * Adds Entry/Exit clock pickers for departmental personnel management.
  * 
  * @param onDismiss Request to close the dialog.
- * @param onConfirm Provides all required employee fields.
+ * @param onConfirm Provides all required employee fields for institutional registration.
  */
 @Composable
 fun CreateEmployeeDialog(
     onDismiss: () -> Unit,
-    onConfirm: (name: String, email: String, phone: String, empId: String, pos: String, dept: String) -> Unit
+    onConfirm: (name: String, email: String, phone: String, entryTime: String, exitTime: String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
-    var employeeId by remember { mutableStateOf("") }
-    var position by remember { mutableStateOf("") }
-    var department by remember { mutableStateOf("") }
     
-    val departments = listOf("DACEA", "DATEFI", "DATID", "DAMI")
-
-    val isFormValid = name.isNotBlank() && email.isNotBlank() && phone.isNotBlank() && department.isNotBlank()
+    // Default working hours: 08:00 - 16:00
+    var entryHour by remember { mutableIntStateOf(8) }
+    var entryMinute by remember { mutableIntStateOf(0) }
+    var exitHour by remember { mutableIntStateOf(16) }
+    var exitMinute by remember { mutableIntStateOf(0) }
+    
+    val isFormValid = name.isNotBlank() && email.isNotBlank() && phone.length >= 10
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -69,7 +71,7 @@ fun CreateEmployeeDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Crear Nuevo Empleado",
+                        text = "Registrar Nuevo Empleado",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF0F2C59)
@@ -81,35 +83,63 @@ fun CreateEmployeeDialog(
 
                 Divider(color = Color(0xFFF1F3F5))
 
-                // Form Fields (using * for required as in Figma)
+                // Basic Identity Fields
                 AppTextField(
                     label = "Nombre completo *",
                     value = name,
                     onValueChange = { name = it },
                     placeholder = "Ej. Juan Pérez García"
                 )
-                AppTextField(
-                    label = "Teléfono *",
-                    value = phone,
-                    onValueChange = { phone = it },
-                    placeholder = "777 123 4567"
+                
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        AppTextField(
+                            label = "Teléfono *",
+                            value = phone,
+                            onValueChange = { if (it.length <= 10) phone = it },
+                            placeholder = "7771234567"
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1.2f)) {
+                        AppTextField(
+                            label = "Email institucional *",
+                            value = email,
+                            onValueChange = { email = it },
+                            placeholder = "usuario@utez.edu.mx"
+                        )
+                    }
+                }
+
+                Text(
+                    text = "Horario de Jornada Laboral",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F2C59),
+                    modifier = Modifier.padding(top = 8.dp)
                 )
-                AppTextField(
-                    label = "Email institucional *",
-                    value = email,
-                    onValueChange = { email = it },
-                    placeholder = "usuario@utez.edu.mx"
-                )
-                AppDropdown(
-                    label = "Departamento *",
-                    options = departments,
-                    selectedOption = department,
-                    onOptionSelected = { department = it }
-                )
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        TimeFieldWithPicker(
+                            label = "Hora Entrada *",
+                            hour = entryHour,
+                            minute = entryMinute,
+                            onTimeSelected = { h, m -> entryHour = h; entryMinute = m }
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        TimeFieldWithPicker(
+                            label = "Hora Salida *",
+                            hour = exitHour,
+                            minute = exitMinute,
+                            onTimeSelected = { h, m -> exitHour = h; exitMinute = m }
+                        )
+                    }
+                }
 
                 // Info Banner (Blue)
                 Surface(
-                    color = Color(0xFFE7F1FF), // Figma Blue Light
+                    color = Color(0xFFE7F1FF),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -125,7 +155,7 @@ fun CreateEmployeeDialog(
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "Información: Se generará una contraseña temporal que será enviada al correo del empleado.",
+                            text = "Nota: El empleado será asignado automáticamente a tu departamento. Se le enviará una contraseña temporal por correo.",
                             fontSize = 11.sp,
                             color = Color(0xFF0056B3),
                             lineHeight = 16.sp,
@@ -136,40 +166,36 @@ fun CreateEmployeeDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Buttons
+                // Action Buttons
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(
+                        onClick = { 
+                            val entry = "%02d:%02d:00".format(entryHour, entryMinute)
+                            val exit = "%02d:%02d:00".format(exitHour, exitMinute)
+                            onConfirm(name, email, phone, entry, exit) 
+                        },
+                        enabled = isFormValid,
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28A745)),
+                        contentPadding = PaddingValues(12.dp)
+                    ) {
+                        Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.White)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Crear Empleado", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    
                     OutlinedButton(
                         onClick = onDismiss,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
                         shape = RoundedCornerShape(8.dp),
                         border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF0F2C59))),
                         contentPadding = PaddingValues(12.dp)
                     ) {
                         Text("Cancelar", color = Color(0xFF0F2C59), fontWeight = FontWeight.Bold)
                     }
-
-                    Button(
-                        onClick = { 
-                            onConfirm(name, email, phone, employeeId.ifBlank { "EMP-${(100..999).random()}" }, "Empleado", department) 
-                        },
-                        enabled = isFormValid,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28A745)), // Success Green
-                        contentPadding = PaddingValues(12.dp)
-                    ) {
-                        Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Crear Empleado", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
                 }
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CreateEmployeeDialogPreview() {
-    CreateEmployeeDialog(onDismiss = {}, onConfirm = { _, _, _, _, _, _ -> })
 }

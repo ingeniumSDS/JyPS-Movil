@@ -52,12 +52,14 @@ fun PassRequestScreen(
     showEmployeeModeBanner: Boolean = false,
     onReturnToRoleDashboard: () -> Unit = {},
     userName: String = "Juan",
-    userEmail: String = "juan.perez@utez.edu.mx"
+    userEmail: String = "juan.perez@utez.edu.mx",
+    userId: Long = 0L,
+    jefeId: Long = 0L
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(userName, userEmail) {
-        viewModel.setUserInfo(userName, userEmail)
+    LaunchedEffect(userName, userEmail, userId, jefeId) {
+        viewModel.setUserInfo(userName, userEmail, userId, jefeId)
     }
     
     androidx.compose.runtime.LaunchedEffect(uiState.isSuccess) {
@@ -159,6 +161,23 @@ fun PassRequestScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (uiState.jefeId == 0L) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color(0xFFFFEBEE),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, Color(0xFFEF9A9A))
+                ) {
+                    Text(
+                        text = "⚠️ No tienes un jefe asignado. No podrás enviar la solicitud hasta que administración te asigne un departamento.",
+                        modifier = Modifier.padding(12.dp),
+                        fontSize = 13.sp,
+                        color = Color(0xFFC62828),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
             // Main Form Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -262,7 +281,7 @@ fun PassRequestScreen(
                             onClick = onBackClick,
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(8.dp),
-                            border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.7.dp),
+                            border = ButtonDefaults.outlinedButtonBorder(true).copy(width = 1.7.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Text("Cancelar", fontWeight = FontWeight.Medium)

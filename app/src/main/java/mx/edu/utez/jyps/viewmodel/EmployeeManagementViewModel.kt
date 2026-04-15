@@ -1,16 +1,29 @@
 package mx.edu.utez.jyps.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import mx.edu.utez.jyps.data.model.DepartamentoResponse
 import mx.edu.utez.jyps.data.model.EmployeeItem
+import mx.edu.utez.jyps.data.model.UserRequest
+import mx.edu.utez.jyps.data.model.Usuario
+import mx.edu.utez.jyps.data.network.RetrofitInstance
+import mx.edu.utez.jyps.data.repository.DepartmentRepository
+import mx.edu.utez.jyps.data.repository.PreferencesManager
+import mx.edu.utez.jyps.data.repository.UsuarioRepository
+import timber.log.Timber
 
 /**
  * State representing the Employee Management UI.
  * 
  * @property employees Complete list of current employees.
+ * @property departments List of available departments for transfers.
+ * @property managerDeptId The department ID of the logged manager.
  * @property searchQuery Input text for filtering the list.
  * @property isLoading Indicates background operations.
  * @property showCreateDialog Toggles visibility of the addition modal.
@@ -19,15 +32,14 @@ import mx.edu.utez.jyps.data.model.EmployeeItem
  */
 data class EmployeeManagementState(
     val employees: List<EmployeeItem> = emptyList(),
+    val departments: List<DepartamentoResponse> = emptyList(),
+    val managerDeptId: Long = 0,
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val showCreateDialog: Boolean = false,
     val selectedEmployee: EmployeeItem? = null,
     val error: String? = null
 ) {
-    /**
-     * Filters the full list based on names or employee IDs.
-     */
     val filteredEmployees: List<EmployeeItem>
         get() = if (searchQuery.isBlank()) employees
         else employees.filter { 
@@ -38,119 +50,159 @@ data class EmployeeManagementState(
 
 /**
  * ViewModel responsible for Business Logic and state coordination in Employee Management.
- * Implements CRUD operations using dummy data for mock mode.
+ * Implements CRUD operations using real backend APIs.
  */
-class EmployeeManagementViewModel : ViewModel() {
+class EmployeeManagementViewModel(application: Application) : AndroidViewModel(application) {
+    private val preferencesManager = PreferencesManager(application)
+    private val usuarioRepository = UsuarioRepository(RetrofitInstance.api)
+    private val departmentRepository = DepartmentRepository(RetrofitInstance.api)
+
     private val _uiState = MutableStateFlow(EmployeeManagementState())
     val uiState: StateFlow<EmployeeManagementState> = _uiState.asStateFlow()
 
     init {
-        loadMockEmployees()
+        loadSessionAndData()
     }
 
-    private fun loadMockEmployees() {
-        val mocks = listOf(
-            EmployeeItem(1, "Ana Martinez Lopez", "ana.martinez@utez.edu.mx", "7771234567", "EMP001", "Docente", "DACEA"),
-            EmployeeItem(2, "Luis Garcia Ruiz", "luis.garcia@utez.edu.mx", "7772345678", "EMP002", "Investigador", "DACEA"),
-            EmployeeItem(3, "Elena Soto Perez", "elena.soto@utez.edu.mx", "7773456789", "EMP003", "Asistente", "DACEA"),
-            EmployeeItem(4, "Diego Hernadez", "diego.h@utez.edu.mx", "7774567890", "EMP004", "Técnico", "DACEA")
-        )
-        _uiState.update { it.copy(employees = mocks) }
+    private fun loadSessionAndData() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            
+            // 1. Get Manager's Dept ID
+            preferencesManager.deptIdFlow.collect { deptId ->
+                _uiState.update { it.copy(managerDeptId = deptId) }
+                if (deptId > 0) {
+                    refreshEmployees(deptId)
+                    loadDepartments()
+                }
+            }
+        }
     }
 
-    /**
-     * Updates the search filter.
-     *
-     * @param query The string typed by the user to find matches.
-     */
+    private suspend fun refreshEmployees(deptId: Long) {
+        Timber.d("Refreshing employees for department $deptId")
+        val users = usuarioRepository.getUsuariosByDepartamento(deptId)
+        val items = users.map { it.toEmployeeItem() }
+        _uiState.update { it.copy(employees = items, isLoading = false) }
+    }
+
+    private suspend fun loadDepartments() {
+        val depts = departmentRepository.getDepartamentos()
+        _uiState.update { it.copy(departments = depts) }
+    }
+
+    private fun Usuario.toEmployeeItem(): EmployeeItem = EmployeeItem(
+        id = this.id,
+        fullName = this.nombreCompleto,
+        email = this.correo,
+        phone = this.telefono,
+        employeeId = "EMP-${this.id}",
+        position = this.roles.firstOrNull() ?: "Empleado",
+        department = this.nombreDepartamento ?: "Sin Depto",
+        isActive = this.activo
+    )
+
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
     }
 
-    /** Opens the modal for creating a new employee. */
     fun onCreateClick() {
         _uiState.update { it.copy(showCreateDialog = true) }
     }
 
-    /**
-     * Opens the modal to modify an existing employee.
-     *
-     * @param employee The [EmployeeItem] to act upon.
-     */
     fun onEditClick(employee: EmployeeItem) {
         _uiState.update { it.copy(selectedEmployee = employee) }
     }
 
-    /** Dismisses both create and edit modals safely without effect. */
     fun onDismissDialogs() {
-        _uiState.update { it.copy(showCreateDialog = false, selectedEmployee = null) }
+        _uiState.update { it.copy(showCreateDialog = false, selectedEmployee = null, error = null) }
     }
 
     /**
-     * Attaches a new employee into the internal list (Mock).
-     *
-     * @param name Full name.
-     * @param email Institutional email.
-     * @param phone Phone identifier.
-     * @param empId Institutional ID.
-     * @param pos Role or designation.
-     * @param dept Institutional department namespace.
+     * Registers a new employee using the real API.
      */
-    fun addEmployee(name: String, email: String, phone: String, empId: String, pos: String, dept: String) {
-        val newEmployee = EmployeeItem(
-            id = (_uiState.value.employees.maxOfOrNull { it.id } ?: 0) + 1,
-            fullName = name,
-            email = email,
-            phone = phone,
-            employeeId = empId,
-            position = pos,
-            department = dept
-        )
-        _uiState.update { state -> 
-            state.copy(
-                employees = state.employees + newEmployee,
-                showCreateDialog = false 
+    fun addEmployee(
+        name: String, 
+        email: String, 
+        phone: String, 
+        entryTime: String, 
+        exitTime: String
+    ) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            
+            val names = name.split(" ")
+            val firstName = names.getOrNull(0) ?: ""
+            val paternal = names.getOrNull(1) ?: ""
+            val maternal = names.getOrNull(2) ?: ""
+
+            val request = UserRequest(
+                nombre = firstName,
+                apellidoPaterno = paternal,
+                apellidoMaterno = maternal,
+                correo = email,
+                telefono = phone,
+                horaEntrada = entryTime,
+                horaSalida = exitTime,
+                roles = listOf("EMPLEADO"),
+                departamentoId = _uiState.value.managerDeptId
             )
+
+            val result = usuarioRepository.registrarUsuario(request)
+            result.onSuccess {
+                refreshEmployees(_uiState.value.managerDeptId)
+                _uiState.update { it.copy(showCreateDialog = false) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(error = error.message, isLoading = false) }
+            }
         }
     }
 
     /**
-     * Overwrites an existing employee payload matching its ID.
-     *
-     * @param employee The mutated [EmployeeItem].
+     * Updates an existing employee using the real API.
      */
-    fun updateEmployee(employee: EmployeeItem) {
-        _uiState.update { state ->
-            state.copy(
-                employees = state.employees.map { if (it.id == employee.id) employee else it },
-                selectedEmployee = null
+    fun updateEmployee(
+        employee: EmployeeItem,
+        entryTime: String = "08:00:00",
+        exitTime: String = "16:00:00",
+        targetDeptId: Long = 0
+    ) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            
+            val names = employee.fullName.split(" ")
+            val firstName = names.getOrNull(0) ?: ""
+            val paternal = names.getOrNull(1) ?: ""
+            val maternal = names.getOrNull(2) ?: ""
+
+            val request = UserRequest(
+                nombre = firstName,
+                apellidoPaterno = paternal,
+                apellidoMaterno = maternal,
+                correo = employee.email,
+                telefono = employee.phone,
+                horaEntrada = entryTime,
+                horaSalida = exitTime,
+                roles = listOf("EMPLEADO"),
+                departamentoId = if (targetDeptId > 0) targetDeptId else _uiState.value.managerDeptId
             )
+
+            val result = usuarioRepository.actualizarUsuario(employee.id, request)
+            result.onSuccess {
+                refreshEmployees(_uiState.value.managerDeptId)
+                _uiState.update { it.copy(selectedEmployee = null) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(error = error.message, isLoading = false) }
+            }
         }
     }
 
-    /**
-     * Toggles the active/inactive authorization status mechanism.
-     *
-     * @param employeeId The target employee database identity.
-     */
-    fun toggleEmployeeStatus(employeeId: Int) {
-        _uiState.update { state ->
-            state.copy(
-                employees = state.employees.map { 
-                    if (it.id == employeeId) it.copy(isActive = !it.isActive) else it 
-                }
-            )
-        }
-    }
-
-    /**
-     * Hard-removes the member from the internal memory store.
-     *
-     * @param employeeId The target employee identity.
-     */
-    fun deleteEmployee(employeeId: Int) {
-        _uiState.update { state ->
-            state.copy(employees = state.employees.filter { it.id != employeeId })
+    fun toggleEmployeeStatus(employeeId: Long) {
+        viewModelScope.launch {
+            val result = usuarioRepository.toggleEstadoUsuario(employeeId)
+            result.onSuccess {
+                refreshEmployees(_uiState.value.managerDeptId)
+            }
         }
     }
 }

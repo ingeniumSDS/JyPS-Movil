@@ -1,18 +1,34 @@
 package mx.edu.utez.jyps.viewmodel
 
+import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import mx.edu.utez.jyps.data.network.RetrofitInstance
+import mx.edu.utez.jyps.data.repository.JustificationRepository
+import mx.edu.utez.jyps.data.repository.PreferencesManager
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 /**
- * State class for the Justification Request screen.
+  * Sealed contract for Justification Request UI states.
+  */
+sealed interface JustificationUiState {
+    object Idle : JustificationUiState
+    object Loading : JustificationUiState
+    object Success : JustificationUiState
+    data class Error(val message: String) : JustificationUiState
+}
+
+/**
+  * State class for the Justification Request screen.
  *
  * @property fullName Session populated name.
  * @property email Session populated email limit.
@@ -24,13 +40,13 @@ import java.time.format.DateTimeFormatter
  * @property maxFiles Upper DFR bounds for items.
  * @property maxFileSizeMb Hard cap metric checks.
  * @property showDatePicker Trigger Boolean for UI prompt UI.
- * @property isLoading Network lock.
- * @property isSuccess Transversal UI state indicating request success.
- * @property error Active block error mapping layout text message display constraints.
+ * @property uiState Current reactive state (Idle, Loading, Success, Error).
  */
 data class JustificationRequestState(
-    val fullName: String = "Juan Pérez García", // Dummy data
-    val email: String = "juan.perez@utez.edu.mx", // Dummy data
+    val userId: Long = 0,
+    val jefeId: Long = 0,
+    val fullName: String = "",
+    val email: String = "",
     val selectedDate: LocalDate? = null,
     val details: String = "",
     val detailsMinLimit: Int = 25,
@@ -39,23 +55,45 @@ data class JustificationRequestState(
     val maxFiles: Int = 3,
     val maxFileSizeMb: Int = 3,
     val showDatePicker: Boolean = false,
-    val isLoading: Boolean = false,
-    val isSuccess: Boolean = false,
-    val error: String? = null
+    val uiState: JustificationUiState = JustificationUiState.Idle
 ) {
     val dateDisplay: String
         get() = selectedDate?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) ?: ""
 
     val isFormValid: Boolean
-        get() = !isLoading && selectedDate != null && details.length in detailsMinLimit..detailsLimit
+        get() = uiState !is JustificationUiState.Loading && selectedDate != null && details.length in detailsMinLimit..detailsLimit
 }
 
 /**
  * ViewModel managing the Justificante request flow.
  */
-class JustificationRequestViewModel : ViewModel() {
+class JustificationRequestViewModel(application: android.app.Application) : AndroidViewModel(application) {
+    
+    private val preferencesManager = PreferencesManager(application)
+    private val repository = JustificationRepository(RetrofitInstance.api, application)
+    
     private val _uiState = MutableStateFlow(JustificationRequestState())
     val uiState: StateFlow<JustificationRequestState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            preferencesManager.userIdFlow.collect { id ->
+                _uiState.update { it.copy(userId = id) }
+                android.util.Log.d("JustificationVM", "ID de usuario cargado: $id")
+            }
+        }
+        viewModelScope.launch {
+            preferencesManager.deptIdFlow.collect { id ->
+                _uiState.update { it.copy(jefeId = id) }
+                android.util.Log.d("JustificationVM", "ID de jefe (departamento) cargado: $id")
+            }
+        }
+        viewModelScope.launch {
+            preferencesManager.userProfileFlow.collect { (name, email, _) ->
+                _uiState.update { it.copy(fullName = name, email = email) }
+            }
+        }
+    }
 
     /**
      * Maps global settings natively.
@@ -154,39 +192,65 @@ class JustificationRequestViewModel : ViewModel() {
     }
 
     /**
-     * Constructs and executes submit API boundary natively sequence map.
+     * Construye y ejecuta la secuencia nativa para enviar la solicitud a la API.
      */
     fun onSubmit() {
-        if (!_uiState.value.isFormValid) return
+        if (!_uiState.value.isFormValid) {
+            showError("Asegúrate de completar todos los campos y adjuntar al menos un archivo.")
+            return
+        }
         
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        val currentState = _uiState.value
+        _uiState.update { it.copy(uiState = JustificationUiState.Loading) }
         
-        // Simulating API call & DFR requirements (Register -> Notify Boss -> set status Pending)
-        // Dummy backend logic simulated by simple success flag
-        _uiState.update { 
-            it.copy(
-                isLoading = false,
-                isSuccess = true
-            ) 
+        // SEGREGACIÓN DE LÓGICA MOCK PARA JUAN PÉREZ
+        if (currentState.email == "juan.perez@utez.edu.mx") {
+            android.util.Log.d("JustificationVM", "Ejecutando envío MOCK para Juan Pérez")
+            viewModelScope.launch {
+                kotlinx.coroutines.delay(1000)
+                _uiState.update { it.copy(uiState = JustificationUiState.Success) }
+            }
+            return
+        }
+
+        // REAL BACKEND INTEGRATION
+        viewModelScope.launch {
+            val result = repository.crearJustificante(
+                empleadoId = currentState.userId,
+                jefeId = currentState.jefeId,
+                fechaSolicitada = currentState.selectedDate.toString(), // ISO-8601 (YYYY-MM-DD)
+                descripcion = currentState.details,
+                fileUris = currentState.attachedUris
+            )
+            
+            result.onSuccess {
+                _uiState.update { it.copy(uiState = JustificationUiState.Success) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(uiState = JustificationUiState.Error(error.message ?: "Error desconocido")) }
+            }
         }
     }
 
     /**
      * Injects overlay UI alert sequence mappings parameters text natively parameters message parameters execution variables map constraint mappings constraint natively explicitly target message sequences bounds text array mapping.
-     *
-     * @param message Text array mapped parameters mapping explicitly bounds target array boundaries explicit limits target limits strings boundaries explicitly properties validation.
      */
     fun showError(message: String) {
-        _uiState.update { it.copy(error = message) }
+        _uiState.update { it.copy(uiState = JustificationUiState.Error(message)) }
     }
 
     /** Unbinds error flag string natively limit target sequences arrays definitions map explicitly. */
     fun clearError() {
-        _uiState.update { it.copy(error = null) }
+        _uiState.update { it.copy(uiState = JustificationUiState.Idle) }
     }
 
     /** Reverts mapping flags parameters constraint boundaries variables validation mapped states map states explicit boundaries boolean boundaries explicitly limit mapping target boundaries constraints. */
     fun resetSuccess() {
-        _uiState.update { it.copy(isSuccess = false) }
+        _uiState.update { it.copy(uiState = JustificationUiState.Idle) }
     }
 }
+
+private val JustificationRequestState.isFormValid: Boolean
+    get() = uiState !is JustificationUiState.Loading && 
+            selectedDate != null && 
+            details.length in detailsMinLimit..detailsLimit &&
+            attachedUris.isNotEmpty()

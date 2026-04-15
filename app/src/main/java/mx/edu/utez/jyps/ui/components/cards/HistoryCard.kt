@@ -21,8 +21,10 @@ import androidx.compose.ui.unit.sp
 import mx.edu.utez.jyps.data.model.EstadosIncidencia
 import mx.edu.utez.jyps.ui.components.status.StatusBadge
 import mx.edu.utez.jyps.ui.theme.*
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import mx.edu.utez.jyps.data.model.HistoryItem
+import mx.edu.utez.jyps.utils.FileUtils
 
 /**
  * Reusable card for history items (Passes or Justifications).
@@ -31,20 +33,21 @@ import mx.edu.utez.jyps.data.model.HistoryItem
  * @param onEdit Lambda executed when the user chooses to modify a pending request.
  * @param onDelete Lambda executed when the user opts to discard a pending request.
  * @param onShowQr Lambda displaying the generated visual matrix upon confirmation click.
+ * @param onClick Lambda executed when the entire card is tapped to show details.
  */
 @Composable
 fun HistoryCard(
     item: HistoryItem,
     onEdit: () -> Unit = {},
     onDelete: () -> Unit = {},
-    onShowQr: () -> Unit = {}
+    onShowQr: () -> Unit = {},
+    onClick: () -> Unit = {},
+    showEditButton: Boolean = true
 ) {
-    val isClickable = item.status == EstadosIncidencia.APROBADO && item.type.contains("Pase")
-    
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (isClickable) Modifier.clickable { onShowQr() } else Modifier),
+            .clickable { onClick() },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp)
@@ -92,17 +95,32 @@ fun HistoryCard(
                 
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text("📅 ${item.date}", fontSize = 12.sp, color = Color(0xFF6A7282))
-                    Text("🕐 ${item.time}", fontSize = 12.sp, color = Color(0xFF6A7282))
+                    
+                    if (item.type != "Justificante") {
+                        Text("🕐 ${item.time}", fontSize = 12.sp, color = Color(0xFF6A7282))
+                    }
                     
                     if (item.status != EstadosIncidencia.PENDIENTE && 
                         item.status != EstadosIncidencia.RECHAZADO && 
                         item.status != EstadosIncidencia.CADUCADO) {
-                        Text("🔑 ${item.code}", fontSize = 12.sp, color = Color(0xFF6A7282))
+                        
+                        val codeLabel = if (item.type == "Justificante") "JUST_${item.id}" else item.code
+                        Text("🔑 $codeLabel", fontSize = 12.sp, color = Color(0xFF6A7282))
                     }
                 }
 
-                item.fileName?.let {
-                    Text("📎 $it", fontSize = 12.sp, color = Color(0xFF155DFC))
+                if (item.attachments.isNotEmpty()) {
+                    val firstFile = item.attachments.first()
+                    val fileName = FileUtils.formatFileName(firstFile.displayName)
+                    val extraText = if (item.attachments.size > 1) " y ${item.attachments.size - 1} más" else ""
+                    
+                    Text(
+                        text = "📎 $fileName$extraText",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        textDecoration = TextDecoration.Underline
+                    )
                 }
 
                 item.internalInfo?.let { 
@@ -149,12 +167,14 @@ fun HistoryCard(
 
                 if (item.status == EstadosIncidencia.PENDIENTE) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
-                            onClick = onEdit,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Editar", fontSize = 12.sp)
+                        if (showEditButton) {
+                            OutlinedButton(
+                                onClick = onEdit,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Editar", fontSize = 12.sp)
+                            }
                         }
                         OutlinedButton(
                             onClick = onDelete,

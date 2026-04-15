@@ -1,9 +1,11 @@
 package mx.edu.utez.jyps.ui.components.scanner
 
+import timber.log.Timber
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -37,12 +39,14 @@ import java.util.concurrent.Executors
  * The camera preview is rendered at square 1:1 aspect ratio, cropped from the center of the
  * sensor to match the existing [ScannerBox] frame.
  *
- * @param onQrDetected Callback fired with the decoded QR string (debounced by [QRCodeAnalyzer]).
+ * @param isScanning Whether the QR analyzer should be active. If false, camera continues previewing but scanning stops.
+ * @param onQrDetected Callback fired with the decoded QR string.
  * @param onFrameWithQr Callback fired each frame: true when a QR is visible, false otherwise.
  * @param modifier Modifier applied to the root Box.
  */
 @Composable
 fun CameraPreview(
+    isScanning: Boolean = true,
     onQrDetected: (String) -> Unit,
     onFrameWithQr: (Boolean) -> Unit,
     modifier: Modifier = Modifier
@@ -52,6 +56,9 @@ fun CameraPreview(
     var hasCameraPermission by remember { mutableStateOf(false) }
     var permissionDeniedPermanently by remember { mutableStateOf(false) }
     var permissionChecked by remember { mutableStateOf(false) }
+
+    val currentOnQrDetected by rememberUpdatedState(onQrDetected)
+    val currentOnFrameWithQr by rememberUpdatedState(onFrameWithQr)
 
     // Launcher for the system permission dialog
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -82,51 +89,65 @@ fun CameraPreview(
         when {
             hasCameraPermission -> {
                 // Live camera preview in a square crop
-                AndroidView(
-                    factory = { ctx ->
-                        val previewView = PreviewView(ctx).apply {
-                            // FILL_CENTER scales and crops the sensor output to fill the square
-                            scaleType = PreviewView.ScaleType.FILL_CENTER
-                        }
+                val previewView = remember {
+                    PreviewView(context).apply {
+                        scaleType = PreviewView.ScaleType.FILL_CENTER
+                    }
+                }
+                val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+                var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+                val executor = remember { Executors.newSingleThreadExecutor() }
 
-                        val executor = Executors.newSingleThreadExecutor()
-                        val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                val preview = remember { 
+                    CameraXPreview.Builder().build().also {
+                        it.setSurfaceProvider(previewView.surfaceProvider)
+                    }
+                }
 
-                        cameraProviderFuture.addListener({
-                            val cameraProvider = cameraProviderFuture.get()
+                val imageAnalysis = remember {
+                    ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+                }
 
-                            val preview = CameraXPreview.Builder().build().also {
-                                it.setSurfaceProvider(previewView.surfaceProvider)
-                            }
+                // Initial binding
+                LaunchedEffect(hasCameraPermission) {
+                    if (hasCameraPermission) {
+                        cameraProvider = cameraProviderFuture.get()
+                    }
+                }
 
-                            val imageAnalysis = ImageAnalysis.Builder()
-                                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                                .build()
-                                .also {
-                                    it.setAnalyzer(
-                                        executor,
-                                        QRCodeAnalyzer(
-                                            onQrDetected = onQrDetected,
-                                            onFrameWithQr = onFrameWithQr
-                                        )
-                                    )
-                                }
-
-                            try {
-                                cameraProvider.unbindAll()
-                                cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    CameraSelector.DEFAULT_BACK_CAMERA,
-                                    preview,
-                                    imageAnalysis
+                // Dynamic camera lifecycle: on/off based on isScanning
+                LaunchedEffect(isScanning, cameraProvider) {
+                    val pc = cameraProvider ?: return@LaunchedEffect
+                    try {
+                        if (isScanning) {
+                            imageAnalysis.setAnalyzer(
+                                executor,
+                                QRCodeAnalyzer(
+                                    onQrDetected = currentOnQrDetected,
+                                    onFrameWithQr = currentOnFrameWithQr
                                 )
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }, ContextCompat.getMainExecutor(ctx))
+                            )
+                            // Re-bind everything: camera turns ON
+                            pc.unbindAll()
+                            pc.bindToLifecycle(
+                                lifecycleOwner,
+                                CameraSelector.DEFAULT_BACK_CAMERA,
+                                preview,
+                                imageAnalysis
+                            )
+                        } else {
+                            // Unbind everything: camera turns OFF
+                            pc.unbindAll()
+                        }
+                    } catch (e: Exception) {
+                        Timber.e(e, "Camera toggle failure")
+                    }
+                }
 
-                        previewView
-                    },
+                AndroidView(
+                    factory = { previewView },
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -157,6 +178,7 @@ fun CameraPreview(
 @Composable
 fun CameraPreviewPreview() {
     CameraPreview(
+        isScanning = true,
         onQrDetected = {},
         onFrameWithQr = {}
     )

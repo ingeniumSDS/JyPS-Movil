@@ -11,6 +11,7 @@ import mx.edu.utez.jyps.data.model.UpdateDepartmentRequest
 import mx.edu.utez.jyps.data.model.ToggleStatusRequest
 import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.data.network.ApiService
+import mx.edu.utez.jyps.utils.CrashlyticsHelper
 
 /**
  * Repository responsible for managing department operations within the institution.
@@ -35,18 +36,21 @@ class DepartmentRepository(private val apiService: ApiService) {
      * @return List of retrieved [DepartamentoResponse] objects.
      */
     suspend fun getDepartamentos(): List<DepartamentoResponse> {
+        val endpoint = "/api/v1/departamentos"
         if (isFetchingDepts) return _allDepartments.value
         return try {
             isFetchingDepts = true
-            Log.d(TAG, "GET /api/v1/departamentos")
+            CrashlyticsHelper.logApiCall("GET", endpoint)
+            Log.d(TAG, "GET $endpoint")
             val response = apiService.getDepartamentos()
             Log.d(TAG, "${response.size} departamentos recibidos")
             
             _allDepartments.value = response
-            Log.d(TAG, "Actualizada lista global en StateFlow")
+            CrashlyticsHelper.logApiSuccess("GET", endpoint)
             response
         } catch (e: Exception) {
-            Log.e(TAG, "Error getDepartamentos (Resilient): ${e.message}")
+            Log.e(TAG, "Error getDepartamentos: ${e.message}")
+            CrashlyticsHelper.logApiError("GET", endpoint, e)
             _allDepartments.value
         } finally {
             isFetchingDepts = false
@@ -85,13 +89,17 @@ class DepartmentRepository(private val apiService: ApiService) {
      * @return List of [Usuario] objects linked to the department.
      */
     suspend fun getUsuariosByDepartamento(id: Long): List<Usuario> {
+        val endpoint = "/api/v1/$id/usuarios"
         return try {
-            Log.d(TAG, "GET /api/v1/$id/usuarios")
+            CrashlyticsHelper.logApiCall("GET", endpoint)
+            Log.d(TAG, "GET $endpoint")
             val response = apiService.getUsuariosByDepartamento(id)
+            CrashlyticsHelper.logApiSuccess("GET", endpoint)
             Log.d(TAG, "${response.size} usuarios recuperados para depto $id")
             response
         } catch (e: Exception) {
             Log.e(TAG, "Error getUsuariosByDepartamento ($id): ${e.message}", e)
+            CrashlyticsHelper.logApiError("GET", endpoint, e)
             emptyList()
         }
     }
@@ -104,10 +112,15 @@ class DepartmentRepository(private val apiService: ApiService) {
      * @return [Result] containing the updated [DepartamentoResponse] or an error.
      */
     suspend fun asignarJefe(id: Long, jefeId: Long): Result<DepartamentoResponse> {
+        val endpoint = "/api/v1/departamentos/$id/asignar-jefe"
         return try {
-            Log.d(TAG, "PATCH /api/v1/departamentos/$id/asignar-jefe?jefeId=$jefeId")
+            CrashlyticsHelper.logApiCall("PATCH", endpoint)
+            CrashlyticsHelper.logAction("DepartmentRepo", "assign_head",
+                mapOf("deptId" to id.toString(), "jefeId" to jefeId.toString()))
+            Log.d(TAG, "PATCH $endpoint?jefeId=$jefeId")
             val response = apiService.asignarJefe(id, jefeId)
             if (response.isSuccessful && response.body() != null) {
+                CrashlyticsHelper.logApiSuccess("PATCH", endpoint)
                 Log.d(TAG, "Jefe asignado correctamente en el servidor")
                 Result.success(response.body()!!)
             } else {
@@ -117,6 +130,7 @@ class DepartmentRepository(private val apiService: ApiService) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Excepción en asignarJefe: ${e.message}", e)
+            CrashlyticsHelper.logApiError("PATCH", endpoint, e)
             Result.failure(e)
         }
     }

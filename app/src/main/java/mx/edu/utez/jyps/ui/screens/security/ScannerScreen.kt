@@ -119,6 +119,7 @@ fun ScannerContent(
             // Placing it outside prevents CameraX surface destruction on scroll events.
             ScannerCard(
                 status = uiState.status,
+                isScanning = uiState.isScanning,
                 isQrInFrame = uiState.isQrInFrame,
                 onQrDetected = onQrCodeDetected,
                 onFrameWithQr = onFrameWithQr,

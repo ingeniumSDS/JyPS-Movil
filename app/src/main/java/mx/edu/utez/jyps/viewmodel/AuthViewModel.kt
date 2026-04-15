@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.data.network.RetrofitInstance
 import mx.edu.utez.jyps.data.repository.AuthRepository
 import mx.edu.utez.jyps.data.repository.PreferencesManager
+import mx.edu.utez.jyps.utils.CrashlyticsHelper
 
 /**
  * Represents the unified, immutable state of an active user session.
@@ -28,7 +29,9 @@ data class SessionState(
     val roles: List<String> = emptyList(),
     val userName: String = "Usuario",
     val userEmail: String = "",
-    val userPhone: String = "No disponible"
+    val userPhone: String = "No disponible",
+    val userId: Long = 0L,
+    val deptId: Long = 0L
 )
 
 /**
@@ -51,14 +54,18 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     val sessionState: StateFlow<SessionState> = kotlinx.coroutines.flow.combine(
         repository.tokenFlow,
         repository.rolesFlow,
-        preferencesManager.userProfileFlow
-    ) { token, roles, profile ->
+        preferencesManager.userProfileFlow,
+        preferencesManager.userIdFlow,
+        preferencesManager.deptIdFlow
+    ) { token, roles, profile, userId, deptId ->
         SessionState(
             isLoggedIn = !token.isNullOrEmpty(),
             roles = roles?.split(",")?.filter { it.isNotEmpty() } ?: emptyList(),
             userName = profile.first,
             userEmail = profile.second,
-            userPhone = profile.third
+            userPhone = profile.third,
+            userId = userId,
+            deptId = deptId
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SessionState())
 
@@ -82,6 +89,14 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     val userPhone: StateFlow<String> = sessionState.map { it.userPhone }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "No disponible")
+
+    val userId: StateFlow<Long> = sessionState.map { it.userId }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
+
+    val deptId: StateFlow<Long> = sessionState.map { it.deptId }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
 
     private val _correo = MutableStateFlow("")
     val correo: StateFlow<String> = _correo
@@ -112,8 +127,19 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             _errorMessage.value = null
 
             val result = repository.login(email, pwd)
+            result.onSuccess {
+                // Tag Crashlytics session with authenticated identity
+                val session = sessionState.value
+                CrashlyticsHelper.setUserContext(
+                    userId = session.userId,
+                    role = session.roles.firstOrNull() ?: "UNKNOWN",
+                    deptId = session.deptId,
+                    email = session.userEmail
+                )
+            }
             result.onFailure { error ->
                 _errorMessage.value = error.message
+                CrashlyticsHelper.logAction("Login", "login_failed", mapOf("email" to email))
             }
             _isLoading.value = false
         }
@@ -124,6 +150,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun logout() {
         viewModelScope.launch {
+            CrashlyticsHelper.clearUserContext()
             repository.logout()
         }
     }

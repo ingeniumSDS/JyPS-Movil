@@ -9,6 +9,7 @@ import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import mx.edu.utez.jyps.data.model.EstadosIncidencia
 import mx.edu.utez.jyps.data.model.PassResponse
@@ -64,6 +65,8 @@ sealed class ScannerStatus {
  */
 data class ScannerUiState(
     val status: ScannerStatus = ScannerStatus.Idle,
+    val isScanning: Boolean = true,
+    val isLoading: Boolean = false,
     val manualCode: String = "",
     val errorToast: String? = null,
     val isQrInFrame: Boolean = false,
@@ -112,6 +115,7 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
     // ─── Camera & Manual Input ────────────────────────────────────────────────
 
     fun onQrCodeDetected(rawValue: String) {
+        if (!_uiState.value.isScanning || _uiState.value.isLoading) return
         processCode(rawValue.trim().uppercase())
     }
 
@@ -132,7 +136,13 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
     // ─── Core Business Logic ─────────────────────────────────────────────────
 
     private fun processCode(code: String) {
-        if (code.isBlank()) return
+        if (code.isBlank() || _uiState.value.isLoading) return
+
+        _uiState.update { it.copy(
+            isScanning = false,
+            isLoading = true,
+            isQrInFrame = false
+        ) }
 
         // Check if we should use Mock logic based on the user identity
         if (_uiState.value.currentUserEmail == "maria.gonzalez@utez.edu.mx") {
@@ -147,15 +157,17 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
      */
     private fun processRealCode(code: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(status = ScannerStatus.Idle)
-            
             repository.processPassCheckout(code).onSuccess { response ->
                 val status = mapResponseToStatus(response)
-                _uiState.value = _uiState.value.copy(status = status)
+                _uiState.update { it.copy(
+                    status = status,
+                    isLoading = false
+                ) }
             }.onFailure { error ->
-                _uiState.value = _uiState.value.copy(
-                    status = ScannerStatus.InvalidCode(error.message ?: "Código no válido")
-                )
+                _uiState.update { it.copy(
+                    status = ScannerStatus.InvalidCode(error.message ?: "Código no válido"),
+                    isLoading = false
+                ) }
             }
         }
     }
@@ -167,16 +179,18 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
         Timber.d("[MOCK] Processing code: %s", code)
         
         if (usedRegistry.contains(code)) {
-            _uiState.value = _uiState.value.copy(
-                status = ScannerStatus.AlreadyUsed(buildMockPassInfo(code, true))
-            )
+            _uiState.update { it.copy(
+                status = ScannerStatus.AlreadyUsed(buildMockPassInfo(code, true)),
+                isLoading = false
+            ) }
             return
         }
 
         val hasReturnLimit = validCodes[code] ?: run {
-            _uiState.value = _uiState.value.copy(
-                status = ScannerStatus.InvalidCode("Código \"$code\" no registrado (MOCK).")
-            )
+            _uiState.update { it.copy(
+                status = ScannerStatus.InvalidCode("Código \"$code\" no registrado (MOCK)."),
+                isLoading = false
+            ) }
             return
         }
 
@@ -190,48 +204,40 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
                 usedRegistry.add(code)
                 exitRegistry.remove(code)
             }
-            _uiState.value = _uiState.value.copy(
-                status = if (hasReturnLimit) ScannerStatus.ExitGranted(info) else ScannerStatus.ExitNoReturn(info)
-            )
+            _uiState.update { it.copy(
+                status = if (hasReturnLimit) ScannerStatus.ExitGranted(info) else ScannerStatus.ExitNoReturn(info),
+                isLoading = false
+            ) }
         } else {
             val actualReturnTime = ZonedDateTime.now().format(timeFormatter)
             val info = buildMockPassInfo(code, hasReturnLimit, actualReturnTime)
             usedRegistry.add(code)
             exitRegistry.remove(code)
-            _uiState.value = _uiState.value.copy(status = ScannerStatus.ReturnOnTime(info))
+            _uiState.update { it.copy(status = ScannerStatus.ReturnOnTime(info), isLoading = false) }
         }
     }
 
     private fun mapResponseToStatus(response: PassResponse): ScannerStatus {
-        val now = ZonedDateTime.now()
-        val formattedNow = now.format(timeFormatter)
-        
-        // Determinar si es un estado de retorno
-        val isReturn = response.estado.uppercase() == EstadosIncidencia.A_TIEMPO.name || 
-                       response.estado.uppercase() == EstadosIncidencia.RETARDO.name
-
         val info = ScannedPassInfo(
-            name = response.nombreCompleto,
-            code = response.QR,
+            name = response.nombreCompleto ?: "Empleado",
+            code = response.QR ?: "N/A",
             date = formatIsoDate(response.fechaSolicitud),
-            exitTime = formatIsoTime(response.horaSalidaReal ?: response.horaSolicitada),
+            exitTime = formatIsoTime(response.horaSalidaReal),
             returnDeadline = formatIsoTime(response.horaEsperada),
-            actualReturnTime = if (isReturn) formattedNow else ""
+            actualReturnTime = if (response.horaRetornoReal != null) formatIsoTime(response.horaRetornoReal) else ""
         )
 
-        return when (response.estado.uppercase()) {
-            EstadosIncidencia.APROBADO.name,
-            EstadosIncidencia.FUERA.name -> {
-                if (response.horaEsperada.isNullOrBlank() || response.horaEsperada == "0") {
-                    ScannerStatus.ExitNoReturn(info)
-                } else {
-                    ScannerStatus.ExitGranted(info)
-                }
-            }
-            EstadosIncidencia.A_TIEMPO.name -> ScannerStatus.ReturnOnTime(info)
-            EstadosIncidencia.RETARDO.name -> ScannerStatus.ReturnLate(info)
-            EstadosIncidencia.CADUCADO.name -> ScannerStatus.ExpiredPass(info)
-            EstadosIncidencia.USADO.name -> ScannerStatus.AlreadyUsed(info)
+        val hasHoraRetornoReal = response.horaRetornoReal != null
+        val upperState = response.estado.uppercase()
+
+        return when {
+            upperState == EstadosIncidencia.A_TIEMPO.name && !hasHoraRetornoReal -> ScannerStatus.ExitNoReturn(info)
+            upperState == EstadosIncidencia.FUERA.name -> ScannerStatus.ExitGranted(info)
+            upperState == EstadosIncidencia.A_TIEMPO.name && hasHoraRetornoReal -> ScannerStatus.ReturnOnTime(info)
+            upperState == EstadosIncidencia.RETARDO.name && hasHoraRetornoReal -> ScannerStatus.ReturnLate(info)
+            upperState == EstadosIncidencia.CADUCADO.name -> ScannerStatus.ExpiredPass(info)
+            upperState == EstadosIncidencia.USADO.name -> ScannerStatus.AlreadyUsed(info)
+            upperState == EstadosIncidencia.APROBADO.name -> ScannerStatus.ExitGranted(info) // Fallback just in case
             else -> ScannerStatus.InvalidCode("Estado de pase desconocido: ${response.estado}")
         }
     }
@@ -248,7 +254,7 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun formatIsoTime(isoString: String?): String {
-        if (isoString.isNullOrBlank() || isoString == "0") return "N/A (Sin regreso)"
+        if (isoString.isNullOrBlank() || isoString == "0") return "N/A"
         return try {
             val cleaned = if (isoString.contains("T")) isoString else "1970-01-01T$isoString"
             val normalized = if (cleaned.contains("+") || cleaned.endsWith("Z")) cleaned else "${cleaned}Z"
@@ -295,9 +301,11 @@ class ScannerViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun resetScanner() {
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             status = ScannerStatus.Idle,
+            isScanning = true,
+            isLoading = false,
             isQrInFrame = false
-        )
+        ) }
     }
 }

@@ -37,6 +37,15 @@ import mx.edu.utez.jyps.viewmodel.AuthViewModel
 import mx.edu.utez.jyps.viewmodel.LoginViewModel
 import mx.edu.utez.jyps.ui.components.common.AppToast
 import mx.edu.utez.jyps.ui.components.common.ToastType
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Feedback
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import com.google.firebase.appdistribution.FirebaseAppDistribution
+import mx.edu.utez.jyps.BuildConfig
+import mx.edu.utez.jyps.R
 
 /**
  * AppRoutes defines the immutable navigation destinations for the application.
@@ -90,6 +99,10 @@ fun NavigationHost(
     val currentUser by authViewModel.userName.collectAsStateWithLifecycle()
     val currentUserEmail by authViewModel.userEmail.collectAsStateWithLifecycle()
     val currentUserPhone by authViewModel.userPhone.collectAsStateWithLifecycle()
+    val currentUserId by authViewModel.userId.collectAsStateWithLifecycle()
+    val currentDeptId by authViewModel.deptId.collectAsStateWithLifecycle()
+
+    android.util.Log.d("NavigationHost", "Current session: User=$currentUserId, Dept=$currentDeptId")
 
     // SECURE NAVIGATION LOGIC: Derived from unified session state
     val targetRoute = remember(sessionToken, roles) {
@@ -210,7 +223,8 @@ fun NavigationHost(
                             navController.navigateUp()
                         },
                         userName = currentUser,
-                        userEmail = currentUserEmail
+                        userEmail = currentUserEmail,
+                        userId = currentUserId
                     )
                 }
 
@@ -238,7 +252,8 @@ fun NavigationHost(
                         onHomeClick = { navController.navigate(AppRoutes.EmployeeHome.route) },
                         onProfileClick = { navController.navigate(AppRoutes.Profile.route) },
                         viewModel = historyViewModel,
-                        userName = currentUser
+                        userName = currentUser,
+                        userEmail = currentUserEmail
                     )
                 }
 
@@ -346,7 +361,9 @@ fun NavigationHost(
                             }
                         },
                         userName = currentUser,
-                        userEmail = currentUserEmail
+                        userEmail = currentUserEmail,
+                        userId = currentUserId,
+                        jefeId = currentDeptId
                     )
                 }
 
@@ -405,7 +422,8 @@ fun NavigationHost(
                                 popUpTo(AppRoutes.DeptHeadDashboard.route) { inclusive = false }
                             }
                         },
-                        userName = currentUser
+                        userName = currentUser,
+                        userEmail = currentUserEmail
                     )
                 }
 
@@ -445,7 +463,9 @@ fun NavigationHost(
                             }
                         },
                         userName = currentUser,
-                        userEmail = currentUserEmail
+                        userEmail = currentUserEmail,
+                        userId = currentUserId,
+                        jefeId = currentDeptId
                     )
                 }
 
@@ -504,7 +524,8 @@ fun NavigationHost(
                                 popUpTo(AppRoutes.Home.route) { inclusive = false }
                             }
                         },
-                        userName = currentUser
+                        userName = currentUser,
+                        userEmail = currentUserEmail
                     )
                 }
 

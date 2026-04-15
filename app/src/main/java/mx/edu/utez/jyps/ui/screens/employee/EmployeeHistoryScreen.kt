@@ -7,9 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.MeetingRoom
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -17,9 +15,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,6 +30,8 @@ import mx.edu.utez.jyps.ui.components.dialogs.ApprovedPassQrDialog
 import mx.edu.utez.jyps.ui.components.dialogs.ConfirmDeleteDialog
 import mx.edu.utez.jyps.ui.components.dialogs.EditJustificationDialog
 import mx.edu.utez.jyps.ui.components.dialogs.EditPassDialog
+import mx.edu.utez.jyps.ui.components.dialogs.JustificationDetailDialog
+import mx.edu.utez.jyps.ui.components.dialogs.PassDetailDialog
 import mx.edu.utez.jyps.ui.components.header.EmployeeHeader
 import mx.edu.utez.jyps.ui.components.navigation.AppBottomNavigationBar
 import mx.edu.utez.jyps.ui.components.navigation.FilterTab
@@ -56,7 +59,8 @@ fun EmployeeHistoryScreen(
     viewModel: EmployeeHistoryViewModel,
     showEmployeeModeBanner: Boolean = false,
     onReturnToRoleDashboard: () -> Unit = {},
-    userName: String = "Empleado"
+    userName: String = "Empleado",
+    userEmail: String = ""
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedFilter by remember { mutableStateOf(HistoryFilter.PASES) }
@@ -64,13 +68,16 @@ fun EmployeeHistoryScreen(
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Display SnackBar messages from the ViewModel
-    LaunchedEffect(uiState.isSuccessOp) {
-        if (uiState.isSuccessOp) {
-            uiState.opMessage?.let { msg ->
-                snackbarHostState.showSnackbar(msg)
-                viewModel.clearOpMessage()
-            }
+    // Refresh history every time the screen is entered
+    LaunchedEffect(Unit) {
+        viewModel.refreshHistory()
+    }
+
+    // Display SnackBar messages from the ViewModel (Success or Error)
+    LaunchedEffect(uiState.opMessage) {
+        uiState.opMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearOpMessage()
         }
     }
 
@@ -105,6 +112,7 @@ fun EmployeeHistoryScreen(
     uiState.requestToShowQr?.let { item ->
         ApprovedPassQrDialog(
             item = item,
+            userEmail = userEmail,
             onDismissRequest = { viewModel.dismissShowQr() },
             onDownloadMock = { bitmap ->
                 coroutineScope.launch {
@@ -113,6 +121,26 @@ fun EmployeeHistoryScreen(
                 }
             }
         )
+    }
+
+    uiState.selectedItemForDetail?.let { item ->
+        if (item.type == "Justificante") {
+            JustificationDetailDialog(
+                item = item,
+                onDismissRequest = { viewModel.dismissDetails() },
+                onDownload = { fileName ->
+                    val empId = item.internalInfo?.substringAfter(": ")?.toLongOrNull() ?: 0L
+                    viewModel.downloadJustificationFile(empId, fileName)
+                },
+                downloadedFiles = uiState.downloadedFiles,
+                downloadingFileName = uiState.downloadingFileName
+            )
+        } else {
+            PassDetailDialog(
+                item = item,
+                onDismissRequest = { viewModel.dismissDetails() }
+            )
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -161,26 +189,50 @@ fun EmployeeHistoryScreen(
                     )
                 }
 
-                // History List
+                // History List / Loading / Empty State
                 val listItems = if (selectedFilter == HistoryFilter.PASES) uiState.pases else uiState.justifications
                 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(listItems, key = { it.id }) { item ->
-                        HistoryCard(
-                            item = item,
-                            onEdit = { 
-                                if (selectedFilter == HistoryFilter.PASES) viewModel.promptEditPass(item) 
-                                else viewModel.promptEditJustification(item) 
-                            },
-                            onDelete = { viewModel.promptDelete(item.id) },
-                            onShowQr = { viewModel.promptShowQr(item) }
-                        )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    } else if (listItems.isEmpty()) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.Description,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = Color.LightGray
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Sin solicitudes registradas.",
+                                color = Color.Gray,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            contentPadding = PaddingValues(vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(listItems, key = { it.id }) { item ->
+                                HistoryCard(
+                                    item = item,
+                                    onEdit = { 
+                                        if (selectedFilter == HistoryFilter.PASES) viewModel.promptEditPass(item) 
+                                        else viewModel.promptEditJustification(item) 
+                                    },
+                                    onDelete = { viewModel.promptDelete(item.id) },
+                                    onShowQr = { viewModel.promptShowQr(item) },
+                                    onClick = { viewModel.onItemClickDetails(item) },
+                                    showEditButton = userEmail == "juan.perez@utez.edu.mx"
+                                )
+                            }
+                        }
                     }
                 }
             }

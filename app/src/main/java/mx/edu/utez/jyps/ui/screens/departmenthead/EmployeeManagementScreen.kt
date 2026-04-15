@@ -199,8 +199,8 @@ fun EmployeeManagementScreen(
     if (uiState.showCreateDialog) {
         CreateEmployeeDialog(
             onDismiss = { viewModel.onDismissDialogs() },
-            onConfirm = { name, email, phone, empId, pos, dept ->
-                viewModel.addEmployee(name, email, phone, empId, pos, dept)
+            onConfirm = { name, email, phone, entry, exit ->
+                viewModel.addEmployee(name, email, phone, entry, exit)
             }
         )
     }
@@ -208,9 +208,10 @@ fun EmployeeManagementScreen(
     uiState.selectedEmployee?.let { employee ->
         EditEmployeeDialog(
             employee = employee,
+            departments = uiState.departments,
             onDismiss = { viewModel.onDismissDialogs() },
-            onConfirm = { updatedEmployee ->
-                viewModel.updateEmployee(updatedEmployee)
+            onConfirm = { updatedEmployee, entry, exit, targetDeptId ->
+                viewModel.updateEmployee(updatedEmployee, entry, exit, targetDeptId)
             }
         )
     }

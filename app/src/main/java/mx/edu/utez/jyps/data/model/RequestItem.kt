@@ -16,6 +16,7 @@ package mx.edu.utez.jyps.data.model
  */
 data class RequestItem(
     val id: String,
+    val numericId: Long,
     val employeeName: String,
     val employeeEmail: String,
     val requestType: RequestType,

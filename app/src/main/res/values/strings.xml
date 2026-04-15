@@ -20,4 +20,7 @@
 
     <!-- Scan Results -->
     <string name="scan_result_close">Cerrar</string>
+
+    <!-- Firebase App Distribution Feedback -->
+    <string name="feedback_notice">Tu opinión nos ayuda a mejorar JyPS. Puedes incluir capturas de pantalla y comentarios sobre cualquier problema o sugerencia.</string>
 </resources>

@@ -171,6 +171,21 @@ class PreferencesManager(private val context: Context) {
         }
 
     /**
+     * Exposes a reactive Flow of the decrypted user ID.
+     */
+    val userIdFlow: Flow<Long> = context.dataStore.data
+        .map { preferences ->
+            val encryptedId = preferences[USER_ID_KEY]
+            if (encryptedId != null) {
+                try {
+                    val decoded = Base64.decode(encryptedId, Base64.DEFAULT)
+                    val decrypted = aead.decrypt(decoded, null)
+                    String(decrypted, Charsets.UTF_8).toLong()
+                } catch (e: Exception) { 0L }
+            } else { 0L }
+        }
+
+    /**
      * Exposes a reactive Flow of the decrypted user email.
      */
     val userEmailFlow: Flow<String?> = context.dataStore.data
@@ -187,6 +202,21 @@ class PreferencesManager(private val context: Context) {
             } else {
                 null
             }
+        }
+
+    /**
+     * Exposes a reactive Flow of the decrypted department identifier.
+     */
+    val deptIdFlow: Flow<Long> = context.dataStore.data
+        .map { preferences ->
+            val encryptedId = preferences[DEPT_ID_KEY]
+            if (encryptedId != null) {
+                try {
+                    val decoded = Base64.decode(encryptedId, Base64.DEFAULT)
+                    val decrypted = aead.decrypt(decoded, null)
+                    String(decrypted, Charsets.UTF_8).toLong()
+                } catch (e: Exception) { 0L }
+            } else { 0L }
         }
 
     /**
@@ -271,6 +301,7 @@ class PreferencesManager(private val context: Context) {
         val encryptedDeptName = aead.encrypt(deptName.toByteArray(Charsets.UTF_8), null)
         val encryptedDeptId = aead.encrypt(deptId.toString().toByteArray(Charsets.UTF_8), null)
 
+        android.util.Log.d("PrefsManager", "Saving session: UserID=$userId, DeptID=$deptId")
         context.dataStore.edit { preferences ->
             preferences[TOKEN_KEY] = Base64.encodeToString(encryptedToken, Base64.DEFAULT)
             preferences[ROLES_KEY] = Base64.encodeToString(encryptedRoles, Base64.DEFAULT)

@@ -30,6 +30,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -40,11 +43,13 @@ import mx.edu.utez.jyps.ui.components.common.AppToast
 import mx.edu.utez.jyps.ui.components.common.ToastType
 import mx.edu.utez.jyps.ui.components.inputs.AppTextField
 import mx.edu.utez.jyps.ui.components.common.EmployeeModeBanner
-import mx.edu.utez.jyps.viewmodel.JustificationRequestViewModel
-import java.io.File
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import mx.edu.utez.jyps.viewmodel.JustificationRequestViewModel
+import mx.edu.utez.jyps.viewmodel.JustificationUiState
+import java.io.File
 
 /**
  * Screen that allows an employee to request a justification (Justificante) for an absence.
@@ -77,8 +82,8 @@ fun JustificationRequestScreen(
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
     var localValidationToast by remember { mutableStateOf<String?>(null) }
 
-    androidx.compose.runtime.LaunchedEffect(uiState.isSuccess) {
-        if (uiState.isSuccess) {
+    LaunchedEffect(uiState.uiState) {
+        if (uiState.uiState is JustificationUiState.Success) {
             viewModel.resetSuccess()
             onSuccessSubmit("Solicitud registrada con éxito.")
         }
@@ -86,7 +91,19 @@ fun JustificationRequestScreen(
 
     // Launchers for Gallery and Camera
     val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
+        contract = object : ActivityResultContracts.GetContent() {
+            override fun createIntent(context: Context, input: String): Intent {
+                return super.createIntent(context, input).apply {
+                    val mimeTypes = arrayOf("image/jpeg", "image/jpg", "image/png", "application/pdf")
+                    putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
+                    // Hiding non-permitted and forcing recent is hardware/OS dependent,
+                    // but CATEGORY_OPENABLE + NO EXTRA_LOCAL_ONLY usually defaults to Recents on modern Android.
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    // Some devices respect this for Recents
+                    putExtra("android.intent.extra.SHOW_ADVANCED", false)
+                }
+            }
+        },
         onResult = { uri -> if (uri != null) viewModel.onFileAttached(context, uri) }
     )
 
@@ -109,26 +126,73 @@ fun JustificationRequestScreen(
 
 
     if (uiState.showDatePicker) {
-        val todayMillis = System.currentTimeMillis()
-        val selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                val date = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneId.systemDefault()).toLocalDate()
-                val today = LocalDate.now()
-                val limit = today.minusDays(3)
-                return !date.isAfter(today) && !date.isBefore(limit)
+        val datePickerState = rememberDatePickerState(
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    val date = Instant.ofEpochMilli(utcTimeMillis)
+                        .atZone(ZoneId.of("UTC"))
+                        .toLocalDate()
+                    val today = LocalDate.now()
+                    
+                    // 1. Ocultar fechas futuras
+                    if (date.isAfter(today)) return false
+                    
+                    // 2. Domingo no es día hábil en la UTEZ (no se selecciona como incidencia)
+                    if (date.dayOfWeek == DayOfWeek.SUNDAY) return false
+                    
+                    // 3. Regla de los 3 días hábiles posteriores
+                    // Contamos cuántos días hábiles (Lun-Sab) han pasado desde 'date' hasta hoy
+                    var businessDaysCount = 0
+                    var tempDate = date.plusDays(1)
+                    while (tempDate.isBefore(today) || tempDate.isEqual(today)) {
+                        if (tempDate.dayOfWeek != DayOfWeek.SUNDAY) {
+                            businessDaysCount++
+                        }
+                        tempDate = tempDate.plusDays(1)
+                    }
+                    
+                    return businessDaysCount < 3
+                }
             }
-        }
-        val datePickerState = rememberDatePickerState(selectableDates = selectableDates)
+        )
         
         DatePickerDialog(
             onDismissRequest = { viewModel.onDateDismiss() },
             confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let {
-                        val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
-                        viewModel.onDateSelected(date)
-                    }
-                }) { Text("Aceptar") }
+                val selectedMillis = datePickerState.selectedDateMillis
+                val isValid = remember(selectedMillis) {
+                    selectedMillis?.let { millis ->
+                        val date = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.of("UTC"))
+                            .toLocalDate()
+                        val today = LocalDate.now()
+                        
+                        var businessDaysCount = 0
+                        var tempDate = date.plusDays(1)
+                        while (tempDate.isBefore(today) || tempDate.isEqual(today)) {
+                            if (tempDate.dayOfWeek != DayOfWeek.SUNDAY) businessDaysCount++
+                            tempDate = tempDate.plusDays(1)
+                        }
+                        
+                        !date.isAfter(today) && 
+                        date.dayOfWeek != DayOfWeek.SUNDAY && 
+                        businessDaysCount < 3
+                    } ?: false
+                }
+
+                TextButton(
+                    onClick = {
+                        selectedMillis?.let { millis ->
+                            val date = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.of("UTC"))
+                                .toLocalDate()
+                            viewModel.onDateSelected(date)
+                        }
+                    },
+                    enabled = isValid
+                ) { 
+                    Text("Aceptar") 
+                }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.onDateDismiss() }) { Text("Cancelar") }
@@ -296,12 +360,16 @@ fun JustificationRequestScreen(
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                "Archivos Adjuntos (Recomendado)",
+                                "Archivos Adjuntos *",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFF364153)
+                                color = Color(0xFF364153),
+                                modifier = Modifier.weight(1f)
                             )
                             Text(
                                 "${uiState.attachedUris.size}/${uiState.maxFiles} Archivos",
@@ -335,8 +403,9 @@ fun JustificationRequestScreen(
                                             }
                                             Spacer(modifier = Modifier.width(12.dp))
                                             val fileName = getFileName(context, uri)
+                                            val formattedName = formatFileName(fileName)
                                             Text(
-                                                text = fileName,
+                                                text = formattedName,
                                                 modifier = Modifier
                                                     .weight(1f)
                                                     .clickable {
@@ -353,8 +422,7 @@ fun JustificationRequestScreen(
                                                 fontSize = 14.sp,
                                                 color = MaterialTheme.colorScheme.primary,
                                                 textDecoration = TextDecoration.Underline,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                maxLines = 1
                                             )
                                             IconButton(onClick = { viewModel.removeFile(uri) }) {
                                                 Icon(Icons.Default.Close, contentDescription = "Eliminar", tint = Color(0xFF6A7282))
@@ -377,7 +445,7 @@ fun JustificationRequestScreen(
                                         if (uiState.attachedUris.size >= uiState.maxFiles) {
                                             localValidationToast = "Has alcanzado el límite de ${uiState.maxFiles} archivos."
                                         } else {
-                                            galleryLauncher.launch(arrayOf("image/jpeg", "image/png", "application/pdf"))
+                                            galleryLauncher.launch("*/*")
                                         }
                                     },
                                 shape = RoundedCornerShape(8.dp),
@@ -416,7 +484,16 @@ fun JustificationRequestScreen(
                         }
                         
                         Text(
-                            "Receta médica, comprobante de cita, carta de padres, etc.",
+                            text = buildAnnotatedString {
+                                append("Receta médica, comprobante, etc. ")
+                                withStyle(
+                                    style = SpanStyle(
+                                        color = if (uiState.attachedUris.isEmpty()) Color.Red else Color(0xFF6A7282)
+                                    )
+                                ) {
+                                    append("(Mín. 1 archivo obligatorio)")
+                                }
+                            },
                             fontSize = 12.sp,
                             color = Color(0xFF6A7282)
                         )
@@ -434,13 +511,21 @@ fun JustificationRequestScreen(
                         }
                         
                         Button(
-                            onClick = { viewModel.onSubmit() },
+                            onClick = { 
+                                if (uiState.attachedUris.isEmpty()) {
+                                    localValidationToast = "Debes adjuntar al menos un archivo de evidencia."
+                                } else {
+                                    viewModel.onSubmit() 
+                                }
+                            },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(8.dp),
-                            enabled = uiState.isFormValid && !uiState.isLoading,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28A745)) // Exact Green from Figma
+                            enabled = uiState.uiState !is JustificationUiState.Loading,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (uiState.isFormValid) Color(0xFF28A745) else Color(0xFF6C757D)
+                            )
                         ) {
-                            if (uiState.isLoading) {
+                            if (uiState.uiState is JustificationUiState.Loading) {
                                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                             } else {
                                 Text("Enviar Solicitud", fontWeight = FontWeight.Medium)
@@ -467,8 +552,8 @@ fun JustificationRequestScreen(
     }
 
     AppToast(
-        message = uiState.error,
-        isVisible = uiState.error != null,
+        message = (uiState.uiState as? JustificationUiState.Error)?.message,
+        isVisible = uiState.uiState is JustificationUiState.Error,
         onDismiss = { viewModel.clearError() },
         type = ToastType.ERROR,
         modifier = Modifier.align(Alignment.BottomCenter)
@@ -522,6 +607,24 @@ private fun getFileName(context: Context, uri: Uri): String {
         if (cut != -1) result = result?.substring(cut + 1)
     }
     return result ?: "Archivo adjunto"
+}
+
+/**
+ * Utility function to truncate long filenames preserving the extension.
+ * Example: "Very_long_filename_of_a_medical_report.pdf" -> "Very_long_filename...pdf"
+ */
+private fun formatFileName(name: String, maxLength: Int = 22): String {
+    if (name.length <= maxLength) return name
+    val dotIndex = name.lastIndexOf('.')
+    if (dotIndex == -1 || name.length - dotIndex > 6) {
+        // No extension or extension too long, truncate end
+        return name.take(maxLength - 3) + "..."
+    }
+    val extension = name.substring(dotIndex)
+    val base = name.substring(0, dotIndex)
+    val charsToKeep = maxLength - extension.length - 3
+    if (charsToKeep <= 0) return "..." + extension
+    return base.take(charsToKeep) + "..." + extension
 }
 
 @Preview(showSystemUi = true)

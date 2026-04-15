@@ -13,7 +13,7 @@ package mx.edu.utez.jyps.data.model
  * @property isActive Boolean status indicating if the employee is currently active in the system.
  */
 data class EmployeeItem(
-    val id: Int = 0,
+    val id: Long = 0,
     val fullName: String,
     val email: String,
     val phone: String,

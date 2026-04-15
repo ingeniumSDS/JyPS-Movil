@@ -38,6 +38,7 @@ class AuthRepository(
     suspend fun login(correo: String, pass: String): Result<LoginResponse> {
         Log.d("AuthRepo", "POST /api/v1/usuarios/login")
 
+        /* Work In Progress - Future Features - No Delete */
         // FALLBACK MOCKS: Maintained for development continuity as requested
         if (correo == "maria.gonzalez@utez.edu.mx") {
             val mock = LoginResponse(999, "María González Hernández", correo, "N/A", listOf("GUARDIA"), null, null, "MOCK_GUARD_TOKEN")
@@ -70,7 +71,7 @@ class AuthRepository(
         }
         if (correo == "root@jyps.com") {
             val mock = LoginResponse(1, "Administrador Root", correo, "0000", listOf("ADMINISTRADOR"), null, null, "MOCK_ADMIN_TOKEN")
-            preferencesManager.saveSession(mock.tokenJwt, mock.roles ?: listOf("ADMINISTRADOR"), "Administrador Root", correo, "000-000-0000")
+            preferencesManager.saveSession(mock.tokenJwt, mock.roles ?: listOf("ADMINISTRADOR"), "Administrador Root", correo, "000-000-0000", userId = 1L)
             return Result.success(mock)
         }
 
@@ -90,6 +91,7 @@ class AuthRepository(
                 val finalDeptName = decoded.optString("nombreDepartamento", data.nombreDepartamento ?: "")
                 val finalDeptId = if (decoded.has("departamentoId")) decoded.getLong("departamentoId") else (data.departamentoId ?: 0L)
                 
+                Log.d("AuthRepo", "Resolved Identity: ID=$finalUserId, DeptID=$finalDeptId, DeptName='$finalDeptName'")
                 val finalEmail = data.correo ?: decoded.optString("sub", correo)
                 val finalPhone = data.telefono?.takeIf { it.isNotBlank() } ?: decoded.optString("telefono", decoded.optString("phone", "No disponible"))
                 val finalRoles = data.roles ?: decoded.optJSONArray("authorities")?.let { arr ->
