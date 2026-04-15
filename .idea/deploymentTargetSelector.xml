@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-04-10T21:23:50.519939200Z">
+        <DropdownSelection timestamp="2026-04-15T15:40:50.921160900Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\isido\.android\avd\Mi_Telefono.avd" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=YBZ2350MXAB5005154" />
             </handle>
           </Target>
         </DropdownSelection>

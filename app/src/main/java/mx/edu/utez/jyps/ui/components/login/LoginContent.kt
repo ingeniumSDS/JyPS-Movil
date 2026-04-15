@@ -190,11 +190,6 @@ fun LoginContent(
             }
         }
 
-        if (!uiState.isLockedOut) {
-            Spacer(modifier = Modifier.height(24.dp))
-            TestUsersBox()
-        }
-
         Spacer(modifier = Modifier.height(24.dp))
 
         InfoNoticeCards(

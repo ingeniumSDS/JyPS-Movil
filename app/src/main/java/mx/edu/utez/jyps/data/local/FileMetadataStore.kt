@@ -17,7 +17,18 @@ class FileMetadataStore(context: Context) {
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
 
-        EncryptedSharedPreferences.create(
+        try {
+            createEncryptedPrefs(context, masterKey)
+        } catch (e: Exception) {
+            Timber.e(e, "EncryptedSharedPreferences corrupted. Attempting recovery...")
+            // Clear the corrupted file and try again
+            context.getSharedPreferences("secure_file_metadata", Context.MODE_PRIVATE).edit().clear().apply()
+            createEncryptedPrefs(context, masterKey)
+        }
+    }
+
+    private fun createEncryptedPrefs(context: Context, masterKey: MasterKey): SharedPreferences {
+        return EncryptedSharedPreferences.create(
             context,
             "secure_file_metadata",
             masterKey,

@@ -98,15 +98,19 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             val result = repository.login(email, password)
             
             result.onSuccess {
-                Log.d("LoginVM", "Auth success for $email. Resetting state.")
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false, 
-                        isLoginSuccessful = true,
-                        loginAttempts = 3,
-                        errorMessage = null,
-                        isAccountBlocked = false
-                    ) 
+                Log.d("LoginVM", "Auth success for $email. Finalizing session...")
+                viewModelScope.launch {
+                    // Safety delay to ensure DataStore synchronization completes
+                    kotlinx.coroutines.delay(300) 
+                    _uiState.update { 
+                        it.copy(
+                            isLoading = false, 
+                            isLoginSuccessful = true,
+                            loginAttempts = 3,
+                            errorMessage = null,
+                            isAccountBlocked = false
+                        ) 
+                    }
                 }
             }.onFailure { error ->
                 val message = error.message ?: "Error desconocido"

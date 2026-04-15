@@ -52,14 +52,12 @@ fun PassRequestScreen(
     showEmployeeModeBanner: Boolean = false,
     onReturnToRoleDashboard: () -> Unit = {},
     userName: String = "Juan",
-    userEmail: String = "juan.perez@utez.edu.mx",
-    userId: Long = 0L,
-    jefeId: Long = 0L
+    userEmail: String = "juan.perez@utez.edu.mx"
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(userName, userEmail, userId, jefeId) {
-        viewModel.setUserInfo(userName, userEmail, userId, jefeId)
+    LaunchedEffect(userName, userEmail) {
+        viewModel.setUserInfo(userName, userEmail)
     }
     
     androidx.compose.runtime.LaunchedEffect(uiState.isSuccess) {
@@ -161,9 +159,11 @@ fun PassRequestScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (uiState.jefeId == 0L) {
+            // Show banner ONLY if we are sure we have a user (name loaded) AND the jefeId is strictly 0.
+            // If the ID updates to 1 later, Compose will automatically hide this.
+            if (uiState.jefeId == 0L && uiState.fullName.isNotBlank() && uiState.fullName != "Juan Pérez García") {
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     color = Color(0xFFFFEBEE),
                     shape = RoundedCornerShape(8.dp),
                     border = BorderStroke(1.dp, Color(0xFFEF9A9A))

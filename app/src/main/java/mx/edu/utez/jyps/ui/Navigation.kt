@@ -223,8 +223,7 @@ fun NavigationHost(
                             navController.navigateUp()
                         },
                         userName = currentUser,
-                        userEmail = currentUserEmail,
-                        userId = currentUserId
+                        userEmail = currentUserEmail
                     )
                 }
 
@@ -343,7 +342,7 @@ fun NavigationHost(
                     )
                 }
 
-                // Dept Head → Employee Mode: Pass Request (with banner)
+                // Dept Head â†’ Employee Mode: Pass Request (with banner)
                 composable(AppRoutes.DeptHeadPassRequest.route) {
                     PassRequestScreen(
                         onBackClick = { navController.navigateUp() },
@@ -361,13 +360,11 @@ fun NavigationHost(
                             }
                         },
                         userName = currentUser,
-                        userEmail = currentUserEmail,
-                        userId = currentUserId,
-                        jefeId = currentDeptId
+                        userEmail = currentUserEmail
                     )
                 }
 
-                // Dept Head → Employee Mode: Home (with banner)
+                // Dept Head â†’ Employee Mode: Home (with banner)
                 composable(AppRoutes.DeptHeadEmployeeHome.route) {
                     EmployeeDashboardScreen(
                         onLogoutClick = { loginViewModel.logout() },
@@ -386,7 +383,7 @@ fun NavigationHost(
                     )
                 }
 
-                // Dept Head → Employee Mode: Justification Request
+                // Dept Head â†’ Employee Mode: Justification Request
                 composable(AppRoutes.DeptHeadJustificationRequest.route) {
                     JustificationRequestScreen(
                         onBackClick = { navController.navigateUp() },
@@ -408,7 +405,7 @@ fun NavigationHost(
                     )
                 }
 
-                // Dept Head → Employee Mode: History
+                // Dept Head â†’ Employee Mode: History
                 composable(AppRoutes.DeptHeadHistory.route) {
                     val historyViewModel: EmployeeHistoryViewModel = viewModel()
                     EmployeeHistoryScreen(
@@ -427,7 +424,7 @@ fun NavigationHost(
                     )
                 }
 
-                // Dept Head → Employee Mode: Profile
+                // Dept Head â†’ Employee Mode: Profile
                 composable(AppRoutes.DeptHeadProfile.route) {
                     ProfileScreen(
                         onLogoutClick = { loginViewModel.logout() },
@@ -445,7 +442,7 @@ fun NavigationHost(
                         roleTitle = currentRole
                     )
                 }
-                // Admin → Employee Mode: Pass Request
+                // Admin â†’ Employee Mode: Pass Request
                 composable(AppRoutes.AdminPassRequest.route) {
                     PassRequestScreen(
                         onBackClick = { navController.navigateUp() },
@@ -463,13 +460,11 @@ fun NavigationHost(
                             }
                         },
                         userName = currentUser,
-                        userEmail = currentUserEmail,
-                        userId = currentUserId,
-                        jefeId = currentDeptId
+                        userEmail = currentUserEmail
                     )
                 }
 
-                // Admin → Employee Mode: Home (with banner)
+                // Admin â†’ Employee Mode: Home (with banner)
                 composable(AppRoutes.AdminEmployeeHome.route) {
                     EmployeeDashboardScreen(
                         onLogoutClick = { loginViewModel.logout() },
@@ -488,7 +483,7 @@ fun NavigationHost(
                     )
                 }
 
-                // Admin → Employee Mode: Justification Request
+                // Admin â†’ Employee Mode: Justification Request
                 composable(AppRoutes.AdminJustificationRequest.route) {
                     JustificationRequestScreen(
                         onBackClick = { navController.navigateUp() },
@@ -510,7 +505,7 @@ fun NavigationHost(
                     )
                 }
 
-                // Admin → Employee Mode: History
+                // Admin â†’ Employee Mode: History
                 composable(AppRoutes.AdminHistory.route) {
                     val historyViewModel: EmployeeHistoryViewModel = viewModel()
                     EmployeeHistoryScreen(
@@ -529,7 +524,7 @@ fun NavigationHost(
                     )
                 }
 
-                // Admin → Employee Mode: Profile
+                // Admin â†’ Employee Mode: Profile
                 composable(AppRoutes.AdminProfile.route) {
                     ProfileScreen(
                         onLogoutClick = { loginViewModel.logout() },

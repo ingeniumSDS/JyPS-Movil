@@ -73,15 +73,20 @@ class PassRequestViewModel(application: android.app.Application) : AndroidViewMo
         checkActivePasses()
         viewModelScope.launch {
             preferencesManager.deptIdFlow.collect { id ->
-                this@PassRequestViewModel.jefeId = id
-                _uiState.update { it.copy(jefeId = id) }
-                timber.log.Timber.d("PassRequestVM: Automatically loaded JefeId=$id from preferences")
+                // Only update if ID is valid to avoid flicker on logout/login
+                if (id != 0L) {
+                    this@PassRequestViewModel.jefeId = id
+                    _uiState.update { it.copy(jefeId = id) }
+                    timber.log.Timber.d("PassRequestVM: Reactive update - JefeId=$id")
+                }
             }
         }
         viewModelScope.launch {
             preferencesManager.userIdFlow.collect { id ->
-                this@PassRequestViewModel.userId = id
-                timber.log.Timber.d("PassRequestVM: Automatically loaded UserId=$id from preferences")
+                if (id != 0L) {
+                    this@PassRequestViewModel.userId = id
+                    timber.log.Timber.d("PassRequestVM: Reactive update - UserId=$id")
+                }
             }
         }
     }
@@ -94,10 +99,15 @@ class PassRequestViewModel(application: android.app.Application) : AndroidViewMo
      * @param id The internal database ID of the employee.
      */
     fun setUserInfo(name: String, email: String, id: Long = 0, jefeId: Long = 0) {
-        this.userId = id
-        this.jefeId = jefeId
-        timber.log.Timber.d("PassRequestVM: User=$id, Jefe=$jefeId, Name=$name")
-        _uiState.update { it.copy(fullName = name, email = email, jefeId = jefeId) }
+        // Only update IDs if they are valid (not 0) to prevent overwriting reactive results
+        if (id != 0L) this.userId = id
+        if (jefeId != 0L) {
+            this.jefeId = jefeId
+            _uiState.update { it.copy(jefeId = jefeId) }
+        }
+        
+        timber.log.Timber.d("PassRequestVM: setUserInfo internal - User=${this.userId}, Jefe=${this.jefeId}, Name=$name")
+        _uiState.update { it.copy(fullName = name, email = email) }
     }
 
     private fun checkActivePasses() {
@@ -155,9 +165,12 @@ class PassRequestViewModel(application: android.app.Application) : AndroidViewMo
         if (!_uiState.value.isFormValid) return
         
         if (_uiState.value.jefeId == 0L) {
-            _uiState.update { it.copy(error = "No tienes un jefe encargado asignado. Contacta con administración.") }
+            _uiState.update { it.copy(error = "No tienes un jefe encargado asignado. Si acabas de iniciar sesión, espera unos segundos o contacta a administración.") }
             return
         }
+        
+        // Ensure local jefeId is sync'd with state before submit
+        this.jefeId = _uiState.value.jefeId
         
         _uiState.update { it.copy(isLoading = true, error = null) }
         
