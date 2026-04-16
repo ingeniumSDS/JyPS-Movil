@@ -365,10 +365,34 @@ class AdminViewModel(
     fun openEditUser(usuario: Usuario) {
         editSubmitAttempted = false
         _editingUser.value = usuario
-        val parts = usuario.nombreCompleto.split(" ")
-        _editName.value = parts.getOrElse(0) { "" }
-        _editPaterno.value = parts.getOrElse(1) { "" }
-        _editMaterno.value = parts.drop(2).joinToString(" ")
+        
+        if (usuario.nombre.isNotBlank() || usuario.apellidoPaterno.isNotBlank()) {
+            // BEST CASE: We have atomized fields from backend mapping
+            _editName.value = usuario.nombre
+            _editPaterno.value = usuario.apellidoPaterno
+            _editMaterno.value = usuario.apellidoMaterno
+        } else {
+            // FALLBACK: Manual split with smart guessing for multiple names
+            val parts = usuario.nombreCompleto.trim().split(Regex("\\s+"))
+            when {
+                parts.size >= 3 -> {
+                    // Assume last two are surnames, everything else is the name
+                    _editMaterno.value = parts.last()
+                    _editPaterno.value = parts[parts.size - 2]
+                    _editName.value = parts.subList(0, parts.size - 2).joinToString(" ")
+                }
+                parts.size == 2 -> {
+                    _editName.value = parts[0]
+                    _editPaterno.value = parts[1]
+                    _editMaterno.value = ""
+                }
+                else -> {
+                    _editName.value = usuario.nombreCompleto
+                    _editPaterno.value = ""
+                    _editMaterno.value = ""
+                }
+            }
+        }
         _editPhone.value = usuario.telefono
         _editEmail.value = usuario.correo
         _editRoles.value = usuario.roles.mapNotNull { reverseRoleMapping[it] }.toSet()

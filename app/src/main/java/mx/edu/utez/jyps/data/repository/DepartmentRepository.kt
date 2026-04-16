@@ -11,6 +11,7 @@ import mx.edu.utez.jyps.data.model.UpdateDepartmentRequest
 import mx.edu.utez.jyps.data.model.ToggleStatusRequest
 import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.data.network.ApiService
+import mx.edu.utez.jyps.data.network.NetworkErrorParser
 import mx.edu.utez.jyps.utils.CrashlyticsHelper
 
 /**
@@ -124,8 +125,8 @@ class DepartmentRepository(private val apiService: ApiService) {
                 Log.d(TAG, "Jefe asignado correctamente en el servidor")
                 Result.success(response.body()!!)
             } else {
-                val error = "Error de servidor (${response.code()}): ${response.message()}"
-                Log.w(TAG, error)
+                val error = NetworkErrorParser.parseError(response.errorBody())
+                Log.w(TAG, "Server rejection: $error")
                 Result.failure(Exception(error))
             }
         } catch (e: Exception) {
@@ -174,8 +175,8 @@ class DepartmentRepository(private val apiService: ApiService) {
                 Log.d(TAG, "Departamento '${request.nombre}' creado exitosamente")
                 Result.success(response.body()!!)
             } else {
-                val error = "Error de servidor (${response.code()})"
-                Log.w(TAG, error)
+                val error = NetworkErrorParser.parseError(response.errorBody())
+                Log.w(TAG, "Creación fallida: $error")
                 Result.failure(Exception(error))
             }
         } catch (e: Exception) {
@@ -199,8 +200,8 @@ class DepartmentRepository(private val apiService: ApiService) {
                 Log.d(TAG, "Actualización procesada exitosamente")
                 Result.success(response.body()!!)
             } else {
-                val error = "Error de servidor (${response.code()})"
-                Log.w(TAG, error)
+                val error = NetworkErrorParser.parseError(response.errorBody())
+                Log.w(TAG, "Actualización fallida: $error")
                 Result.failure(Exception(error))
             }
         } catch (e: Exception) {

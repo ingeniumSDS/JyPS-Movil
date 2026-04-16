@@ -9,6 +9,7 @@ import mx.edu.utez.jyps.data.model.EstadoCuentaResponse
 import mx.edu.utez.jyps.data.model.Usuario
 import mx.edu.utez.jyps.data.model.UserRequest
 import mx.edu.utez.jyps.data.network.ApiService
+import mx.edu.utez.jyps.data.network.NetworkErrorParser
 import mx.edu.utez.jyps.utils.CrashlyticsHelper
 
 /**
@@ -160,9 +161,9 @@ class UsuarioRepository(
                 getUsuarios()
                 Result.success(response.body()!!)
             } else {
-                val err = "Server rejected registration (HTTP ${response.code()})"
-                Log.e(TAG, err)
-                Result.failure(Exception(err))
+                val error = NetworkErrorParser.parseError(response.errorBody())
+                Log.e(TAG, "Server rejected registration: $error")
+                Result.failure(Exception(error))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Resource creation failure at $endpoint: ${e.message}", e)
@@ -191,9 +192,9 @@ class UsuarioRepository(
                 getUsuarios()
                 Result.success(response.body()!!)
             } else {
-                val err = "Server rejected update (HTTP ${response.code()})"
-                Log.e(TAG, err)
-                Result.failure(Exception(err))
+                val error = NetworkErrorParser.parseError(response.errorBody())
+                Log.e(TAG, "Server rejected update: $error")
+                Result.failure(Exception(error))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Update failure at $endpoint: ${e.message}", e)

@@ -172,14 +172,14 @@ fun AdminDashboardScreen(
             onManageEmployees = { viewModel.selectDrawerItem("admin_users") }
         )
 
-        // Processing overlay
-        if (isProcessing) {
-            Surface(modifier = Modifier.fillMaxSize(), color = Color.Black.copy(alpha = 0.3f)) {
-                Box(contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color.White)
-                }
-            }
-        }
+        // Loading States
+        val deptUiState by deptViewModel.uiState.collectAsStateWithLifecycle()
+        
+        // Show LoadingDialog if EITHER the global admin is processing OR the department module is processing
+        mx.edu.utez.jyps.ui.components.common.LoadingDialog(
+            isVisible = isProcessing || deptUiState.processingMessage.isNotBlank(),
+            message = if (deptUiState.processingMessage.isNotBlank()) deptUiState.processingMessage else "Procesando..."
+        )
     }
 }
 

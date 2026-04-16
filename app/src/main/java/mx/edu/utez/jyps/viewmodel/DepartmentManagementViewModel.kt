@@ -37,18 +37,12 @@ data class DepartmentUiState(
     val activeCount: Int = 0,
     val inactiveCount: Int = 0,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val processingMessage: String = ""
 )
 
 /**
  * ViewModel orchestrating the lifecycle and structural integrity of institutional departments.
- *
- * Manages the transition between operational states, enforcing security policies that
- * prevent the deactivation of departments containing active personnel. Optimizes data
- * flow by combining multiple reactive streams into a unified UI state.
- *
- * @property repository Data source for Department-specific CRUD operations.
- * @property userRepository Shared authority for user identity reconciliation.
  */
 class DepartmentManagementViewModel(
     private val repository: DepartmentRepository = DepartmentRepository(RetrofitInstance.api),
@@ -65,14 +59,23 @@ class DepartmentManagementViewModel(
 
     private val _isLoading = MutableStateFlow(false)
     private val _errorMessage = MutableStateFlow<String?>(null)
+    private val _processingMessage = MutableStateFlow("")
 
     val uiState: StateFlow<DepartmentUiState> = combine(
         repository.allDepartments,
         _searchQuery,
         _selectedFilter,
         _isLoading,
-        _errorMessage
-    ) { departments, query, filter, loading, error ->
+        _errorMessage,
+        _processingMessage
+    ) { flows ->
+        val departments = flows[0] as List<DepartamentoResponse>
+        val query = flows[1] as String
+        val filter = flows[2] as String
+        val loading = flows[3] as Boolean
+        val error = flows[4] as String?
+        val procMsg = flows[5] as String
+
         val filtered = departments.filter { dept ->
             val matchesQuery = dept.nombre.contains(query, ignoreCase = true) || 
                                dept.descripcion.contains(query, ignoreCase = true)
@@ -92,7 +95,8 @@ class DepartmentManagementViewModel(
             activeCount = departments.count { it.activo },
             inactiveCount = departments.count { !it.activo },
             isLoading = loading,
-            errorMessage = error
+            errorMessage = error,
+            processingMessage = procMsg
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DepartmentUiState())
 
@@ -223,6 +227,7 @@ class DepartmentManagementViewModel(
         if (!validateForm()) return
 
         viewModelScope.launch {
+            _processingMessage.value = if (_isEditVisible.value) "Actualizando departamento..." else "Creando departamento..."
             _isProcessing.value = true
             val isEdit = _isEditVisible.value
             val result = if (isEdit) {
@@ -253,6 +258,7 @@ class DepartmentManagementViewModel(
                 _formErrors.value = mapOf("api" to (e.localizedMessage ?: "Error al guardar"))
             }
             _isProcessing.value = false
+            _processingMessage.value = ""
         }
     }
 
@@ -264,6 +270,7 @@ class DepartmentManagementViewModel(
         _selectedDept.value = dept
         
         viewModelScope.launch {
+            _processingMessage.value = "Validando personal vinculado..."
             _isProcessing.value = true
             
             // USE Specialized endpoint as requested
@@ -282,12 +289,14 @@ class DepartmentManagementViewModel(
                 _isStatusToggleVisible.value = true
             }
             _isProcessing.value = false
+            _processingMessage.value = ""
         }
     }
 
     fun confirmToggleStatus() {
         val dept = _selectedDept.value ?: return
         viewModelScope.launch {
+            _processingMessage.value = "Cambiando estado..."
             _isProcessing.value = true
             repository.toggleEstado(dept.id).onSuccess {
                 Log.d(TAG, "Cambio de estado exitoso para depto ${dept.id}")
@@ -297,6 +306,7 @@ class DepartmentManagementViewModel(
                 Log.e(TAG, "Error toggleEstado: ${e.message}")
             }
             _isProcessing.value = false
+            _processingMessage.value = ""
         }
     }
 

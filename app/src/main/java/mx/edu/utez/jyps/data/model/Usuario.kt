@@ -15,6 +15,9 @@ package mx.edu.utez.jyps.data.model
  */
 data class Usuario(
     val id: Long = 0,
+    val nombre: String = "",
+    val apellidoPaterno: String = "",
+    val apellidoMaterno: String = "",
     val nombreCompleto: String = "",
     val correo: String = "",
     val telefono: String = "",
